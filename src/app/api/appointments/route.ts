@@ -132,11 +132,48 @@ export const POST = withErrorHandling(async (request: Request) => {
     resolvedPatient.fileNumber,
   );
 
-  // 4. Create appointment
+  // 4. Resolve Doctor and Service (supports UUIDs or exact Names)
+  let resolvedService = await prisma.service.findFirst({
+    where: {
+      clinicId: targetClinicId,
+      OR: [{ id: input.serviceId }, { name: input.serviceId }],
+    },
+  });
+  if (!resolvedService) {
+    resolvedService = await prisma.service.findFirst({
+      where: { clinicId: targetClinicId, isActive: true },
+    });
+  }
+  if (!resolvedService) {
+    throw badRequest('Selected service is not found in this clinic.');
+  }
+
+  let resolvedDoctor = await prisma.doctor.findFirst({
+    where: {
+      clinicId: targetClinicId,
+      OR: [{ id: input.doctorId }, { name: input.doctorId }],
+    },
+  });
+  if (!resolvedDoctor) {
+    const docService = await prisma.doctorService.findFirst({
+      where: { serviceId: resolvedService.id },
+      include: { doctor: true },
+    });
+    resolvedDoctor =
+      docService?.doctor ||
+      (await prisma.doctor.findFirst({
+        where: { clinicId: targetClinicId, isActive: true },
+      }));
+  }
+  if (!resolvedDoctor) {
+    throw badRequest('Selected doctor is not found in this clinic.');
+  }
+
+  // 5. Create appointment
   const result = await createAppointment(scope, {
     clinicId: targetClinicId,
-    doctorId: input.doctorId,
-    serviceId: input.serviceId,
+    doctorId: resolvedDoctor.id,
+    serviceId: resolvedService.id,
     patientId: resolvedPatientId,
     startsAt: input.startsAt,
     notes: input.notes,

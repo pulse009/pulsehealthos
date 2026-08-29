@@ -156,7 +156,7 @@ export function AppShell({
         </header>
 
         {/* FLUSH PAGE CONTENT */}
-        <main className="min-w-0 min-h-0 flex-1 flex flex-col overflow-hidden">{children}</main>
+        <main className="min-w-0 min-h-0 flex-1 flex flex-col overflow-y-auto">{children}</main>
       </div>
     </div>
   );

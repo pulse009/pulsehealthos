@@ -278,6 +278,16 @@ export function AppointmentsScheduleDashboard({
     }
   }, [effectiveSlots, selectedSlotStartsAt]);
 
+  // Ensure a compatible doctor is selected whenever modalCompatibleDoctors updates
+  useEffect(() => {
+    if (modalCompatibleDoctors.length > 0) {
+      const exists = modalCompatibleDoctors.some((d) => d.id === selectedDoctorId);
+      if (!exists && modalCompatibleDoctors[0]) {
+        setSelectedDoctorId(modalCompatibleDoctors[0].id);
+      }
+    }
+  }, [modalCompatibleDoctors, selectedDoctorId]);
+
   // Open modal with fresh state
   const handleOpenNewAppointmentModal = () => {
     setPatientTab('NEW');
@@ -573,7 +583,16 @@ export function AppointmentsScheduleDashboard({
 
       const data = await res.json();
       if (!res.ok) {
-        setFormError(data?.error?.message || 'Failed to book appointment.');
+        let errorMsg = data?.error?.message || data?.error || 'Failed to book appointment.';
+        if (data?.error?.details?.issues?.length > 0) {
+          const detailed = data.error.details.issues
+            .map((issue: any) => `${issue.path ? `${issue.path}: ` : ''}${issue.message}`)
+            .join(', ');
+          errorMsg = `${errorMsg} (${detailed})`;
+        } else if (data?.error?.details?.reason) {
+          errorMsg = `${errorMsg}: ${data.error.details.reason}`;
+        }
+        setFormError(errorMsg);
         setIsSubmitting(false);
         return;
       }

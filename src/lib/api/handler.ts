@@ -45,8 +45,11 @@ export function withErrorHandling(
       return await handler(request);
     } catch (error) {
       if (error instanceof ZodError) {
+        const issueMessages = error.issues
+          .map((i) => `${i.path.length > 0 ? `${i.path.join('.')}: ` : ''}${i.message}`)
+          .join(', ');
         return errorResponse(
-          validationError('The request payload is invalid.', {
+          validationError(`Invalid payload: ${issueMessages}`, {
             issues: error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
           }),
           requestId,
@@ -70,7 +73,10 @@ export async function parseJson<TSchema extends ZodTypeAny>(
   }
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
-    throw validationError('The request payload is invalid.', {
+    const issueMessages = parsed.error.issues
+      .map((i) => `${i.path.length > 0 ? `${i.path.join('.')}: ` : ''}${i.message}`)
+      .join(', ');
+    throw validationError(`Invalid payload: ${issueMessages}`, {
       issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
     });
   }
