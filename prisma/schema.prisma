@@ -1,0 +1,759 @@
+// Clinic AI WhatsApp Appointment Platform — data model.
+//
+// Conventions used throughout:
+//   * Every tenant-owned table carries `clinicId` and indexes it. Authorization is
+//     enforced in the service layer by always threading a tenant scope into queries.
+//   * All instants are stored as `timestamptz` (Prisma `DateTime`) in UTC. Wall-clock
+//     interpretation always goes through the owning clinic's IANA timezone.
+//   * Weekdays are ISO-8601: 1 = Monday ... 7 = Sunday (matches Luxon's `weekday`).
+//   * Local time-of-day is stored as minutes-from-midnight (0..1440) so it is
+//     timezone- and DST-agnostic until resolved against a concrete date.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  CLIENT
+  PATIENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED // superseded by a newer appointment; the original slot is released
+  COMPLETED
+  NO_SHOW
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  BOOKED
+  LOST
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ESCALATED
+  CLOSED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageSender {
+  PATIENT
+  AI
+  HUMAN
+  SYSTEM
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum ReminderStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+enum AppointmentSource {
+  AI_WHATSAPP
+  ADMIN
+  IMPORT
+}
+
+// ---------------------------------------------------------------------------
+// Identity & access
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String
+  name         String
+  role         Role    @default(CLIENT)
+  isActive     Boolean @default(true)
+
+  /// Null for SUPER_ADMIN (platform-wide). Required for CLIENT and PATIENT (tenant-bound).
+  clinicId String?
+  clinic   Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// Bumped to invalidate every issued session for this user.
+  sessionVersion Int       @default(0)
+  lastLoginAt    DateTime? @db.Timestamptz(3)
+  failedLogins   Int       @default(0)
+  lockedUntil    DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  auditLogs          AuditLog[]
+  appointments       Appointment[] @relation("AppointmentCreatedBy")
+  messages           Message[]     @relation("MessageSentByUser")
+  patient            Patient?      @relation("PatientUser")
+  coordinatedDoctors Doctor[]      @relation("DoctorCoordinator")
+
+  @@index([clinicId])
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model Clinic {
+  id          String  @id @default(uuid())
+  slug        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  phone          String?
+  whatsappNumber String?
+  email          String?
+  website        String?
+  addressLine    String?
+  city           String?
+  country        String?
+
+  /// IANA timezone, e.g. "Asia/Karachi". Never assume the server timezone.
+  timezone String @default("Asia/Riyadh")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  users           User[]
+  settings        ClinicSettings?
+  aiConfiguration AIConfiguration?
+  whatsapp        WhatsAppIntegration?
+  hours           ClinicHours[]
+  holidays        Holiday[]
+  specialClosures SpecialClosure[]
+  doctors         Doctor[]
+  services        Service[]
+  faqs            FAQ[]
+  patients        Patient[]
+  leads           Lead[]
+  conversations   Conversation[]
+  messages        Message[]
+  appointments    Appointment[]
+  reminders       Reminder[]
+  reminderRules   ReminderRule[]
+  auditLogs       AuditLog[]
+  systemLogs      SystemLog[]
+
+  @@index([isActive])
+}
+
+model ClinicSettings {
+  id       String @id @default(uuid())
+  clinicId String @unique
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// Fallback appointment length when a service does not specify one.
+  defaultAppointmentMinutes Int @default(30)
+  /// Gap enforced after each appointment before the next may start.
+  defaultBufferMinutes      Int @default(0)
+  /// Granularity of offered start times.
+  slotGranularityMinutes    Int @default(15)
+
+  /// Booking window guards.
+  minAdvanceBookingMinutes Int     @default(60)
+  maxAdvanceBookingDays    Int     @default(60)
+  /// Patients may not cancel/reschedule inside this window.
+  cancellationCutoffHours  Int     @default(4)
+  allowPatientCancellation Boolean @default(true)
+  allowPatientReschedule   Boolean @default(true)
+
+  cancellationPolicy  String?
+  reschedulingPolicy  String?
+  /// Max slots offered to a patient in one message.
+  maxSlotsOfferedToAI Int     @default(5)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model ClinicHours {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// ISO weekday: 1 = Monday ... 7 = Sunday.
+  weekday     Int
+  /// Minutes from local midnight.
+  startMinute Int
+  endMinute   Int
+  isClosed    Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([clinicId, weekday])
+}
+
+model Holiday {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  name                String
+  /// Local calendar date in the clinic timezone, stored as YYYY-MM-DD.
+  date                String
+  isRecurringAnnually Boolean @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([clinicId, date, name])
+  @@index([clinicId, date])
+}
+
+model SpecialClosure {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  reason      String?
+  /// Inclusive local date range in the clinic timezone (YYYY-MM-DD).
+  startDate   String
+  endDate     String
+  /// Optional intra-day window; null means the whole day is closed.
+  startMinute Int?
+  endMinute   Int?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([clinicId, startDate, endDate])
+}
+
+// ---------------------------------------------------------------------------
+// Providers & catalogue
+// ---------------------------------------------------------------------------
+
+model Doctor {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  name        String
+  specialty   String?
+  description String?
+  imageUrl    String?
+  isActive    Boolean @default(true)
+
+  /// Per-doctor overrides; fall back to ClinicSettings when null.
+  appointmentMinutes Int?
+  bufferMinutes      Int?
+
+  coordinatorId String?
+  coordinator   User?   @relation("DoctorCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  schedules    DoctorSchedule[]
+  breaks       DoctorBreak[]
+  timeOff      DoctorTimeOff[]
+  services     DoctorService[]
+  appointments Appointment[]
+
+  @@index([clinicId, isActive])
+  @@index([coordinatorId])
+}
+
+model DoctorSchedule {
+  id       String @id @default(uuid())
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinicId String
+
+  /// ISO weekday: 1 = Monday ... 7 = Sunday.
+  weekday     Int
+  startMinute Int
+  endMinute   Int
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([doctorId, weekday])
+  @@index([clinicId])
+}
+
+model DoctorBreak {
+  id       String @id @default(uuid())
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinicId String
+
+  label       String?
+  weekday     Int
+  startMinute Int
+  endMinute   Int
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([doctorId, weekday])
+  @@index([clinicId])
+}
+
+model DoctorTimeOff {
+  id       String @id @default(uuid())
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinicId String
+
+  reason      String?
+  /// Inclusive local date range (YYYY-MM-DD) in the clinic timezone.
+  startDate   String
+  endDate     String
+  startMinute Int?
+  endMinute   Int?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([doctorId, startDate, endDate])
+  @@index([clinicId])
+}
+
+model Service {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  name            String
+  description     String?
+  durationMinutes Int
+  bufferMinutes   Int?
+  /// Minor units (e.g. cents/paisa) to avoid float rounding on money.
+  priceMinor      Int?
+  currency        String? @default("SAR")
+  isActive        Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  doctors      DoctorService[]
+  appointments Appointment[]
+
+  @@unique([clinicId, name])
+  @@index([clinicId, isActive])
+}
+
+model DoctorService {
+  doctorId  String
+  serviceId String
+  clinicId  String
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, serviceId])
+  @@index([serviceId])
+  @@index([clinicId])
+}
+
+model FAQ {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  question  String
+  answer    String
+  category  String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([clinicId, isActive])
+}
+
+// ---------------------------------------------------------------------------
+// AI & WhatsApp configuration (internal-only; never exposed to CLIENT users)
+// ---------------------------------------------------------------------------
+
+model AIConfiguration {
+  id       String @id @default(uuid())
+  clinicId String @unique
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  assistantName      String   @default("Assistant")
+  greeting           String?
+  tone               String   @default("professional, warm, concise")
+  personality        String?
+  primaryLanguage    String   @default("en")
+  supportedLanguages String[] @default(["en"])
+
+  /// Extra operator instructions appended to the system prompt.
+  customInstructions String?
+  /// Free-text conditions under which the agent must hand off to a human.
+  escalationRules    String?
+  escalationKeywords String[] @default([])
+
+  model           String  @default("gemini-3.6-flash")
+  temperature     Float   @default(0.3)
+  maxOutputTokens Int     @default(1024)
+  /// Turns of history replayed into the model.
+  historyWindow   Int     @default(20)
+  isEnabled       Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model WhatsAppIntegration {
+  id       String @id @default(uuid())
+  clinicId String @unique
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// Meta Cloud API phone number id — used to route inbound webhooks to a tenant.
+  phoneNumberId      String  @unique
+  wabaId             String?
+  displayPhoneNumber String?
+
+  /// AES-256-GCM ciphertext. Plaintext never leaves the server.
+  accessTokenCipher String?
+  appSecretCipher   String?
+  verifyTokenCipher String?
+
+  isActive    Boolean   @default(false)
+  lastError   String?
+  lastErrorAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model ReminderRule {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// How long before the appointment start this reminder fires.
+  offsetMinutes Int
+  /// Optional override; falls back to a built-in template.
+  template      String?
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  reminders Reminder[]
+
+  @@unique([clinicId, offsetMinutes])
+  @@index([clinicId, isActive])
+}
+
+// ---------------------------------------------------------------------------
+// People & funnel
+// ---------------------------------------------------------------------------
+
+model Patient {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// Sequential unique medical record / file number within the clinic (e.g. 1, 2, 3...)
+  fileNumber Int?
+
+  name           String?
+  /// E.164 without the leading '+', as delivered by the WhatsApp Cloud API.
+  phone          String
+  whatsappNumber String?
+  email          String?
+  notes          String?
+  tags           String[] @default([])
+
+  userId String? @unique
+  user   User?   @relation("PatientUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  lead          Lead?
+  conversations Conversation[]
+  appointments  Appointment[]
+
+  @@unique([clinicId, phone])
+  @@unique([clinicId, fileNumber])
+  @@index([clinicId])
+  @@index([clinicId, fileNumber])
+}
+
+model Lead {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId String  @unique
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  status LeadStatus @default(NEW)
+  source String     @default("whatsapp")
+  notes  String?
+  tags   String[]   @default([])
+
+  firstContactAt DateTime  @default(now()) @db.Timestamptz(3)
+  lastContactAt  DateTime  @default(now()) @db.Timestamptz(3)
+  qualifiedAt    DateTime? @db.Timestamptz(3)
+  bookedAt       DateTime? @db.Timestamptz(3)
+  lostAt         DateTime? @db.Timestamptz(3)
+  lostReason     String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  appointments Appointment[]
+
+  @@index([clinicId, status])
+  @@index([clinicId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Conversations
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  status             ConversationStatus @default(ACTIVE)
+  /// Set when the agent hands the thread to a human.
+  escalatedAt        DateTime?          @db.Timestamptz(3)
+  escalationReason   String?
+  /// Denormalised for fast inbox sorting.
+  lastMessageAt      DateTime           @default(now()) @db.Timestamptz(3)
+  lastMessagePreview String?
+  aiEnabled          Boolean            @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  messages Message[]
+
+  @@index([clinicId, lastMessageAt])
+  @@index([clinicId, status])
+  @@index([patientId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  clinicId       String
+  clinic         Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  direction    MessageDirection
+  sender       MessageSender
+  /// Set when a human operator sent the message.
+  sentByUserId String?
+  sentByUser   User?            @relation("MessageSentByUser", fields: [sentByUserId], references: [id], onDelete: SetNull)
+
+  body     String
+  mediaUrl String?
+  status   MessageStatus @default(PENDING)
+  error    String?
+
+  /// Provider message id. Unique per clinic so redelivered webhooks are no-ops.
+  externalId String?
+  /// Structured record of any tool calls the agent made on this turn.
+  toolCalls  Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([clinicId, externalId])
+  @@index([conversationId, createdAt])
+  @@index([clinicId, createdAt])
+}
+
+/// Webhook / job de-duplication ledger. Insert-wins: a duplicate insert throws
+/// a unique violation, which callers treat as "already handled".
+model ProcessedEvent {
+  id        String   @id @default(uuid())
+  scope     String
+  key       String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([scope, key])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Appointments
+// ---------------------------------------------------------------------------
+
+model Appointment {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  /// Sequential unique appointment number per clinic, starting from 1.
+  appointmentNumber Int?
+
+  doctorId  String
+  doctor    Doctor  @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  leadId    String?
+  lead      Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  /// UTC instants. This is the appointment as the patient experiences it, and
+  /// the only pair that should ever be displayed.
+  startsAt DateTime @db.Timestamptz(3)
+  endsAt   DateTime @db.Timestamptz(3)
+
+  /// Buffer snapshot (doctor override, else service, else clinic default).
+  bufferMinutes Int      @default(0)
+  /// The interval this appointment actually *occupies* on the doctor's calendar:
+  /// `blockStartsAt == startsAt` and `blockEndsAt == endsAt + bufferMinutes`.
+  /// Denormalised so the exclusion constraint can be an immutable column
+  /// expression — that is what makes buffer time enforceable by the database
+  /// rather than only by the availability engine.
+  blockStartsAt DateTime @db.Timestamptz(3)
+  blockEndsAt   DateTime @db.Timestamptz(3)
+
+  /// Snapshot of the clinic timezone at booking time, for stable rendering.
+  timezone String
+
+  status AppointmentStatus @default(CONFIRMED)
+  source AppointmentSource @default(AI_WHATSAPP)
+  notes  String?
+
+  /// Caller-supplied de-duplication key; a retried tool call returns the
+  /// original appointment instead of creating a second one.
+  idempotencyKey String? @unique
+
+  createdByUserId String?
+  createdBy       User?   @relation("AppointmentCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  confirmedAt  DateTime? @db.Timestamptz(3)
+  cancelledAt  DateTime? @db.Timestamptz(3)
+  cancelReason String?
+  completedAt  DateTime? @db.Timestamptz(3)
+  noShowAt     DateTime? @db.Timestamptz(3)
+
+  /// Set on the NEW appointment, pointing at the one it replaced.
+  rescheduledFromId String?      @unique
+  rescheduledFrom   Appointment? @relation("Reschedule", fields: [rescheduledFromId], references: [id], onDelete: SetNull)
+  rescheduledTo     Appointment? @relation("Reschedule")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  reminders Reminder[]
+
+  @@unique([clinicId, appointmentNumber])
+  @@index([clinicId, startsAt])
+  @@index([clinicId, status, startsAt])
+  @@index([doctorId, startsAt])
+  @@index([doctorId, blockStartsAt, blockEndsAt])
+  @@index([patientId, startsAt])
+  @@index([leadId])
+  @@index([serviceId])
+}
+
+model Reminder {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  appointmentId String
+  appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  ruleId        String?
+  rule          ReminderRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+
+  offsetMinutes Int
+  scheduledFor  DateTime       @db.Timestamptz(3)
+  status        ReminderStatus @default(SCHEDULED)
+  sentAt        DateTime?      @db.Timestamptz(3)
+  attempts      Int            @default(0)
+  lastError     String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  /// One reminder per appointment per offset — makes re-scheduling idempotent.
+  @@unique([appointmentId, offsetMinutes])
+  @@index([status, scheduledFor])
+  @@index([clinicId, scheduledFor])
+}
+
+// ---------------------------------------------------------------------------
+// Observability
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id       String  @id @default(uuid())
+  clinicId String?
+  clinic   Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  actorUserId String?
+  actor       User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorLabel  String?
+
+  action     String
+  entityType String
+  entityId   String?
+  /// Redacted diff/metadata. Never contains secrets.
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([clinicId, createdAt])
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+}
+
+model SystemLog {
+  id       String  @id @default(uuid())
+  clinicId String?
+  clinic   Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  level   LogLevel
+  event   String
+  message String
+  context Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([level, createdAt])
+  @@index([clinicId, createdAt])
+  @@index([event, createdAt])
+}
