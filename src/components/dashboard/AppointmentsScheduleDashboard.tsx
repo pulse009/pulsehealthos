@@ -24,6 +24,8 @@ import {
   DollarSign,
   Check,
   Globe,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 export interface AppointmentItem {
@@ -191,6 +193,12 @@ export function AppointmentsScheduleDashboard({
   const [newStatus, setNewStatus] = useState<'Confirmed' | 'Pending'>('Confirmed');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Delete Appointment Confirmation State
+  const [appointmentToDelete, setAppointmentToDelete] = useState<AppointmentItem | null>(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Search Existing Patient by File Number
   const handleSearchPatient = async () => {
@@ -670,18 +678,44 @@ export function AppointmentsScheduleDashboard({
     }
   };
 
-  const handleDeleteAppointment = async (id: string) => {
-    // 1. Immediately remove from UI state
-    setAppointments((prev) => prev.filter((app) => app.id !== id));
+  const handleDeleteAppointment = (item: AppointmentItem) => {
     setActiveActionId(null);
+    setAppointmentToDelete(item);
+    setDeleteConfirmInput('');
+    setDeleteError(null);
+  };
 
-    // 2. Persist deletion to DB
+  const handleConfirmDeleteAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appointmentToDelete) return;
+    if (deleteConfirmInput.trim().toUpperCase() !== 'CONFIRM DELETE') {
+      setDeleteError('Please type "CONFIRM DELETE" exactly to proceed.');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
     try {
-      await fetch(`/api/appointments/${id}`, {
+      const res = await fetch(`/api/appointments/${appointmentToDelete.id}`, {
         method: 'DELETE',
       });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteError(data?.error?.message || data?.error || 'Failed to delete appointment from database.');
+        setIsDeleting(false);
+        return;
+      }
+
+      // Remove from live UI state
+      setAppointments((prev) => prev.filter((app) => app.id !== appointmentToDelete.id));
+      setAppointmentToDelete(null);
+      setDeleteConfirmInput('');
     } catch (err) {
       console.error('Failed to delete appointment from database:', err);
+      setDeleteError('An unexpected error occurred while deleting.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1190,11 +1224,11 @@ export function AppointmentsScheduleDashboard({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteAppointment(row.id);
+                                  handleDeleteAppointment(row);
                                 }}
                                 className="w-full px-3.5 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-semibold cursor-pointer"
                               >
-                                <XCircle className="size-3.5" />
+                                <Trash2 className="size-3.5" />
                                 <span>Remove</span>
                               </button>
                             </div>
@@ -1606,6 +1640,115 @@ export function AppointmentsScheduleDashboard({
                     <>
                       <Check className="size-3.5 stroke-[2.5]" />
                       <span>{patientTab === 'EXISTING' ? 'Attach & Create Appointment' : 'Create Appointment'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. MODAL FOR DELETE APPOINTMENT CONFIRMATION */}
+      {appointmentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-full bg-rose-100 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                  <AlertTriangle className="size-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Delete Appointment
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+                    This action permanently deletes this record from the database.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAppointmentToDelete(null)}
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Appointment Details Preview Box */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-[10px] border border-slate-200 dark:border-slate-700/80 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900 dark:text-white text-xs">
+                  {appointmentToDelete.patientName}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {appointmentToDelete.fileNumber && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                      File #{appointmentToDelete.fileNumber}
+                    </span>
+                  )}
+                  {appointmentToDelete.appointmentNumber && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      Appt #{appointmentToDelete.appointmentNumber}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                • {appointmentToDelete.department} — {appointmentToDelete.doctor}
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                • Scheduled Time: {appointmentToDelete.time}
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="p-2.5 rounded-[8px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="size-3.5 shrink-0" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            {/* Confirmation Form with Required Text */}
+            <form onSubmit={handleConfirmDeleteAppointment} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Type <span className="text-rose-600 dark:text-rose-400 font-mono font-black select-all">CONFIRM DELETE</span> to proceed *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Type CONFIRM DELETE"
+                  value={deleteConfirmInput}
+                  onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAppointmentToDelete(null)}
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isDeleting ||
+                    deleteConfirmInput.trim().toUpperCase() !== 'CONFIRM DELETE'
+                  }
+                  className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  {isDeleting ? (
+                    <span>Deleting...</span>
+                  ) : (
+                    <>
+                      <Trash2 className="size-3.5" />
+                      <span>Delete Appointment</span>
                     </>
                   )}
                 </button>
