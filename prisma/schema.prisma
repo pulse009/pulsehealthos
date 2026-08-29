@@ -25,6 +25,8 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   CLIENT
+  COORDINATOR
+  DOCTOR
   PATIENT
 }
 
@@ -98,6 +100,8 @@ enum AppointmentSource {
 model User {
   id           String  @id @default(uuid())
   email        String  @unique
+  username     String? @unique
+  phone        String?
   passwordHash String
   name         String
   role         Role    @default(CLIENT)
@@ -120,10 +124,12 @@ model User {
   appointments       Appointment[] @relation("AppointmentCreatedBy")
   messages           Message[]     @relation("MessageSentByUser")
   patient            Patient?      @relation("PatientUser")
+  doctor             Doctor?       @relation("DoctorUser")
   coordinatedDoctors Doctor[]      @relation("DoctorCoordinator")
 
   @@index([clinicId])
   @@index([role])
+  @@index([username])
 }
 
 // ---------------------------------------------------------------------------
@@ -276,6 +282,10 @@ model Doctor {
 
   coordinatorId String?
   coordinator   User?   @relation("DoctorCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
+
+  phone  String?
+  userId String? @unique
+  user   User?   @relation("DoctorUser", fields: [userId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -485,6 +495,9 @@ model Patient {
   /// Sequential unique medical record / file number within the clinic (e.g. 1, 2, 3...)
   fileNumber Int?
 
+  title          String?
+  gender         String?
+  nationality    String?
   name           String?
   /// E.164 without the leading '+', as delivered by the WhatsApp Cloud API.
   phone          String
@@ -650,9 +663,10 @@ model Appointment {
   /// Snapshot of the clinic timezone at booking time, for stable rendering.
   timezone String
 
-  status AppointmentStatus @default(CONFIRMED)
-  source AppointmentSource @default(AI_WHATSAPP)
-  notes  String?
+  status         AppointmentStatus @default(CONFIRMED)
+  source         AppointmentSource @default(AI_WHATSAPP)
+  notes          String?
+  pendingPayment String?
 
   /// Caller-supplied de-duplication key; a retried tool call returns the
   /// original appointment instead of creating a second one.

@@ -1,6 +1,7 @@
 import 'server-only';
 import { prisma, type DbClient } from '@/lib/db/prisma';
 import { hashPassword } from '@/lib/auth/password';
+import { generateUniqueUsername } from '@/lib/auth/username.service';
 
 /**
  * Generate a random 12-character password satisfying the password policy
@@ -25,69 +26,107 @@ export function generateTemporaryPassword(): string {
 export interface PatientAccountResult {
   userId: string;
   email: string;
+  username: string;
   temporaryPassword?: string;
   isNewAccount: boolean;
 }
 
 /**
  * Ensures a User record with role PATIENT exists for the given patient,
- * creating one with a temporary password if it does not yet exist.
+ * assigning a unique PA-NUMBER username and password if it does not yet exist.
  */
 export async function ensurePatientUserAccount(
   clinicId: string,
   patientId: string,
-  email: string,
+  emailOrPhone?: string | null,
   patientName?: string | null,
+  fileNumber?: number | null,
   db: DbClient = prisma,
 ): Promise<PatientAccountResult | null> {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail || !normalizedEmail.includes('@')) return null;
-
-  // 1. Check if user already exists
-  const existingUser = await db.user.findUnique({
-    where: { email: normalizedEmail },
-    select: { id: true, role: true, clinicId: true },
+  const patient = await db.patient.findUnique({
+    where: { id: patientId },
+    select: { id: true, userId: true, phone: true, email: true, fileNumber: true, user: true },
   });
+  if (!patient) return null;
 
-  if (existingUser) {
-    // Link existing user to patient record
-    await db.patient.update({
-      where: { id: patientId },
-      data: { userId: existingUser.id, email: normalizedEmail },
-    });
+  const actualFileNumber = fileNumber ?? patient.fileNumber ?? 1;
+
+  // 1. Check if patient already has a linked user
+  if (patient.userId && patient.user) {
+    let existingUsername = patient.user.username;
+    if (!existingUsername) {
+      existingUsername = await generateUniqueUsername('PA', actualFileNumber, db);
+      await db.user.update({
+        where: { id: patient.userId },
+        data: { username: existingUsername },
+      });
+    }
     return {
-      userId: existingUser.id,
-      email: normalizedEmail,
+      userId: patient.userId,
+      email: patient.user.email,
+      username: existingUsername,
       isNewAccount: false,
     };
   }
 
-  // 2. Create new user account with role PATIENT
+  // 2. Generate unique PA-NUMBER username
+  const username = await generateUniqueUsername('PA', actualFileNumber, db);
+  
+  // Format normalized email or fallback unique username email
+  const cleanEmail = emailOrPhone && emailOrPhone.includes('@')
+    ? emailOrPhone.trim().toLowerCase()
+    : `${username.toLowerCase()}@patient.clinic`;
+
+  // Check if a user exists with this email or username
+  const existingUser = await db.user.findFirst({
+    where: {
+      OR: [{ email: cleanEmail }, { username }],
+    },
+    select: { id: true, email: true, username: true },
+  });
+
+  if (existingUser) {
+    await db.patient.update({
+      where: { id: patientId },
+      data: { userId: existingUser.id },
+    });
+    return {
+      userId: existingUser.id,
+      email: existingUser.email,
+      username: existingUser.username || username,
+      isNewAccount: false,
+    };
+  }
+
+  // 3. Create new user account with role PATIENT and unique username
   const temporaryPassword = generateTemporaryPassword();
   const passwordHash = await hashPassword(temporaryPassword);
   const name = patientName?.trim() || 'Patient';
 
   const newUser = await db.user.create({
     data: {
-      email: normalizedEmail,
+      email: cleanEmail,
+      username,
+      phone: patient.phone,
       name,
       passwordHash,
       role: 'PATIENT',
       clinicId,
       isActive: true,
     },
-    select: { id: true },
+    select: { id: true, email: true, username: true },
   });
 
   // Link newly created user to patient record
   await db.patient.update({
     where: { id: patientId },
-    data: { userId: newUser.id, email: normalizedEmail },
+    data: { userId: newUser.id },
   });
 
   return {
     userId: newUser.id,
-    email: normalizedEmail,
+    email: newUser.email,
+    username: newUser.username || username,
     temporaryPassword,
     isNewAccount: true,
   };

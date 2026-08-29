@@ -47,10 +47,10 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
   return (
     <div className="w-full max-w-md mx-auto">
       <form onSubmit={onSubmit} className="space-y-4 text-left" noValidate>
-        {/* Email Field */}
+        {/* Email or Username Field */}
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-            Email address
+            Username or Email
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -59,12 +59,12 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
             <input
               id="email"
               name="email"
-              type="email"
+              type="text"
               autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@clinic.com"
+              placeholder="e.g. PA-101, RC-101, or admin@clinic.com"
               disabled={pending}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-slate-100"
             />

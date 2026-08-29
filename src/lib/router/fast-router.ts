@@ -147,37 +147,59 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   }
 
   // -------------------------------------------------------------------------
-  // PATIENT DETAILS (Email & Name) EXTRACTION & RESUME BOOKING
+  // PATIENT DETAILS (Full Name & Gender) EXTRACTION & RESUME BOOKING
   // -------------------------------------------------------------------------
-  const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  if (emailMatch) {
-    const extractedEmail = emailMatch[0].trim().toLowerCase();
-    let extractedName: string | null = null;
-    const parts = rawText.split(emailMatch[0]);
-    const candidateName = (parts[0] || parts[1] || '')
-      .replace(/[,:;\-\n]/g, ' ')
-      .replace(/(my name is|name is|name:|email:|اسمي|الاسم|البريد|ايميلي|إيميلي)/gi, '')
+  const pendingToken =
+    pendingBookingSlots.get(input.conversationId) || pendingBookingSlots.get(input.patientId);
+
+  if (pendingToken && rawText.trim().length >= 2) {
+    let extractedGender: string | null = null;
+    let textToParse = rawText;
+
+    // Detect gender
+    if (/\b(female|woman|girl|mrs|ms|miss)\b|أنثى|انثى|سيدة|آنسة|بنت/i.test(rawText)) {
+      extractedGender = 'Female';
+      textToParse = textToParse.replace(/\b(female|woman|girl|mrs|ms|miss)\b|أنثى|انثى|سيدة|آنسة|بنت/gi, ' ');
+    } else if (/\b(male|man|boy|mr)\b|ذكر|رجل|ولد|سيد/i.test(rawText)) {
+      extractedGender = 'Male';
+      textToParse = textToParse.replace(/\b(male|man|boy|mr)\b|ذكر|رجل|ولد|سيد/gi, ' ');
+    }
+
+    // Also extract email if user happens to send one
+    const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    let extractedEmail: string | null = null;
+    if (emailMatch) {
+      extractedEmail = emailMatch[0].trim().toLowerCase();
+      textToParse = textToParse.replace(emailMatch[0], ' ');
+    }
+
+    const cleanedName = textToParse
+      .replace(/[,:;\-\n/]/g, ' ')
+      .replace(/(my name is|name is|name:|gender:|email:|اسمي|الاسم|الجنس|النوع|البريد|ايميلي|إيميلي)/gi, '')
+      .replace(/\s+/g, ' ')
       .trim();
-    if (candidateName.length >= 2 && candidateName.length <= 60) {
-      extractedName = candidateName;
+
+    const updateData: any = {};
+    if (cleanedName.length >= 2 && cleanedName.length <= 80 && !/^[\d\W]+$/.test(cleanedName)) {
+      updateData.name = cleanedName;
+    }
+    if (extractedGender) {
+      updateData.gender = extractedGender;
+    }
+    if (extractedEmail) {
+      updateData.email = extractedEmail;
     }
 
-    try {
-      const updateData: { email: string; name?: string } = { email: extractedEmail };
-      if (extractedName) {
-        updateData.name = extractedName;
+    if (Object.keys(updateData).length > 0) {
+      try {
+        await prisma.patient.update({
+          where: { id: input.patientId },
+          data: updateData,
+        });
+      } catch {
+        // ignore
       }
-      await prisma.patient.update({
-        where: { id: input.patientId },
-        data: updateData,
-      });
-    } catch {
-      // ignore
-    }
 
-    const pendingToken =
-      pendingBookingSlots.get(input.conversationId) || pendingBookingSlots.get(input.patientId);
-    if (pendingToken) {
       pendingBookingSlots.delete(input.conversationId);
       pendingBookingSlots.delete(input.patientId);
       return handleSlotSelection(input, pendingToken, locale, now, startedAt);
@@ -203,7 +225,7 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     isAwaitingFileNumber && /^\s*#?\s*(\d+)\s*$/.test(rawText) ? rawText.match(/^\s*#?\s*(\d+)\s*$/) : null;
   const fileMatch = explicitFileMatch || plainDigitMatch;
 
-  if (fileMatch && fileMatch[1] && !emailMatch) {
+  if (fileMatch && fileMatch[1]) {
     const fileNum = parseInt(fileMatch[1], 10);
     if (!isNaN(fileNum)) {
       return handleFileNumberLookup(input, fileNum, locale, startedAt);
@@ -673,7 +695,7 @@ async function handleSlotSelection(
       const [doctor, service, patient, clinic] = await Promise.all([
         prisma.doctor.findUnique({ where: { id: doctorId }, select: { name: true } }),
         prisma.service.findUnique({ where: { id: serviceId }, select: { name: true } }),
-        prisma.patient.findUnique({ where: { id: input.patientId }, select: { name: true, phone: true, email: true } }),
+        prisma.patient.findUnique({ where: { id: input.patientId }, select: { name: true, phone: true, email: true, gender: true } }),
         prisma.clinic.findUnique({ where: { id: input.clinicId }, select: { timezone: true } }),
       ]);
       if (doctor?.name) doctorName = translateDoctorName(doctor.name, locale);
@@ -685,29 +707,39 @@ async function handleSlotSelection(
       // fallback
     }
 
-    // Check if patient email is missing
-    if (!patientEmail) {
+    // Check if patient name is missing
+    const isNameMissing = !patientName || patientName === 'Patient' || patientName === 'ضيف العيادة' || patientName === 'Guest';
+    if (isNameMissing) {
       pendingBookingSlots.set(input.conversationId, slotToken);
       pendingBookingSlots.set(input.patientId, slotToken);
 
-      logger.info(Events.ROUTER_COMPLETED, 'Fast router prompting for patient contact details', {
+      logger.info(Events.ROUTER_COMPLETED, 'Fast router prompting for patient name and gender', {
         clinicId: input.clinicId,
         patientId: input.patientId,
-        intent: 'ASK_NAME_EMAIL',
+        intent: 'ASK_NAME_GENDER',
         ms: Date.now() - startedAt,
       });
 
       return {
         handled: true,
-        reply: dict.ask_name_and_email,
+        reply: dict.ask_name_and_gender || dict.ask_name_and_email,
         locale,
-        intent: 'ASK_NAME_EMAIL',
+        intent: 'ASK_NAME_GENDER',
       };
     }
 
     const formattedTime = formatInstant(start, timezone, { locale });
 
-    const reply = `${dict.step5_title}\n\n• *${dict.service_label}:* ${serviceName}\n• *${dict.doctor_label}:* ${doctorName}\n• *${dict.date_label}:* ${formattedTime}\n• *${dict.patient_label}:* ${patientName}\n• *Email:* ${patientEmail}\n\n${dict.step5_subtitle}`;
+    let reply = `${dict.step5_title}\n\n• *${dict.service_label}:* ${serviceName}\n• *${dict.doctor_label}:* ${doctorName}\n• *${dict.date_label}:* ${formattedTime}\n• *${dict.patient_label}:* ${patientName}`;
+    try {
+      const p = await prisma.patient.findUnique({ where: { id: input.patientId }, select: { gender: true } });
+      if (p?.gender) {
+        reply += `\n• *${dict.gender_label || 'Gender'}:* ${p.gender}`;
+      }
+    } catch {
+      // ignore
+    }
+    reply += `\n\n${dict.step5_subtitle}`;
 
     const buttons: WhatsAppButton[] = [
       { id: `confirm_booking:${slotToken}`, title: dict.btn_confirm_booking },

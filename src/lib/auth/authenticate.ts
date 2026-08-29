@@ -24,7 +24,7 @@ import { signSession, setSessionCookie, type SessionUser } from '@/lib/auth/sess
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
-const GENERIC_FAILURE = 'Email or password is incorrect.';
+const GENERIC_FAILURE = 'Username/Email or password is incorrect.';
 
 export interface LoginContext {
   ipAddress?: string | null;
@@ -32,17 +32,27 @@ export interface LoginContext {
 }
 
 export async function authenticate(
-  email: string,
+  identifier: string,
   password: string,
   context: LoginContext = {},
 ): Promise<SessionUser> {
   const now = new Date();
+  const trimmed = identifier.trim();
+  const lowerIdentifier = trimmed.toLowerCase();
+  const upperIdentifier = trimmed.toUpperCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: lowerIdentifier },
+        { username: upperIdentifier },
+        { username: trimmed },
+      ],
+    },
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       role: true,
       clinicId: true,
@@ -58,7 +68,8 @@ export async function authenticate(
   if (!user) {
     // Spend comparable time so a missing account is not detectable by timing.
     await fakeVerify();
-    logger.warn(Events.AUTH_LOGIN_FAILED, 'Login attempt for unknown email', {
+    logger.warn(Events.AUTH_LOGIN_FAILED, 'Login attempt for unknown identifier', {
+      identifier: trimmed,
       ip: context.ipAddress,
     });
     throw unauthenticated(GENERIC_FAILURE);
@@ -123,6 +134,7 @@ export async function authenticate(
   const sessionUser: SessionUser = {
     id: user.id,
     email: user.email,
+    username: user.username,
     name: user.name,
     role: user.role,
     clinicId: user.clinicId,

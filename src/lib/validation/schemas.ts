@@ -48,7 +48,7 @@ export const paginationSchema = z.object({
 // --- Auth ------------------------------------------------------------------
 
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(200),
+  email: z.string().trim().min(1).max(200),
   password: z.string().min(1).max(200),
 });
 
@@ -278,9 +278,15 @@ export const createAppointmentSchema = z.object({
   clinicId: idSchema.optional(),
   doctorId: idSchema,
   serviceId: idSchema,
-  patientId: idSchema.optional(),
+  patientType: z.enum(['EXISTING', 'NEW']).optional().default('NEW'),
+  fileNumber: z.coerce.number().int().optional().nullable(),
+  patientId: idSchema.optional().nullable(),
+  title: optionalText(30),
+  gender: optionalText(30),
+  nationality: optionalText(80),
   patientName: optionalText(120),
   patientPhone: optionalText(40),
+  pendingPayment: optionalText(100),
   startsAt: z.coerce.date(),
   notes: optionalText(1_000),
   status: z.enum(['PENDING', 'CONFIRMED']).default('CONFIRMED'),

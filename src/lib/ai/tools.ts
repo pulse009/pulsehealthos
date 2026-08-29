@@ -417,6 +417,7 @@ const createSchema = z.object({
     .min(1)
     .describe('Exact slot_token from get_available_slots. Do not construct one yourself.'),
   patient_name: z.string().min(1).max(120).describe('Patient’s full name.'),
+  gender: z.string().max(30).optional().describe('Patient’s gender (Male/Female).'),
   email: z.string().email().max(200).optional().describe('Patient’s email address.'),
   phone: z.string().max(30).optional().describe('Patient’s phone number.'),
   notes: z.string().max(500).optional(),
@@ -425,13 +426,14 @@ const createSchema = z.object({
 const createAppointmentTool: ToolDefinition<typeof createSchema> = {
   name: 'create_appointment',
   description:
-    'Book an appointment for a slot returned by get_available_slots. Takes slot_token, full patient name, email, and phone number. The booking is only real if this returns ok=true. If ok=false, offer the alternatives provided.',
+    'Book an appointment for a slot returned by get_available_slots. Takes slot_token, full patient name, gender, and optional contact info. The booking is only real if this returns ok=true. If ok=false, offer the alternatives provided.',
   parameters: {
     type: 'OBJECT',
     properties: {
       slot_token: { type: 'STRING', description: 'Exact slot_token from get_available_slots.' },
       patient_name: { type: 'STRING', description: 'Patient’s full name.' },
-      email: { type: 'STRING', description: 'Patient’s email address.' },
+      gender: { type: 'STRING', description: 'Patient’s gender (Male/Female).' },
+      email: { type: 'STRING', description: 'Patient’s email address (optional).' },
       phone: { type: 'STRING', description: 'Patient’s phone number.' },
       notes: { type: 'STRING', description: 'Optional reason for visit.' },
     },
@@ -442,16 +444,18 @@ const createAppointmentTool: ToolDefinition<typeof createSchema> = {
     const scope = scopeOf(ctx);
     const { doctorId, serviceId, start } = decodeSlotToken(args.slot_token);
 
-    // Save/update patient contact info (name, email, phone)
+    // Save/update patient contact info (name, gender, email, phone)
     const trimmedName = args.patient_name.trim();
+    const trimmedGender = args.gender?.trim();
     const trimmedEmail = args.email?.trim();
     const trimmedPhone = args.phone?.trim();
 
-    if (trimmedName || trimmedEmail || trimmedPhone) {
+    if (trimmedName || trimmedGender || trimmedEmail || trimmedPhone) {
       await prisma.patient.update({
         where: { id: ctx.patientId },
         data: {
           ...(trimmedName ? { name: trimmedName } : {}),
+          ...(trimmedGender ? { gender: trimmedGender } : {}),
           ...(trimmedEmail ? { email: trimmedEmail } : {}),
           ...(trimmedPhone ? { phone: trimmedPhone, whatsappNumber: trimmedPhone } : {}),
         },
@@ -670,6 +674,7 @@ const rescheduleAppointmentTool: ToolDefinition<typeof rescheduleSchema> = {
 
 const updateLeadSchema = z.object({
   patient_name: z.string().max(120).optional(),
+  gender: z.string().max(30).optional(),
   email: z.string().email().max(200).optional(),
   phone: z.string().max(30).optional(),
   interest: z.string().max(300).optional().describe('What the patient is asking about.'),
@@ -682,11 +687,12 @@ const updateLeadSchema = z.object({
 const updateLead: ToolDefinition<typeof updateLeadSchema> = {
   name: 'update_lead',
   description:
-    'Record details the patient volunteered (name, email, phone, what they need). Call this as soon as you learn the patient’s contact details.',
+    'Record details the patient volunteered (name, gender, email, phone, what they need). Call this as soon as you learn the patient’s contact details.',
   parameters: {
     type: 'OBJECT',
     properties: {
       patient_name: { type: 'STRING', description: 'Patient’s name.' },
+      gender: { type: 'STRING', description: 'Patient’s gender (Male/Female).' },
       email: { type: 'STRING', description: 'Email address.' },
       phone: { type: 'STRING', description: 'Phone number.' },
       interest: { type: 'STRING', description: 'What they are asking about.' },
@@ -697,11 +703,12 @@ const updateLead: ToolDefinition<typeof updateLeadSchema> = {
   async execute(args, ctx) {
     const now = ctx.now;
 
-    if (args.patient_name || args.email || args.phone) {
+    if (args.patient_name || args.gender || args.email || args.phone) {
       await prisma.patient.update({
         where: { id: ctx.patientId },
         data: {
           ...(args.patient_name ? { name: args.patient_name.trim() } : {}),
+          ...(args.gender ? { gender: args.gender.trim() } : {}),
           ...(args.email ? { email: args.email.trim() } : {}),
           ...(args.phone ? { phone: args.phone.trim(), whatsappNumber: args.phone.trim() } : {}),
         },

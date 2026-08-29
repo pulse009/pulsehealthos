@@ -18,6 +18,12 @@ import {
   CalendarDays,
   Filter,
   RotateCcw,
+  UserCheck,
+  UserPlus,
+  FileText,
+  DollarSign,
+  Check,
+  Globe,
 } from 'lucide-react';
 
 export interface AppointmentItem {
@@ -143,8 +149,33 @@ export function AppointmentsScheduleDashboard({
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
 
   // New Appointment Form State
+  const [patientTab, setPatientTab] = useState<'NEW' | 'EXISTING'>('NEW');
+  const [searchFileNumber, setSearchFileNumber] = useState('');
+  const [isSearchingPatient, setIsSearchingPatient] = useState(false);
+  const [foundPatient, setFoundPatient] = useState<{
+    id: string;
+    fileNumber: number;
+    name: string;
+    phone: string;
+    title?: string;
+    gender?: string;
+    nationality?: string;
+    email?: string;
+    username?: string;
+    appointmentsCount?: number;
+  } | null>(null);
+  const [searchPatientError, setSearchPatientError] = useState<string | null>(null);
+
+  // Patient Intake Fields
+  const [patientTitle, setPatientTitle] = useState('Mr.');
   const [newPatientName, setNewPatientName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [patientGender, setPatientGender] = useState('Male');
+  const [patientNationality, setPatientNationality] = useState('');
+  const [pendingPayment, setPendingPayment] = useState('');
+  const [appointmentNotes, setAppointmentNotes] = useState('');
+
+  // Booking Parameters
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -160,6 +191,36 @@ export function AppointmentsScheduleDashboard({
   const [newStatus, setNewStatus] = useState<'Confirmed' | 'Pending'>('Confirmed');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Search Existing Patient by File Number
+  const handleSearchPatient = async () => {
+    if (!searchFileNumber.trim()) {
+      setSearchPatientError('Please enter a File Number to search.');
+      return;
+    }
+    setIsSearchingPatient(true);
+    setSearchPatientError(null);
+    try {
+      const res = await fetch(`/api/patients?fileNumber=${encodeURIComponent(searchFileNumber.trim())}`);
+      const data = await res.json();
+      if (!res.ok || !data?.patient) {
+        setSearchPatientError(`No patient found with File #${searchFileNumber.trim()}`);
+        setFoundPatient(null);
+      } else {
+        setFoundPatient(data.patient);
+        setNewPatientName(data.patient.name || '');
+        setNewPhone(data.patient.phone || '');
+        if (data.patient.title) setPatientTitle(data.patient.title);
+        if (data.patient.gender) setPatientGender(data.patient.gender);
+        if (data.patient.nationality) setPatientNationality(data.patient.nationality);
+      }
+    } catch (err) {
+      console.error(err);
+      setSearchPatientError('Could not connect to patient database.');
+    } finally {
+      setIsSearchingPatient(false);
+    }
+  };
 
   // Compatible doctors for the currently selected service in modal
   const modalCompatibleDoctors = useMemo(() => {
@@ -211,8 +272,17 @@ export function AppointmentsScheduleDashboard({
 
   // Open modal with fresh state
   const handleOpenNewAppointmentModal = () => {
+    setPatientTab('NEW');
+    setSearchFileNumber('');
+    setFoundPatient(null);
+    setSearchPatientError(null);
+    setPatientTitle('Mr.');
     setNewPatientName('');
     setNewPhone('');
+    setPatientGender('Male');
+    setPatientNationality('');
+    setPendingPayment('');
+    setAppointmentNotes('');
     setFormError(null);
     setSlotsError(null);
     setAvailableSlots([]);
@@ -454,8 +524,12 @@ export function AppointmentsScheduleDashboard({
   // Handle Add Appointment via API
   const handleAddAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPatientName.trim() || !newPhone.trim()) {
-      setFormError('Please enter Patient Name and Phone Number.');
+    if (patientTab === 'EXISTING' && !foundPatient) {
+      setFormError('Please search and select an existing patient by File Number first.');
+      return;
+    }
+    if (patientTab === 'NEW' && (!newPatientName.trim() || !newPhone.trim())) {
+      setFormError('Please enter Patient Name and Mobile Number.');
       return;
     }
     if (!selectedSlotStartsAt) {
@@ -474,8 +548,16 @@ export function AppointmentsScheduleDashboard({
           clinicId,
           doctorId: selectedDoctorId,
           serviceId: selectedServiceId,
+          patientType: patientTab,
+          fileNumber: patientTab === 'EXISTING' ? foundPatient?.fileNumber : undefined,
+          patientId: patientTab === 'EXISTING' ? foundPatient?.id : undefined,
+          title: patientTitle,
+          gender: patientGender,
+          nationality: patientNationality.trim() || undefined,
           patientName: newPatientName.trim(),
           patientPhone: newPhone.trim(),
+          pendingPayment: pendingPayment.trim() || undefined,
+          notes: appointmentNotes.trim() || undefined,
           startsAt: selectedSlotStartsAt,
           status: newStatus === 'Confirmed' ? 'CONFIRMED' : 'PENDING',
         }),
@@ -496,9 +578,9 @@ export function AppointmentsScheduleDashboard({
       const newAppt: AppointmentItem = {
         id: data.appointment?.id || `appt-${Date.now()}`,
         appointmentNumber: data.appointment?.appointmentNumber || appointments.length + 1,
-        fileNumber: data.appointment?.fileNumber || null,
+        fileNumber: data.appointment?.fileNumber || (patientTab === 'EXISTING' ? foundPatient?.fileNumber : null),
         time: formattedTime,
-        patientName: newPatientName.trim(),
+        patientName: (patientTitle ? `${patientTitle} ` : '') + newPatientName.trim(),
         patientDetails: newPhone.trim(),
         department: serviceObj?.name || 'Service',
         doctor: doctorObj?.name || 'Doctor',
@@ -512,6 +594,10 @@ export function AppointmentsScheduleDashboard({
       setNewPatientName('');
       setNewPhone('');
       setSelectedSlotStartsAt('');
+      setFoundPatient(null);
+      setSearchFileNumber('');
+      setPendingPayment('');
+      setAppointmentNotes('');
     } catch (err) {
       console.error(err);
       setFormError('An unexpected error occurred while booking.');
@@ -1122,14 +1208,15 @@ export function AppointmentsScheduleDashboard({
             </table>
           </div>
         )}
-      </div>      {/* 4. MODAL FOR NEW APPOINTMENT */}
+      </div>      {/* 4. MODAL FOR NEW APPOINTMENT (EXISTING / NEW PATIENT FLOWS) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-lg w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100 max-h-[90vh] flex flex-col">
+            {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <CalendarIcon className="size-4 text-blue-600" />
-                <span>New Appointment</span>
+                <span>Create Appointment</span>
               </h3>
               <button
                 type="button"
@@ -1140,7 +1227,41 @@ export function AppointmentsScheduleDashboard({
               </button>
             </div>
 
-            <form onSubmit={handleAddAppointment} className="space-y-3.5 pt-3 overflow-y-auto flex-1 pr-0.5">
+            {/* Segmented Tab: Existing Patient vs New Patient */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-[9px] mt-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setPatientTab('NEW');
+                  setFormError(null);
+                }}
+                className={`py-1.5 px-3 rounded-[7px] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  patientTab === 'NEW'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <UserPlus className="size-3.5" />
+                <span>New Patient</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPatientTab('EXISTING');
+                  setFormError(null);
+                }}
+                className={`py-1.5 px-3 rounded-[7px] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  patientTab === 'EXISTING'
+                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <UserCheck className="size-3.5" />
+                <span>Existing Patient</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAppointment} className="space-y-3 pt-3 overflow-y-auto flex-1 pr-0.5 min-h-0">
               {formError && (
                 <div className="p-2.5 rounded-[8px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                   <AlertCircle className="size-3.5 shrink-0" />
@@ -1148,156 +1269,324 @@ export function AppointmentsScheduleDashboard({
                 </div>
               )}
 
-              {/* Exact user requested structure:
-                  Row 1: Patient Name | Patient Phone
-                  Row 2: Service | Doctor
-                  Row 3: Time | Status
-              */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Row 1, Col 1: Patient Name */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Patient Name *
+              {/* TAB 1: EXISTING PATIENT FILE SEARCH */}
+              {patientTab === 'EXISTING' && (
+                <div className="space-y-2.5 bg-blue-50/50 dark:bg-slate-800/40 p-3 rounded-[10px] border border-blue-100 dark:border-slate-700/80">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Search Patient by File Number *
                   </label>
-                  <div className="relative">
-                    <User className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Sami"
-                      value={newPatientName}
-                      onChange={(e) => setNewPatientName(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 1, Col 2: Patient Phone */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Patient Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="e.g. 923160054922"
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
-
-                {/* Row 2, Col 1: Service */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Service *
-                  </label>
-                  <div className="relative">
-                    <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                    <select
-                      value={selectedServiceId}
-                      onChange={(e) => handleModalServiceChange(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <FileText className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                      <input
+                        type="number"
+                        placeholder="Enter File Number (e.g. 1, 2, 3...)"
+                        value={searchFileNumber}
+                        onChange={(e) => setSearchFileNumber(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSearchPatient();
+                          }
+                        }}
+                        className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSearchPatient}
+                      disabled={isSearchingPatient || !searchFileNumber.trim()}
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[8px] font-bold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-60"
                     >
-                      {servicesList.length > 0 ? (
-                        servicesList.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))
+                      {isSearchingPatient ? (
+                        <span>Searching...</span>
                       ) : (
-                        departments.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))
+                        <>
+                          <Search className="size-3.5" />
+                          <span>Search</span>
+                        </>
                       )}
-                    </select>
+                    </button>
+                  </div>
+
+                  {searchPatientError && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                      {searchPatientError}
+                    </p>
+                  )}
+
+                  {/* Found Patient Profile Summary Card */}
+                  {foundPatient && (
+                    <div className="mt-2 p-2.5 bg-white dark:bg-slate-900 rounded-[8px] border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs">
+                            {foundPatient.title ? `${foundPatient.title} ` : ''}
+                            {foundPatient.name}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            File #{foundPatient.fileNumber}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          📞 {foundPatient.phone} {foundPatient.gender ? `• ${foundPatient.gender}` : ''} {foundPatient.nationality ? `• ${foundPatient.nationality}` : ''}
+                        </p>
+                      </div>
+                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <Check className="size-3.5 stroke-[3]" />
+                        <span>Attached</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: NEW PATIENT INTAKE FIELDS */}
+              {patientTab === 'NEW' && (
+                <div className="space-y-2.5">
+                  {/* Row 1: Title & Name */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Title
+                      </label>
+                      <select
+                        value={patientTitle}
+                        onChange={(e) => setPatientTitle(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      >
+                        <option value="Mr.">Mr.</option>
+                        <option value="Mrs.">Mrs.</option>
+                        <option value="Ms.">Ms.</option>
+                        <option value="Dr.">Dr.</option>
+                      </select>
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Patient Name *
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                        <input
+                          type="text"
+                          required={patientTab === 'NEW'}
+                          placeholder="e.g. Sami Ullah"
+                          value={newPatientName}
+                          onChange={(e) => setNewPatientName(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Mobile Number & Gender */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Mobile Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required={patientTab === 'NEW'}
+                        placeholder="e.g. 966500000000"
+                        value={newPhone}
+                        onChange={(e) => setNewPhone(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Gender
+                      </label>
+                      <select
+                        value={patientGender}
+                        onChange={(e) => setPatientGender(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Nationality & Pending Payments */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Nationality
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="e.g. Saudi, Pakistani"
+                          value={patientNationality}
+                          onChange={(e) => setPatientNationality(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Pending Payments
+                      </label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="e.g. 0 SAR, 150 SAR"
+                          value={pendingPayment}
+                          onChange={(e) => setPendingPayment(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Row 2, Col 2: Doctor */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Doctor *
-                  </label>
-                  <div className="relative">
-                    <Stethoscope className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                    <select
-                      value={selectedDoctorId}
-                      onChange={(e) => setSelectedDoctorId(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                    >
-                      {modalCompatibleDoctors.length > 0 ? (
-                        modalCompatibleDoctors.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.name}
-                          </option>
-                        ))
-                      ) : (
-                        doctors.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 3, Col 1: Time (Available Slots Dropdown + Date Picker) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                      Time Slot *
+              {/* BOOKING DETAILS (COMMON FOR BOTH TABS) */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                {/* Service & Doctor */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Service *
                     </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                      <select
+                        value={selectedServiceId}
+                        onChange={(e) => handleModalServiceChange(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      >
+                        {servicesList.length > 0 ? (
+                          servicesList.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))
+                        ) : (
+                          departments.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Doctor *
+                    </label>
+                    <div className="relative">
+                      <Stethoscope className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                      <select
+                        value={selectedDoctorId}
+                        onChange={(e) => setSelectedDoctorId(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      >
+                        {modalCompatibleDoctors.length > 0 ? (
+                          modalCompatibleDoctors.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))
+                        ) : (
+                          doctors.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date & Time Slot */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                        Date *
+                      </label>
+                    </div>
                     <input
                       type="date"
                       value={selectedDate}
                       min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-transparent border-none p-0 focus:outline-none cursor-pointer"
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer font-medium"
                     />
                   </div>
-                  <div className="relative">
-                    <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                    <select
-                      value={selectedSlotStartsAt}
-                      onChange={(e) => setSelectedSlotStartsAt(e.target.value)}
-                      disabled={isLoadingSlots || effectiveSlots.length === 0}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer disabled:opacity-60"
-                    >
-                      {isLoadingSlots ? (
-                        <option value="">Checking available slots...</option>
-                      ) : effectiveSlots.length === 0 ? (
-                        <option value="">No slots available</option>
-                      ) : (
-                        effectiveSlots.map((slot) => (
-                          <option key={slot.startsAt} value={slot.startsAt}>
-                            {slot.label}
-                          </option>
-                        ))
-                      )}
-                    </select>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Time Slot *
+                    </label>
+                    <div className="relative">
+                      <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                      <select
+                        value={selectedSlotStartsAt}
+                        onChange={(e) => setSelectedSlotStartsAt(e.target.value)}
+                        disabled={isLoadingSlots || effectiveSlots.length === 0}
+                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer disabled:opacity-60"
+                      >
+                        {isLoadingSlots ? (
+                          <option value="">Checking available slots...</option>
+                        ) : effectiveSlots.length === 0 ? (
+                          <option value="">No slots available</option>
+                        ) : (
+                          effectiveSlots.map((slot) => (
+                            <option key={slot.startsAt} value={slot.startsAt}>
+                              {slot.label}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                {/* Row 3, Col 2: Status */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Status *
-                  </label>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as any)}
-                    className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                  >
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Pending">Pending</option>
-                  </select>
+                {/* Status & Notes */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Status *
+                    </label>
+                    <select
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value as any)}
+                      className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                    >
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Pending">Pending</option>
+                    </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Notes
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Skin consultation, first session..."
+                      value={appointmentNotes}
+                      onChange={(e) => setAppointmentNotes(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Footer Actions */}
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
@@ -1308,10 +1597,17 @@ export function AppointmentsScheduleDashboard({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || isLoadingSlots || !selectedSlotStartsAt}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60"
+                  disabled={isSubmitting || isLoadingSlots || !selectedSlotStartsAt || (patientTab === 'EXISTING' && !foundPatient)}
+                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                 >
-                  {isSubmitting ? 'Booking...' : 'Create Appointment'}
+                  {isSubmitting ? (
+                    'Booking...'
+                  ) : (
+                    <>
+                      <Check className="size-3.5 stroke-[2.5]" />
+                      <span>{patientTab === 'EXISTING' ? 'Attach & Create Appointment' : 'Create Appointment'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

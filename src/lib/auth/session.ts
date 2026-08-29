@@ -24,6 +24,7 @@ export interface SessionClaims extends JWTPayload {
 export interface SessionUser {
   id: string;
   email: string;
+  username?: string | null;
   name: string;
   role: Role;
   clinicId: string | null;
@@ -115,6 +116,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       role: true,
       clinicId: true,
@@ -132,6 +134,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   return {
     id: user.id,
     email: user.email,
+    username: user.username,
     name: user.name,
     role: user.role,
     clinicId: user.clinicId,

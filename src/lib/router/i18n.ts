@@ -23,6 +23,7 @@ export const i18n = {
     doctor_label: 'Doctor',
     date_label: 'When',
     patient_label: 'Patient',
+    gender_label: 'Gender',
     minutes_label: 'min',
     selected_service: 'Selected Service',
     any_doctor: '👨‍⚕️ Any Doctor',
@@ -76,10 +77,12 @@ export const i18n = {
       `Welcome to ${clinicName}! 🎉 We are delighted to assist you with booking your first appointment.\n\nPlease choose an option below to get started:`,
     welcome_returning_patient: (clinicName: string) =>
       `Welcome back to ${clinicName}! 👋\n\nHow can we help you today?`,
+    ask_name_and_gender:
+      '📝 *Please provide your details:*\n\nTo confirm your booking and create your medical file, please reply with your *Full Name* and *Gender* (Male / Female).\n\n_Example: Sara Ahmed, Female_',
     ask_name_and_email:
-      '📝 *Please provide your details:*\n\nTo confirm your booking, please reply with your *Full Name* and *Email Address*.\n\n_Example: Sara Ahmed, sara@example.com_',
-    details_saved: (name: string, email: string) =>
-      `Thank you, *${name}*! ✅\nYour details have been saved (Email: ${email}).`,
+      '📝 *Please provide your details:*\n\nTo confirm your booking and create your medical file, please reply with your *Full Name* and *Gender* (Male / Female).\n\n_Example: Sara Ahmed, Female_',
+    details_saved: (name: string, gender?: string) =>
+      `Thank you, *${name}*! ✅\nYour details have been saved${gender ? ` (Gender: ${gender})` : ''}.`,
     booking_confirmed: (
       service: string,
       doctor: string,
@@ -151,6 +154,7 @@ export const i18n = {
     doctor_label: 'الطبيب',
     date_label: 'الموعد',
     patient_label: 'المراجع',
+    gender_label: 'الجنس',
     minutes_label: 'دقيقة',
     selected_service: 'الخدمة المختارة',
     any_doctor: '👨‍⚕️ أي طبيب',
@@ -217,10 +221,12 @@ export const i18n = {
       `أهلاً وسهلاً بك في ${clinicName}! 🎉 يسعدنا ويشرفنا استقبالك وحجز زيارتك الأولى.\n\nيرجى اختيار ما يناسبك أدناه:`,
     welcome_returning_patient: (clinicName: string) =>
       `أهلاً بك مجدداً في ${clinicName}! 👋\n\nكيف يمكننا مساعدتك اليوم؟`,
+    ask_name_and_gender:
+      '📝 *يرجى تزويدنا ببياناتك:*\n\nلتأكيد حجزك وإنشاء ملفك الطبي، يرجى كتابة *الاسم الكامل* و *الجنس* (ذكر / أنثى).\n\n_مثال: سارة أحمد، أنثى_',
     ask_name_and_email:
-      '📝 *يرجى تزويدنا ببياناتك:*\n\nلتأكيد حجزك، يرجى كتابة *الاسم الكامل* و *البريد الإلكتروني*.\n\n_مثال: سارة أحمد، sara@example.com_',
-    details_saved: (name: string, email: string) =>
-      `شكراً لك، *${name}*! ✅\nتم حفظ بياناتك بنجاح (البريد: ${email}).`,
+      '📝 *يرجى تزويدنا ببياناتك:*\n\nلتأكيد حجزك وإنشاء ملفك الطبي، يرجى كتابة *الاسم الكامل* و *الجنس* (ذكر / أنثى).\n\n_مثال: سارة أحمد، أنثى_',
+    details_saved: (name: string, gender?: string) =>
+      `شكراً لك، *${name}*! ✅\nتم حفظ بياناتك بنجاح${gender ? ` (الجنس: ${gender})` : ''}.`,
     booking_confirmed: (
       service: string,
       doctor: string,

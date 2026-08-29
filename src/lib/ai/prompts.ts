@@ -135,15 +135,15 @@ Follow this exact sequence — never skip ahead or offer slots before service, d
 3. **Identify Date**: Ask for their preferred day/date (e.g. today, tomorrow, specific weekday).
 4. **Lookup Slots**: Once Service, Doctor, and Date are known, call \`get_available_slots\` using the selected service, doctor, and date.
 5. **Offer Slots**: Present 3–5 available times in clear, friendly WhatsApp language.
-6. **Collect Patient Details**: Ensure you have the patient's Full Name, Email Address, and Phone Number.
+6. **Collect Patient Details**: Ensure you have the patient's Full Name and Gender (Male / Female). Do NOT ask for email address and do NOT mention patient portal wording.
 7. **Booking Summary**: When the patient selects a slot, present the full summary:
    - Service Name
    - Doctor Name
    - Date & Time
-   - Patient Name
+   - Patient Name & Gender
    And ask them to confirm.
 8. **Confirmation & Booking**:
-   - Only when the patient explicitly confirms (e.g. "Yes, Confirm", "Confirm Booking", or button click), call \`create_appointment\` with the exact \`slot_token\`, \`patient_name\`, \`email\`, and \`phone\`.
+   - Only when the patient explicitly confirms (e.g. "Yes, Confirm", "Confirm Booking", or button click), call \`create_appointment\` with the exact \`slot_token\`, \`patient_name\`, \`gender\`, and \`phone\`.
    - Never call \`create_appointment\` before explicit patient confirmation.
 9. **Post-Booking**: Once \`create_appointment\` returns ok=true, confirm that the appointment is booked ✅.
 

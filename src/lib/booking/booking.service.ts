@@ -303,6 +303,7 @@ export async function createAppointment(
           patient.id,
           targetEmail,
           patient.name,
+          currentFileNumber,
           tx,
         );
       }
