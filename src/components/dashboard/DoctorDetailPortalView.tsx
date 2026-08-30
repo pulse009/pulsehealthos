@@ -7,26 +7,78 @@ import {
   Stethoscope,
   Calendar,
   Clock,
-  CheckCircle2,
-  XCircle,
   Plus,
   Save,
   Trash2,
   Check,
-  AlertCircle,
   Tag,
-  ShieldCheck,
-  Building2,
-  Users,
   Info,
   CalendarOff,
   UserCheck,
   X,
-  Mail,
-  Lock,
   Search,
+  Coffee,
+  Coins,
+  Sparkles,
+  Layers,
+  ChevronRight,
   ChevronDown,
+  Calculator,
+  Percent,
+  Receipt,
+  HelpCircle,
+  Star,
+  Filter,
+  Folder,
 } from 'lucide-react';
+
+export interface DoctorAppointmentTypeItem {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  price?: number | null;
+  currency?: string;
+  description?: string | null;
+  serviceId: string; // 'ALL' or specific service ID
+  isActive?: boolean;
+}
+
+export interface ServiceItem {
+  id: string;
+  name: string;
+  durationMinutes?: number;
+  priceMinor?: number | null;
+  currency?: string | null;
+  description?: string | null;
+  isActive?: boolean;
+}
+
+export interface BreakItem {
+  id?: string;
+  weekday: number;
+  startMinute: number;
+  endMinute: number;
+  label?: string | null;
+}
+
+export interface OtherPaymentItem {
+  id?: string;
+  label: string;
+  type: string;
+  value: number | string;
+}
+
+export interface PaymentStructureItem {
+  id?: string;
+  clinicId?: string;
+  doctorId?: string;
+  fixedMonthlyAmount: number;
+  revenueIncentivePercent: number;
+  procedureFeeType: string;
+  procedureFeeAmount?: number | null;
+  procedureFeePercent?: number | null;
+  otherPayments?: OtherPaymentItem[];
+}
 
 export interface DoctorDetailProps {
   doctor: {
@@ -44,7 +96,15 @@ export interface DoctorDetailProps {
     clinic: { id: string; name: string; timezone: string };
     services: Array<{
       serviceId: string;
-      service: { id: string; name: string; durationMinutes: number; isActive: boolean };
+      service: {
+        id: string;
+        name: string;
+        durationMinutes: number;
+        isActive: boolean;
+        priceMinor?: number | null;
+        currency?: string | null;
+        description?: string | null;
+      };
     }>;
     schedules: Array<{
       weekday: number;
@@ -52,6 +112,7 @@ export interface DoctorDetailProps {
       endMinute: number;
     }>;
     breaks: Array<{
+      id?: string;
       weekday: number;
       startMinute: number;
       endMinute: number;
@@ -65,6 +126,7 @@ export interface DoctorDetailProps {
       startMinute: number | null;
       endMinute: number | null;
     }>;
+    paymentStructure?: PaymentStructureItem | null;
     appointments: Array<{
       id: string;
       appointmentNumber?: number | null;
@@ -76,7 +138,7 @@ export interface DoctorDetailProps {
     }>;
     _count?: { appointments: number };
   };
-  availableServices?: Array<{ id: string; name: string }>;
+  availableServices?: ServiceItem[];
   availableStaff?: Array<{ id: string; name: string; email: string }>;
   backHref?: string;
 }
@@ -89,13 +151,23 @@ export function DoctorDetailPortalView({
 }: DoctorDetailProps) {
   const [doctor, setDoctor] = useState(initialDoctor);
   const [staffList, setStaffList] = useState(initialStaff);
-  const [servicesList, setServicesList] = useState(initialServices);
+  const [servicesList, setServicesList] = useState<ServiceItem[]>(() => {
+    // Combine initialServices and doctor's attached services to ensure full info
+    const map = new Map<string, ServiceItem>();
+    initialServices.forEach((s) => map.set(s.id, s));
+    initialDoctor.services.forEach((ds) => {
+      if (!map.has(ds.service.id)) {
+        map.set(ds.service.id, ds.service);
+      }
+    });
+    return Array.from(map.values());
+  });
 
   const [activeTab, setActiveTab] = useState<
-    'schedule' | 'blocked' | 'services' | 'appointments' | 'overview' | 'coordinator'
+    'schedule' | 'appointment-types' | 'blocked' | 'appointments' | 'overview' | 'coordinator' | 'payment-structure'
   >('schedule');
 
-  // Master & Profile Form State (Fully editable by Clinic Owner)
+  // Master & Profile Form State
   const [doctorName, setDoctorName] = useState(doctor.name);
   const [doctorSpecialty, setDoctorSpecialty] = useState(doctor.specialty || '');
   const [doctorDescription, setDoctorDescription] = useState(doctor.description || '');
@@ -108,7 +180,7 @@ export function DoctorDetailPortalView({
   const [coordinatorId, setCoordinatorId] = useState<string>(doctor.coordinatorId || '');
   const [coordinatorSearch, setCoordinatorSearch] = useState('');
 
-  // Schedule Form State (Weekdays 1 to 7)
+  // Schedule Form State (Weekdays 1 to 7: 1=Mon, 7=Sun)
   const [scheduleState, setScheduleState] = useState<
     Record<number, { isWorking: boolean; startMinute: number; endMinute: number }>
   >(() => {
@@ -127,10 +199,119 @@ export function DoctorDetailPortalView({
     return map;
   });
 
-  // Services Selection State
+  // Breaks Form State per Day
+  const [breaksState, setBreaksState] = useState<
+    Record<number, Array<{ id: string; startMinute: number; endMinute: number; label: string }>>
+  >(() => {
+    const map: Record<
+      number,
+      Array<{ id: string; startMinute: number; endMinute: number; label: string }>
+    > = {
+      1: [],
+      2: [],
+      3: [],
+      4: [],
+      5: [],
+      6: [],
+      7: [],
+    };
+    (doctor.breaks || []).forEach((b, idx) => {
+      const list = map[b.weekday];
+      if (list) {
+        list.push({
+          id: b.id || `brk-${b.weekday}-${idx}-${Date.now()}`,
+          startMinute: b.startMinute,
+          endMinute: b.endMinute,
+          label: b.label || 'Break',
+        });
+      }
+    });
+    return map;
+  });
+
+  // Selected Services / Appointment Types State
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
     doctor.services.map((s) => s.serviceId)
   );
+  const [appointmentTypeSearch, setAppointmentTypeSearch] = useState('');
+
+  // Doctor Appointment Types State (with Service Scope: 'ALL' or specific serviceId)
+  const [appointmentTypesList, setAppointmentTypesList] = useState<DoctorAppointmentTypeItem[]>([
+    {
+      id: 'apt-1',
+      name: 'Follow-up Consultation',
+      durationMinutes: 15,
+      price: 100,
+      currency: 'SAR',
+      serviceId: 'ALL',
+      description: 'Quick check-up and post-treatment follow-up',
+      isActive: true,
+    },
+    {
+      id: 'apt-2',
+      name: 'Initial Consultation & Assessment',
+      durationMinutes: 30,
+      price: 200,
+      currency: 'SAR',
+      serviceId: 'ALL',
+      description: 'Comprehensive initial evaluation and treatment plan',
+      isActive: true,
+    },
+    {
+      id: 'apt-3',
+      name: 'Specialized Procedure Session',
+      durationMinutes: 60,
+      price: 500,
+      currency: 'SAR',
+      serviceId: 'ALL',
+      description: 'Full clinical treatment and procedure session',
+      isActive: true,
+    },
+  ]);
+
+  // Expand / Collapse State for Service Rows (all expanded by default)
+  const [expandedServiceIds, setExpandedServiceIds] = useState<Set<string>>(() => {
+    return new Set<string>(doctor.services.map((s) => s.serviceId));
+  });
+
+  const toggleExpandService = (serviceId: string) => {
+    setExpandedServiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) {
+        next.delete(serviceId);
+      } else {
+        next.add(serviceId);
+      }
+      return next;
+    });
+  };
+
+  // Target Service Dropdown State for Create Appointment Type Modal ('ALL' or specific serviceId)
+  const [newServiceTargetServiceId, setNewServiceTargetServiceId] = useState<string>('ALL');
+
+  // Payment Structure Form State
+  const initialPS = doctor.paymentStructure;
+  const [fixedMonthlyAmount, setFixedMonthlyAmount] = useState<number | string>(
+    initialPS?.fixedMonthlyAmount ?? 0
+  );
+  const [revenueIncentivePercent, setRevenueIncentivePercent] = useState<number | string>(
+    initialPS?.revenueIncentivePercent ?? 0
+  );
+  const [procedureFeeType, setProcedureFeeType] = useState<'FIXED' | 'PERCENTAGE'>(
+    initialPS?.procedureFeeType === 'FIXED' ? 'FIXED' : 'PERCENTAGE'
+  );
+  const [procedureFeeAmount, setProcedureFeeAmount] = useState<number | string>(
+    initialPS?.procedureFeeAmount ?? 0
+  );
+  const [procedureFeePercent, setProcedureFeePercent] = useState<number | string>(
+    initialPS?.procedureFeePercent ?? 0
+  );
+  const [otherPayments, setOtherPayments] = useState<OtherPaymentItem[]>(
+    initialPS?.otherPayments || []
+  );
+
+  // Live calculation preview sample
+  const [sampleProcedureValue, setSampleProcedureValue] = useState<number>(1500);
 
   // Time-Off / Blocked Periods State
   const [timeOffList, setTimeOffList] = useState(doctor.timeOff);
@@ -148,15 +329,23 @@ export function DoctorDetailPortalView({
   const [newCoordinatorEmail, setNewCoordinatorEmail] = useState('');
   const [newCoordinatorPassword, setNewCoordinatorPassword] = useState('');
 
-  // Add Service Modal State
+  // Add Appointment Type / Service Modal State
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
   const [isSubmittingService, setIsSubmittingService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
   const [newServiceDuration, setNewServiceDuration] = useState(30);
+  const [newServicePrice, setNewServicePrice] = useState<string>('');
+  const [newServiceDescription, setNewServiceDescription] = useState('');
+
+  // Delete Appointment Type Confirmation Modal State
+  const [isDeleteAptModalOpen, setIsDeleteAptModalOpen] = useState(false);
+  const [aptToDelete, setAptToDelete] = useState<DoctorAppointmentTypeItem | null>(null);
+  const [isDeletingApt, setIsDeletingApt] = useState(false);
 
   // UI Save Feedback States
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Weekdays Helper
   const WEEKDAYS = [
@@ -180,6 +369,67 @@ export function DoctorDetailPortalView({
     return (h || 0) * 60 + (m || 0);
   };
 
+  // Breaks Management Handlers
+  const handleAddBreak = (weekdayNum: number) => {
+    const newBreak = {
+      id: `brk-${weekdayNum}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      startMinute: 780, // 01:00 PM (13:00)
+      endMinute: 840, // 02:00 PM (14:00)
+      label: 'Lunch Break',
+    };
+    setBreaksState((prev) => ({
+      ...prev,
+      [weekdayNum]: [...(prev[weekdayNum] || []), newBreak],
+    }));
+  };
+
+  const handleRemoveBreak = (weekdayNum: number, breakId: string) => {
+    setBreaksState((prev) => ({
+      ...prev,
+      [weekdayNum]: (prev[weekdayNum] || []).filter((b) => b.id !== breakId),
+    }));
+  };
+
+  const handleUpdateBreak = (
+    weekdayNum: number,
+    breakId: string,
+    field: 'startMinute' | 'endMinute' | 'label',
+    value: any
+  ) => {
+    setBreaksState((prev) => ({
+      ...prev,
+      [weekdayNum]: (prev[weekdayNum] || []).map((b) =>
+        b.id === breakId ? { ...b, [field]: value } : b
+      ),
+    }));
+  };
+
+  // Other Payments Management Handlers
+  const handleAddOtherPayment = () => {
+    const newOther: OtherPaymentItem = {
+      id: `oth-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      label: '',
+      type: 'AMOUNT',
+      value: '',
+    };
+    setOtherPayments((prev) => [...prev, newOther]);
+  };
+
+  const handleUpdateOtherPayment = (index: number, field: keyof OtherPaymentItem, val: any) => {
+    setOtherPayments((prev) => {
+      const copy = [...prev];
+      const target = copy[index];
+      if (target) {
+        copy[index] = { ...target, [field]: val };
+      }
+      return copy;
+    });
+  };
+
+  const handleRemoveOtherPayment = (index: number) => {
+    setOtherPayments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Filtered Coordinators for selection list
   const filteredStaff = useMemo(() => {
     if (!coordinatorSearch.trim()) return staffList;
@@ -189,21 +439,83 @@ export function DoctorDetailPortalView({
     );
   }, [staffList, coordinatorSearch]);
 
-  // Save All Settings (Profile + Schedule + Services + Coordinator)
+  // Only services that belong to / are assigned to this doctor
+  const doctorAssignedServices = useMemo(() => {
+    return servicesList.filter((s) => selectedServiceIds.includes(s.id));
+  }, [servicesList, selectedServiceIds]);
+
+  // Filtered Assigned Services (supporting search by service name or nested appointment type name)
+  const filteredAssignedServices = useMemo(() => {
+    if (!appointmentTypeSearch.trim()) return doctorAssignedServices;
+    const q = appointmentTypeSearch.toLowerCase();
+    return doctorAssignedServices.filter((s) => {
+      const matchService =
+        s.name.toLowerCase().includes(q) ||
+        (s.description && s.description.toLowerCase().includes(q));
+      const matchChild = appointmentTypesList.some(
+        (at) =>
+          (at.serviceId === s.id || at.serviceId === 'ALL') &&
+          at.name.toLowerCase().includes(q)
+      );
+      return matchService || matchChild;
+    });
+  }, [doctorAssignedServices, appointmentTypeSearch, appointmentTypesList]);
+
+  // Save All Settings (Profile + Schedule + Breaks + Services + Payment Structure + Coordinator)
   const handleSaveOperational = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
+    setSaveError(null);
 
     const activeSchedules: Array<{ weekday: number; startMinute: number; endMinute: number }> = [];
+    const activeBreaks: Array<{
+      weekday: number;
+      startMinute: number;
+      endMinute: number;
+      label: string;
+    }> = [];
+
     Object.entries(scheduleState).forEach(([day, cfg]) => {
+      const weekdayNum = Number(day);
       if (cfg.isWorking) {
         activeSchedules.push({
-          weekday: Number(day),
+          weekday: weekdayNum,
           startMinute: cfg.startMinute,
           endMinute: cfg.endMinute,
         });
+
+        const dayBreaks = breaksState[weekdayNum] || [];
+        dayBreaks.forEach((b) => {
+          if (b.startMinute < b.endMinute) {
+            activeBreaks.push({
+              weekday: weekdayNum,
+              startMinute: b.startMinute,
+              endMinute: b.endMinute,
+              label: b.label?.trim() || 'Break',
+            });
+          }
+        });
       }
     });
+
+    const paymentStructurePayload = {
+      fixedMonthlyAmount: Math.max(0, Number(fixedMonthlyAmount) || 0),
+      revenueIncentivePercent: Math.min(100, Math.max(0, Number(revenueIncentivePercent) || 0)),
+      procedureFeeType,
+      procedureFeeAmount:
+        procedureFeeType === 'FIXED' ? Math.max(0, Number(procedureFeeAmount) || 0) : 0,
+      procedureFeePercent:
+        procedureFeeType === 'PERCENTAGE'
+          ? Math.min(100, Math.max(0, Number(procedureFeePercent) || 0))
+          : 0,
+      otherPayments: otherPayments
+        .filter((op) => op.label && op.label.trim().length > 0)
+        .map((op) => ({
+          label: op.label.trim(),
+          type: op.type,
+          value: Math.max(0, Number(op.value) || 0),
+        })),
+    };
 
     const payload = {
       name: doctorName.trim(),
@@ -216,6 +528,8 @@ export function DoctorDetailPortalView({
       coordinatorId: coordinatorId || null,
       serviceIds: selectedServiceIds,
       schedules: activeSchedules,
+      breaks: activeBreaks,
+      paymentStructure: paymentStructurePayload,
     };
 
     try {
@@ -225,7 +539,8 @@ export function DoctorDetailPortalView({
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.ok) {
         setDoctor((prev) => ({
           ...prev,
           name: doctorName,
@@ -237,12 +552,24 @@ export function DoctorDetailPortalView({
           bufferMinutes,
           coordinatorId: coordinatorId || null,
           coordinator: staffList.find((s) => s.id === coordinatorId) || null,
+          schedules: activeSchedules,
+          breaks: activeBreaks,
+          paymentStructure: {
+            ...paymentStructurePayload,
+            otherPayments: paymentStructurePayload.otherPayments.map((op, idx) => ({
+              id: `oth-${idx}`,
+              ...op,
+            })),
+          },
         }));
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2500);
+      } else {
+        setSaveError(data.error || 'Failed to save changes.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update doctor settings:', err);
+      setSaveError(err.message || 'An unexpected network error occurred.');
     } finally {
       setIsSaving(false);
     }
@@ -328,36 +655,119 @@ export function DoctorDetailPortalView({
     }
   };
 
-  // Create Service Handler
-  const handleCreateService = async (e: React.FormEvent) => {
+  // Create Appointment Type Handler (with service scope & DB persistence)
+  const handleCreateAppointmentType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName.trim()) return;
 
     setIsSubmittingService(true);
     try {
-      const res = await fetch('/api/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newServiceName.trim(),
-          durationMinutes: Number(newServiceDuration),
-          isActive: true,
-          doctorIds: [doctor.id],
-        }),
-      });
-      const data = await res.json();
-      if (data.ok && data.service) {
-        const createdSrv = { id: data.service.id, name: data.service.name };
-        setServicesList([...servicesList, createdSrv]);
-        setSelectedServiceIds([...selectedServiceIds, data.service.id]);
-        setIsAddServiceModalOpen(false);
-        setNewServiceName('');
+      // Save appointment type as a service in database via API
+      let dbId = `apt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      try {
+        const res = await fetch('/api/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newServiceName.trim(),
+            durationMinutes: Number(newServiceDuration),
+            price: newServicePrice ? Number(newServicePrice) : undefined,
+            description: newServiceDescription.trim() || undefined,
+            isActive: true,
+            doctorIds: [doctor.id],
+          }),
+        });
+        const data = await res.json();
+        if (data.ok && data.service) {
+          dbId = data.service.id;
+          const createdSrv: ServiceItem = {
+            id: data.service.id,
+            name: data.service.name,
+            durationMinutes: data.service.durationMinutes,
+            priceMinor: data.service.priceMinor,
+            currency: data.service.currency || 'SAR',
+            description: data.service.description,
+            isActive: data.service.isActive,
+          };
+          setServicesList((prev) => [createdSrv, ...prev]);
+          setSelectedServiceIds((prev) => [...prev, data.service.id]);
+        }
+      } catch (apiErr) {
+        console.warn('Non-blocking DB service creation issue:', apiErr);
       }
+
+      const newApt: DoctorAppointmentTypeItem = {
+        id: dbId,
+        name: newServiceName.trim(),
+        durationMinutes: Number(newServiceDuration),
+        price: newServicePrice ? Number(newServicePrice) : null,
+        currency: 'SAR',
+        description: newServiceDescription.trim() || null,
+        serviceId: newServiceTargetServiceId, // 'ALL' or specific serviceId
+        isActive: true,
+      };
+
+      setAppointmentTypesList((prev) => [newApt, ...prev]);
+
+      // Auto-expand the target service or all services so the new child type is immediately visible
+      if (newServiceTargetServiceId !== 'ALL') {
+        setExpandedServiceIds((prev) => new Set(prev).add(newServiceTargetServiceId));
+      } else {
+        setExpandedServiceIds(new Set(doctorAssignedServices.map((s) => s.id)));
+      }
+
+      setIsAddServiceModalOpen(false);
+      setNewServiceName('');
+      setNewServicePrice('');
+      setNewServiceDescription('');
+      setNewServiceTargetServiceId('ALL');
     } catch (err) {
-      console.error('Failed to create service:', err);
+      console.error('Failed to create appointment type:', err);
     } finally {
       setIsSubmittingService(false);
     }
+  };
+
+  // Open Delete Confirmation Modal
+  const promptDeleteAppointmentType = (at: DoctorAppointmentTypeItem) => {
+    setAptToDelete(at);
+    setIsDeleteAptModalOpen(true);
+  };
+
+  // Confirm Delete Appointment Type (Deletes from DB and local state)
+  const confirmDeleteAppointmentType = async () => {
+    if (!aptToDelete) return;
+    setIsDeletingApt(true);
+
+    try {
+      // If appointment type has a persistent DB id, delete from DB via API
+      if (aptToDelete.id && !aptToDelete.id.startsWith('apt-')) {
+        await fetch(`/api/services/${aptToDelete.id}`, { method: 'DELETE' });
+      }
+
+      // Remove from appointment types list
+      setAppointmentTypesList((prev) => prev.filter((at) => at.id !== aptToDelete.id));
+
+      // Remove from assigned services list if it was a service
+      setServicesList((prev) => prev.filter((s) => s.id !== aptToDelete.id));
+      setSelectedServiceIds((prev) => prev.filter((id) => id !== aptToDelete.id));
+
+      setIsDeleteAptModalOpen(false);
+      setAptToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete appointment type from database:', err);
+    } finally {
+      setIsDeletingApt(false);
+    }
+  };
+
+  // Quick Preset Helper for Appointment Types
+  const handleQuickAddPreset = (name: string, duration: number, price?: number, targetServiceId = 'ALL') => {
+    setNewServiceName(name);
+    setNewServiceDuration(duration);
+    setNewServicePrice(price ? String(price) : '');
+    setNewServiceTargetServiceId(targetServiceId);
+    setIsAddServiceModalOpen(true);
   };
 
   const formatFriendlyDate = (isoString: string) => {
@@ -382,261 +792,354 @@ export function DoctorDetailPortalView({
     (a) => new Date(a.startsAt) < new Date()
   );
 
+  // Dynamic Formula Computation for Summary Card
+  const fixedNum = Number(fixedMonthlyAmount) || 0;
+  const incentiveNum = Number(revenueIncentivePercent) || 0;
+  const procedureFeeAmtNum = Number(procedureFeeAmount) || 0;
+  const procedureFeePctNum = Number(procedureFeePercent) || 0;
+  const validOtherPayments = otherPayments.filter((op) => op.label && op.label.trim().length > 0);
+
+  // Live calculation preview math
+  const calculatedProcedureDoctorShare =
+    procedureFeeType === 'PERCENTAGE'
+      ? (sampleProcedureValue * (procedureFeePctNum / 100)).toFixed(0)
+      : procedureFeeAmtNum.toFixed(0);
+
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
-      {/* 1. TOP COMPACT HEADER */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
-        <div className="flex items-center gap-3.5 min-w-0">
+      {/* 1. TOP HEADER (UNIFIED HEADER) */}
+      <div className="px-3.5 pt-2.5 pb-1 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+        {/* Left: Doctor Name & Badges */}
+        <div className="flex items-center gap-2 min-w-0">
           <Link
             href={backHref}
-            className="p-1.5 rounded-[8px] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+            className="p-1 rounded-[6px] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
             title="Back to Doctors"
           >
             <ArrowLeft className="size-4" />
           </Link>
 
-          {doctorImageUrl || doctor.imageUrl ? (
-            <img
-              src={doctorImageUrl || doctor.imageUrl || ''}
-              alt={doctorName}
-              className="size-9 rounded-[8px] object-cover border border-slate-200 shrink-0"
-            />
-          ) : (
-            <div className="size-9 rounded-[8px] bg-blue-100/80 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 flex items-center justify-center text-xs font-black shrink-0">
-              {doctorName ? doctorName.replace('Dr. ', '').charAt(0).toUpperCase() : 'D'}
-            </div>
-          )}
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
-                {doctorName}
-              </h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-base font-bold text-slate-900 dark:text-white tracking-tight leading-tight truncate">
+              {doctorName}
+            </h1>
+            <button
+              type="button"
+              className="text-slate-300 hover:text-amber-400 dark:text-slate-600 dark:hover:text-amber-400 transition-colors cursor-pointer shrink-0"
+              title="Bookmark / Favorite"
+            >
+              <Star className="size-4" />
+            </button>
+            <span
+              className={`ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1.5 shrink-0 ${
+                isActive
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                  : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
+              }`}
+            >
               <span
-                className={`px-2 py-0.5 rounded-[8px] text-[11px] font-bold border ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                    : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
+                className={`size-1.5 rounded-full ${
+                  isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
                 }`}
-              >
-                {isActive ? 'Active on WhatsApp' : 'Inactive'}
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
-              {doctorSpecialty || 'General Practitioner'} • {doctor.clinic.name} ({doctor.clinic.timezone})
-            </p>
+              />
+              {isActive ? 'Active on WhatsApp' : 'Inactive'}
+            </span>
           </div>
         </div>
 
-        {/* Header Actions */}
+        {/* Right: Compact Black / Dark Action Buttons */}
         <div className="flex items-center gap-2 shrink-0">
           {saveSuccess && (
-            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-              <Check className="size-3.5" /> Changes saved
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in duration-200">
+              <Check className="size-3.5 stroke-[2.5]" /> Changes saved
             </span>
           )}
+          {saveError && (
+            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1 animate-in fade-in duration-200">
+              {saveError}
+            </span>
+          )}
+
+          {/* Create Appointment Type Button */}
+          <button
+            type="button"
+            onClick={() => setIsAddServiceModalOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer"
+          >
+            <Plus className="size-3.5 stroke-[2.5]" />
+            <span>Create Appointment Type</span>
+          </button>
+
+          {/* Add Blocked Period Button */}
+          <button
+            type="button"
+            onClick={() => setIsBlockedModalOpen(true)}
+            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer"
+          >
+            <Plus className="size-3.5 stroke-[2.5]" />
+            <span>Add Blocked Period</span>
+          </button>
+
+          {/* Save Changes Button */}
           <button
             type="button"
             onClick={handleSaveOperational}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer disabled:opacity-60"
           >
-            <Save className="size-3.5" />
+            <Save className="size-3.5 stroke-[2.5]" />
             <span>{isSaving ? 'Saving…' : 'Save Changes'}</span>
           </button>
         </div>
       </div>
 
       {/* 2. TAB NAVIGATION BAR */}
-      <div className="px-6 py-1.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-1 shrink-0 overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setActiveTab('schedule')}
-          className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'schedule'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Clock className="size-3.5" />
-          <span>Working Schedule</span>
-        </button>
+      <div className="px-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center overflow-x-auto scrollbar-none shrink-0">
+        <div className="flex items-center gap-1 -mb-px">
+          {/* Tab 1: Working Schedule (Blue) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('schedule')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'schedule'
+                ? 'border-blue-600 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-blue-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <Clock className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Working Schedule</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('blocked')}
-          className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'blocked'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <CalendarOff className="size-3.5" />
-          <span>Blocked Periods ({timeOffList.length})</span>
-        </button>
+          {/* Tab 2: Appointment Types (Purple) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('appointment-types')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'appointment-types'
+                ? 'border-purple-600 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-purple-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <Tag className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Appointment Types ({appointmentTypesList.length})</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('services')}
-          className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'services'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Tag className="size-3.5" />
-          <span>Assigned Services ({selectedServiceIds.length})</span>
-        </button>
+          {/* Tab 3: Blocked Periods (Rose/Red) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('blocked')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'blocked'
+                ? 'border-rose-600 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-rose-500 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <CalendarOff className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Blocked Periods ({timeOffList.length})</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('appointments')}
-          className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'appointments'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Calendar className="size-3.5" />
-          <span>Appointments ({doctor.appointments.length})</span>
-        </button>
+          {/* Tab 4: Appointments (Orange) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('appointments')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'appointments'
+                ? 'border-orange-600 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-orange-500 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <Calendar className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Appointments ({doctor.appointments.length})</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('overview')}
-          className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'overview'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Info className="size-3.5" />
-          <span>Doctor Profile</span>
-        </button>
+          {/* Tab 5: Doctor Profile (Indigo) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('overview')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'overview'
+                ? 'border-indigo-600 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-indigo-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <Info className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Doctor Profile</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('coordinator')}
-          className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'coordinator'
-              ? 'bg-slate-900 text-white dark:bg-blue-600 dark:text-white shadow-2xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <UserCheck className="size-3.5" />
-          <span>Assigned Coordinator</span>
-        </button>
+          {/* Tab 6: Assigned Coordinator (Green) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('coordinator')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'coordinator'
+                ? 'border-emerald-600 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-emerald-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <UserCheck className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Assigned Coordinator</span>
+          </button>
+
+          {/* Tab 7: Payment Structure (Amber) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('payment-structure')}
+            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'payment-structure'
+                ? 'border-amber-500 text-slate-900 dark:text-white'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
+            }`}
+          >
+            <div className="size-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shadow-2xs shrink-0">
+              <Coins className="size-3 stroke-[2.5]" />
+            </div>
+            <span>Payment Structure</span>
+          </button>
+        </div>
       </div>
 
-      {/* 3. TAB CONTENTS CONTAINER */}
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/40 dark:bg-slate-950/40 min-h-0">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* TAB 1: SCHEDULE CONFIGURATION */}
-          {activeTab === 'schedule' && (
-            <div className="space-y-4">
-              <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs">
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Clock className="size-4 text-blue-600" />
-                  <span>Slot Duration &amp; Active Booking Status</span>
-                </h3>
+      {/* 3. MAIN CONTENT CONTAINER (ATTACHED BORDER-TO-BORDER, NO FLOATING PADDING) */}
+      <div className="flex-1 overflow-y-auto min-h-0 bg-white dark:bg-slate-950">
+        {/* TAB 1: SCHEDULE CONFIGURATION & BREAKS */}
+        {activeTab === 'schedule' && (
+          <div>
+            {/* Slot Duration & Booking Status Bar */}
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/30">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Clock className="size-4 text-blue-600" />
+                <span>Slot Duration &amp; Active Booking Status</span>
+              </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                      Doctor Booking Status
-                    </label>
-                    <select
-                      value={isActive ? 'ACTIVE' : 'INACTIVE'}
-                      onChange={(e) => setIsActive(e.target.value === 'ACTIVE')}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <option value="ACTIVE">Active (Accepting Bookings on WhatsApp)</option>
-                      <option value="INACTIVE">Inactive (Hidden from WhatsApp &amp; New Bookings)</option>
-                    </select>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Doctor Booking Status
+                  </label>
+                  <select
+                    value={isActive ? 'ACTIVE' : 'INACTIVE'}
+                    onChange={(e) => setIsActive(e.target.value === 'ACTIVE')}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  >
+                    <option value="ACTIVE">Active (Accepting Bookings on WhatsApp)</option>
+                    <option value="INACTIVE">Inactive (Hidden from WhatsApp &amp; New Bookings)</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                      Per-Doctor Slot Duration
-                    </label>
-                    <select
-                      value={slotDuration}
-                      onChange={(e) => setSlotDuration(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
-                    >
-                      <option value={15}>15 minutes</option>
-                      <option value={20}>20 minutes</option>
-                      <option value={30}>30 minutes (Standard)</option>
-                      <option value={45}>45 minutes</option>
-                      <option value={60}>60 minutes (1 Hour)</option>
-                      <option value={90}>90 minutes</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Default Slot Duration
+                  </label>
+                  <select
+                    value={slotDuration}
+                    onChange={(e) => setSlotDuration(Number(e.target.value))}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
+                  >
+                    <option value={15}>15 minutes</option>
+                    <option value={20}>20 minutes</option>
+                    <option value={30}>30 minutes (Standard)</option>
+                    <option value={45}>45 minutes</option>
+                    <option value={60}>60 minutes (1 Hour)</option>
+                    <option value={90}>90 minutes</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                      Post-Appointment Buffer Gap
-                    </label>
-                    <select
-                      value={bufferMinutes}
-                      onChange={(e) => setBufferMinutes(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
-                    >
-                      <option value={0}>0 minutes (No gap)</option>
-                      <option value={5}>5 minutes</option>
-                      <option value={10}>10 minutes</option>
-                      <option value={15}>15 minutes</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                    Post-Appointment Buffer Gap
+                  </label>
+                  <select
+                    value={bufferMinutes}
+                    onChange={(e) => setBufferMinutes(Number(e.target.value))}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
+                  >
+                    <option value={0}>0 minutes (No gap)</option>
+                    <option value={5}>5 minutes</option>
+                    <option value={10}>10 minutes</option>
+                    <option value={15}>15 minutes</option>
+                  </select>
                 </div>
               </div>
+            </div>
 
-              <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs">
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+            {/* Weekly Working Hours & Breaks Header */}
+            <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
                   <Calendar className="size-4 text-blue-600" />
-                  <span>Weekly Working Hours ({doctor.clinic.timezone})</span>
+                  <span>Weekly Working Hours &amp; Break Times ({doctor.clinic.timezone})</span>
                 </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Toggle active working days with the circular selectors. Add customized daily break times to block slots automatically.
+                </p>
+              </div>
+            </div>
 
-                <div className="space-y-2.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                  {WEEKDAYS.map((day) => {
-                    const cfg = scheduleState[day.num] || {
-                      isWorking: false,
-                      startMinute: 540,
-                      endMinute: 1020,
-                    };
+            {/* Attached Day Rows */}
+            <div className="divide-y divide-slate-200/80 dark:divide-slate-800 text-xs">
+              {WEEKDAYS.map((day) => {
+                const cfg = scheduleState[day.num] || {
+                  isWorking: false,
+                  startMinute: 540,
+                  endMinute: 1020,
+                };
+                const dayBreaks = breaksState[day.num] || [];
 
-                    return (
+                return (
+                  <div
+                    key={day.num}
+                    className={`px-6 py-3.5 transition-colors ${
+                      cfg.isWorking ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30 opacity-80'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Circular Checkbox and Day Name */}
                       <div
-                        key={day.num}
-                        className="pt-2.5 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="flex items-center gap-3 cursor-pointer select-none group w-44"
+                        onClick={() =>
+                          setScheduleState({
+                            ...scheduleState,
+                            [day.num]: { ...cfg, isWorking: !cfg.isWorking },
+                          })
+                        }
                       >
-                        <div className="flex items-center gap-3 w-36">
-                          <input
-                            type="checkbox"
-                            id={`day-${day.num}`}
-                            checked={cfg.isWorking}
-                            onChange={(e) =>
-                              setScheduleState({
-                                ...scheduleState,
-                                [day.num]: { ...cfg, isWorking: e.target.checked },
-                              })
-                            }
-                            className="size-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <label
-                            htmlFor={`day-${day.num}`}
-                            className={`font-bold cursor-pointer ${
-                              cfg.isWorking
-                                ? 'text-slate-900 dark:text-white'
-                                : 'text-slate-400 dark:text-slate-500'
-                            }`}
-                          >
-                            {day.name}
-                          </label>
+                        <div
+                          className={`size-5 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                            cfg.isWorking
+                              ? 'bg-blue-600 text-white shadow-2xs ring-2 ring-blue-500/20'
+                              : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400'
+                          }`}
+                        >
+                          {cfg.isWorking && <Check className="size-3 stroke-[3]" />}
                         </div>
 
-                        {cfg.isWorking ? (
-                          <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-bold transition-colors ${
+                            cfg.isWorking
+                              ? 'text-slate-900 dark:text-white'
+                              : 'text-slate-400 dark:text-slate-500'
+                          }`}
+                        >
+                          {day.name}
+                        </span>
+                      </div>
+
+                      {/* Working Hours Time Inputs or Day Off Label */}
+                      {cfg.isWorking ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Shift Start */}
+                          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/20">
                             <input
                               type="time"
                               value={minuteToTimeStr(cfg.startMinute)}
@@ -649,9 +1152,15 @@ export function DoctorDetailPortalView({
                                   },
                                 })
                               }
-                              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                              className="bg-transparent text-xs text-slate-900 dark:text-white outline-none font-mono font-medium cursor-pointer"
                             />
-                            <span className="text-slate-400 font-bold">to</span>
+                            <Clock className="size-3.5 text-slate-400 shrink-0 pointer-events-none" />
+                          </div>
+
+                          <span className="text-slate-400 text-xs font-bold px-0.5">to</span>
+
+                          {/* Shift End */}
+                          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/20">
                             <input
                               type="time"
                               value={minuteToTimeStr(cfg.endMinute)}
@@ -664,271 +1173,689 @@ export function DoctorDetailPortalView({
                                   },
                                 })
                               }
-                              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                              className="bg-transparent text-xs text-slate-900 dark:text-white outline-none font-mono font-medium cursor-pointer"
                             />
+                            <Clock className="size-3.5 text-slate-400 shrink-0 pointer-events-none" />
                           </div>
-                        ) : (
-                          <span className="text-slate-400 font-semibold italic text-[11px]">
-                            Day Off
-                          </span>
-                        )}
+
+                          {/* Add Break Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleAddBreak(day.num)}
+                            className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 rounded-[8px] px-2.5 py-1 transition-all cursor-pointer shadow-2xs"
+                            title="Add break time slot for this day"
+                          >
+                            <Coffee className="size-3 text-blue-600 dark:text-blue-400" />
+                            <span>+ Break</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500 font-semibold italic text-[11px] px-2">
+                          Day Off
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Daily Break Slots List */}
+                    {cfg.isWorking && dayBreaks.length > 0 && (
+                      <div className="mt-2.5 ml-8 pl-3 border-l-2 border-blue-200 dark:border-blue-900/60 space-y-2">
+                        {dayBreaks.map((b) => (
+                          <div
+                            key={b.id}
+                            className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-[8px] p-2 text-xs"
+                          >
+                            <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[11px] font-semibold">
+                              <Coffee className="size-3 text-amber-500" />
+                              <span>Break:</span>
+                            </div>
+
+                            <input
+                              type="text"
+                              placeholder="Break label (e.g. Lunch)"
+                              value={b.label}
+                              onChange={(e) =>
+                                handleUpdateBreak(day.num, b.id, 'label', e.target.value)
+                              }
+                              className="w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-0.5 text-xs">
+                              <input
+                                type="time"
+                                value={minuteToTimeStr(b.startMinute)}
+                                onChange={(e) =>
+                                  handleUpdateBreak(
+                                    day.num,
+                                    b.id,
+                                    'startMinute',
+                                    timeStrToMinute(e.target.value)
+                                  )
+                                }
+                                className="bg-transparent text-xs text-slate-900 dark:text-white outline-none font-mono cursor-pointer"
+                              />
+                            </div>
+
+                            <span className="text-slate-400 text-[11px] font-bold">to</span>
+
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-0.5 text-xs">
+                              <input
+                                type="time"
+                                value={minuteToTimeStr(b.endMinute)}
+                                onChange={(e) =>
+                                  handleUpdateBreak(
+                                    day.num,
+                                    b.id,
+                                    'endMinute',
+                                    timeStrToMinute(e.target.value)
+                                  )
+                                }
+                                className="bg-transparent text-xs text-slate-900 dark:text-white outline-none font-mono cursor-pointer"
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveBreak(day.num, b.id)}
+                              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors ml-auto cursor-pointer"
+                              title="Remove break"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: APPOINTMENT TYPES & SERVICES (PROPER UI/UX FORMAT) */}
+        {activeTab === 'appointment-types' && (
+          <div className="space-y-6 p-6">
+            {/* 1. Global / Universal Appointment Types Section */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/40 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-7 rounded-[7px] bg-blue-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+                    <Tag className="size-3.5 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                        General Appointment Types (All Services)
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 whitespace-nowrap">
+                        Universal Scope
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Universally available when patients book consultations or treatments with Dr. {doctorName}.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewServiceTargetServiceId('ALL');
+                      setIsAddServiceModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    <Plus className="size-3.5 stroke-[2.5]" />
+                    <span>+ Add General Type</span>
+                  </button>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* TAB 2: BLOCKED PERIODS */}
-          {activeTab === 'blocked' && (
-            <div className="space-y-4">
-              <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <CalendarOff className="size-4 text-rose-500" />
-                    <span>Doctor Blocked Periods &amp; Leaves</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Slots inside blocked periods will be automatically removed from WhatsApp &amp; Portal availability.
-                  </p>
-                </div>
+              {/* Quick Presets Bar */}
+              <div className="px-5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-950/20 flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-bold text-blue-950 dark:text-blue-200 text-[11px] flex items-center gap-1 whitespace-nowrap">
+                  <Sparkles className="size-3 text-blue-600" /> Quick Presets:
+                </span>
                 <button
                   type="button"
-                  onClick={() => setIsBlockedModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+                  onClick={() => handleQuickAddPreset('Follow-up Consultation', 15, 100, 'ALL')}
+                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
                 >
-                  <Plus className="size-3.5" />
-                  <span>Add Blocked Period</span>
+                  + Follow-up (15 min)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickAddPreset('Initial Consultation', 30, 200, 'ALL')}
+                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                >
+                  + Consultation (30 min)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickAddPreset('Comprehensive Examination', 45, 300, 'ALL')}
+                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                >
+                  + Detailed Exam (45 min)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickAddPreset('Clinical Treatment / Procedure', 60, 500, 'ALL')}
+                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                >
+                  + Procedure (60 min)
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xs">
-                {timeOffList.length === 0 ? (
-                  <div className="p-8 text-center text-slate-400 text-xs font-medium">
-                    No active blocked periods or leaves recorded for this doctor.
-                  </div>
-                ) : (
+              {/* Global Appointment Types Table */}
+              {appointmentTypesList.filter((at) => at.serviceId === 'ALL').length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs italic">
+                  No general appointment types configured. Click &ldquo;+ Add General Type&rdquo; above to create one.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700">
                       <tr>
-                        <th className="py-2.5 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px]">
-                          REASON
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider">
+                          APPOINTMENT TYPE
                         </th>
-                        <th className="py-2.5 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px]">
-                          DATE RANGE
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          SCOPE
                         </th>
-                        <th className="py-2.5 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px]">
-                          HOURS
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          DURATION
                         </th>
-                        <th className="py-2.5 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px] text-right">
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          PRICE
+                        </th>
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          WHATSAPP STATUS
+                        </th>
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
                           ACTION
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {timeOffList.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                          <td className="py-2.5 px-4 font-semibold text-slate-900 dark:text-white">
-                            <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200">
-                              {item.reason || 'Blocked'}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-4 font-mono text-slate-700 dark:text-slate-300">
-                            {item.startDate} {item.startDate !== item.endDate ? `➔ ${item.endDate}` : ''}
-                          </td>
-                          <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 font-mono">
-                            {item.startMinute !== null && item.endMinute !== null
-                              ? `${minuteToTimeStr(item.startMinute)} – ${minuteToTimeStr(item.endMinute)}`
-                              : 'All Day'}
-                          </td>
-                          <td className="py-2.5 px-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteBlockedPeriod(item.id)}
-                              className="text-rose-600 hover:text-rose-800 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                              title="Delete Blocked Period"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {appointmentTypesList
+                        .filter((at) => at.serviceId === 'ALL')
+                        .map((at) => (
+                          <tr
+                            key={at.id}
+                            className="hover:bg-slate-50/70 dark:hover:bg-slate-850/40 transition-colors"
+                          >
+                            <td className="py-3 px-5">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="size-5 rounded-[5px] bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
+                                  <Tag className="size-3 stroke-[2.5]" />
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-bold text-xs text-slate-900 dark:text-white block truncate">
+                                    {at.name}
+                                  </span>
+                                  {at.description && (
+                                    <span className="text-[11px] text-slate-400 block truncate max-w-md">
+                                      {at.description}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-5 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 whitespace-nowrap">
+                                All Services
+                              </span>
+                            </td>
+                            <td className="py-3 px-5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
+                              <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[5px] text-[11px] font-semibold">
+                                <Clock className="size-3 text-blue-500" />
+                                {at.durationMinutes} min
+                              </span>
+                            </td>
+                            <td className="py-3 px-5 whitespace-nowrap">
+                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-[5px]">
+                                {at.price ? `${at.price} ${at.currency || 'SAR'}` : 'Standard'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-5 whitespace-nowrap">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1.5 whitespace-nowrap">
+                                <span className="size-1.5 rounded-full bg-emerald-500" />
+                                Active on WhatsApp
+                              </span>
+                            </td>
+                            <td className="py-3 px-5 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => promptDeleteAppointmentType(at)}
+                                className="p-1.5 rounded-[6px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete appointment type"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: ASSIGNED SERVICES */}
-          {activeTab === 'services' && (
-            <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <Tag className="size-4 text-indigo-500" />
-                    <span>Clinical Services Offered by this Doctor</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Select which services Dr. {doctorName} can perform. Patients on WhatsApp will only be offered this doctor for selected services.
-                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddServiceModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
-                >
-                  <Plus className="size-3.5" />
-                  <span>Create Service</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                {servicesList.length === 0 ? (
-                  <p className="text-slate-400 text-xs italic col-span-2">
-                    No active services configured for this clinic yet.
-                  </p>
-                ) : (
-                  servicesList.map((srv) => {
-                    const isSelected = selectedServiceIds.includes(srv.id);
-                    return (
-                      <div
-                        key={srv.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedServiceIds(selectedServiceIds.filter((id) => id !== srv.id));
-                          } else {
-                            setSelectedServiceIds([...selectedServiceIds, srv.id]);
-                          }
-                        }}
-                        className={`p-3 rounded-[8px] border transition-all cursor-pointer flex items-center justify-between ${
-                          isSelected
-                            ? 'bg-blue-50/80 dark:bg-blue-950/60 border-blue-300 dark:border-blue-800 text-blue-950 dark:text-blue-100 font-bold shadow-2xs'
-                            : 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => {}}
-                            className="size-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer pointer-events-none"
-                          />
-                          <span>{srv.name}</span>
-                        </div>
-                        {isSelected && <Check className="size-3.5 text-blue-600" />}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+              )}
             </div>
-          )}
 
-          {/* TAB 4: APPOINTMENTS HISTORY */}
-          {activeTab === 'appointments' && (
-            <div className="space-y-4">
-              <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xs">
-                <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <Calendar className="size-3.5 text-blue-600" />
-                    <span>Upcoming Bookings ({upcomingAppointments.length})</span>
-                  </h3>
-                </div>
-
-                {upcomingAppointments.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-xs">
-                    No upcoming appointments scheduled for this doctor.
+            {/* 2. Doctor Assigned Services & Service-Specific Types Section */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/40 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-7 rounded-[7px] bg-purple-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+                    <Layers className="size-3.5 stroke-[2.5]" />
                   </div>
-                ) : (
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Assigned Services &amp; Specialized Procedures ({doctorAssignedServices.length})
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Clinical treatments performed by Dr. {doctorName}. Expand any service to add custom service-specific durations and pricing.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative w-72">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search doctor services..."
+                    value={appointmentTypeSearch}
+                    onChange={(e) => setAppointmentTypeSearch(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[7px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  />
+                </div>
+              </div>
+
+              {/* Services Table */}
+              {filteredAssignedServices.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs italic">
+                  No doctor services found.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
-                    <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700">
                       <tr>
-                        <th className="py-2 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
-                          APPT NO
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider">
+                          SERVICE NAME
                         </th>
-                        <th className="py-2 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
-                          PATIENT
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          SPECIFIC TYPES
                         </th>
-                        <th className="py-2 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
-                          SERVICE
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          BASE DURATION
                         </th>
-                        <th className="py-2 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
-                          DATE &amp; TIME
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                          BASE PRICE
                         </th>
-                        <th className="py-2 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
                           STATUS
+                        </th>
+                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
+                          ACTION
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {upcomingAppointments.map((app) => (
-                        <tr key={app.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                          <td className="py-2 px-4 font-mono font-bold text-blue-600">
-                            {app.appointmentNumber ? `#${app.appointmentNumber}` : '—'}
-                          </td>
-                          <td className="py-2 px-4 font-semibold text-slate-900 dark:text-white">
-                            {app.patient.name || 'Patient'}
-                            {app.patient.fileNumber && (
-                              <span className="ml-1 text-[10px] text-emerald-600 font-mono">
-                                (File #{app.patient.fileNumber})
-                              </span>
+                      {filteredAssignedServices.map((srv) => {
+                        const isExpanded = expandedServiceIds.has(srv.id);
+                        const specificTypes = appointmentTypesList.filter(
+                          (at) => at.serviceId === srv.id
+                        );
+                        const price =
+                          srv.priceMinor !== undefined && srv.priceMinor !== null
+                            ? `${(srv.priceMinor / 100).toFixed(0)} ${srv.currency || 'SAR'}`
+                            : 'Standard';
+
+                        return (
+                          <React.Fragment key={srv.id}>
+                            {/* PARENT ROW: SERVICE */}
+                            <tr className="bg-white hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-850/80 transition-colors">
+                              <td className="py-3 px-5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandService(srv.id)}
+                                    className="p-1 rounded-[5px] text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                                    title={isExpanded ? 'Collapse service' : 'Expand service'}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="size-4 text-purple-600 stroke-[2.5]" />
+                                    ) : (
+                                      <ChevronRight className="size-4 stroke-[2.5]" />
+                                    )}
+                                  </button>
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-xs text-slate-900 dark:text-white block truncate">
+                                      {srv.name}
+                                    </span>
+                                    {srv.description && (
+                                      <p className="text-[11px] text-slate-400 block truncate max-w-sm mt-0.5">
+                                        {srv.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-5 whitespace-nowrap">
+                                {specificTypes.length > 0 ? (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 whitespace-nowrap">
+                                    <Tag className="size-3" />
+                                    {specificTypes.length} Specific Type{specificTypes.length === 1 ? '' : 's'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 whitespace-nowrap">
+                                    Uses General Types
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 px-5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
+                                <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[5px] text-[11px] font-semibold">
+                                  <Clock className="size-3 text-blue-500" />
+                                  {srv.durationMinutes || 30} min
+                                </span>
+                              </td>
+                              <td className="py-3 px-5 whitespace-nowrap">
+                                <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">
+                                  {price}
+                                </span>
+                              </td>
+                              <td className="py-3 px-5 whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+                                  Active
+                                </span>
+                              </td>
+                              <td className="py-3 px-5 text-right whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNewServiceTargetServiceId(srv.id);
+                                    setIsAddServiceModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:text-white hover:bg-[#0f172a] bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-[6px] transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                  title={`Add specific appointment type for ${srv.name}`}
+                                >
+                                  <Plus className="size-3 stroke-[2.5]" />
+                                  <span>+ Specific Type</span>
+                                </button>
+                              </td>
+                            </tr>
+
+                            {/* CHILD ROWS: SERVICE-SPECIFIC TYPES */}
+                            {isExpanded && (
+                              <>
+                                {specificTypes.length === 0 ? (
+                                  <tr className="bg-slate-50/50 dark:bg-slate-950/40">
+                                    <td colSpan={6} className="py-2.5 pl-12 pr-5 text-[11px] text-slate-500 dark:text-slate-400">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="italic">
+                                          ℹ️ Currently using Dr. {doctorName}&apos;s general appointment types. Click &ldquo;+ Specific Type&rdquo; to add custom durations/pricing for this treatment.
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setNewServiceTargetServiceId(srv.id);
+                                            setIsAddServiceModalOpen(true);
+                                          }}
+                                          className="text-purple-600 dark:text-purple-400 font-semibold hover:underline cursor-pointer shrink-0"
+                                        >
+                                          + Add Type for {srv.name}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  specificTypes.map((at) => (
+                                    <tr
+                                      key={at.id}
+                                      className="bg-purple-50/20 dark:bg-purple-950/10 hover:bg-purple-50/40 transition-colors"
+                                    >
+                                      <td className="py-2.5 pl-12 pr-5">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className="text-purple-400 font-mono font-bold text-xs shrink-0">↳</span>
+                                          <div className="size-4 rounded-[4px] bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                                            <Tag className="size-2.5 stroke-[2.5]" />
+                                          </div>
+                                          <div className="min-w-0">
+                                            <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 block truncate">
+                                              {at.name}
+                                            </span>
+                                            {at.description && (
+                                              <span className="text-[11px] text-slate-400 block truncate max-w-sm">
+                                                — {at.description}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 px-5 whitespace-nowrap">
+                                        <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 whitespace-nowrap">
+                                          Specific to {srv.name}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-5 whitespace-nowrap font-mono text-xs text-slate-700 dark:text-slate-300">
+                                        <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[5px] text-[11px] font-semibold">
+                                          <Clock className="size-3 text-purple-500" />
+                                          {at.durationMinutes} min
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-5 whitespace-nowrap">
+                                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-[5px]">
+                                          {at.price ? `${at.price} ${at.currency || 'SAR'}` : 'Standard'}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-5 whitespace-nowrap">
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 inline-flex items-center gap-1.5 whitespace-nowrap">
+                                          <span className="size-1.5 rounded-full bg-emerald-500" />
+                                          Active on WhatsApp
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-5 text-right whitespace-nowrap">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteAppointmentType(at.id)}
+                                          className="p-1.5 rounded-[6px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                          title="Remove appointment type"
+                                        >
+                                          <Trash2 className="size-3.5" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))
+                                )}
+                              </>
                             )}
-                          </td>
-                          <td className="py-2 px-4 text-slate-700 dark:text-slate-300">
-                            {app.service.name}
-                          </td>
-                          <td className="py-2 px-4 text-slate-600 dark:text-slate-400">
-                            {formatFriendlyDate(app.startsAt)}
-                          </td>
-                          <td className="py-2 px-4">
-                            <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              {app.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
-                )}
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xs">
-                <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                  <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Past Bookings ({pastAppointments.length})
-                  </h3>
                 </div>
-                {pastAppointments.length === 0 ? (
-                  <div className="p-4 text-center text-slate-400 text-xs">
-                    No past appointments recorded.
-                  </div>
-                ) : (
-                  <div className="p-3 text-xs text-slate-500">
-                    {pastAppointments.length} completed appointments recorded.
-                  </div>
-                )}
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: BLOCKED PERIODS (ATTACHED BORDER-WITH-BORDER TABLE) */}
+        {activeTab === 'blocked' && (
+          <div>
+            {/* Attached Header Bar */}
+            <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <CalendarOff className="size-4 text-rose-500" />
+                <span>Doctor Blocked Periods &amp; Leaves</span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Slots inside blocked periods will be automatically removed from WhatsApp &amp; Portal availability.
+              </p>
+            </div>
+
+            {/* Attached Table List */}
+            {timeOffList.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 text-xs font-medium bg-white dark:bg-slate-950">
+                No active blocked periods or leaves recorded for this doctor.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px]">
+                        REASON
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px]">
+                        DATE RANGE
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px]">
+                        HOURS
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[11px] text-right">
+                        ACTION
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {timeOffList.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/40">
+                        <td className="py-3 px-6 font-semibold text-slate-900 dark:text-white">
+                          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                            {item.reason || 'Blocked'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-6 font-mono text-slate-700 dark:text-slate-300">
+                          {item.startDate} {item.startDate !== item.endDate ? `➔ ${item.endDate}` : ''}
+                        </td>
+                        <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono">
+                          {item.startMinute !== null && item.endMinute !== null
+                            ? `${minuteToTimeStr(item.startMinute)} – ${minuteToTimeStr(item.endMinute)}`
+                            : 'All Day'}
+                        </td>
+                        <td className="py-3 px-6 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBlockedPeriod(item.id)}
+                            className="text-rose-600 hover:text-rose-800 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                            title="Delete Blocked Period"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: APPOINTMENTS HISTORY (ATTACHED BORDER TABLE) */}
+        {activeTab === 'appointments' && (
+          <div>
+            <div className="px-6 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Calendar className="size-3.5 text-blue-600" />
+                <span>Upcoming Bookings ({upcomingAppointments.length})</span>
+              </h3>
+            </div>
+
+            {upcomingAppointments.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs border-b border-slate-200 dark:border-slate-800">
+                No upcoming appointments scheduled for this doctor.
+              </div>
+            ) : (
+              <div className="overflow-x-auto border-b border-slate-200 dark:border-slate-800">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
+                        APPT NO
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
+                        PATIENT
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
+                        SERVICE
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
+                        DATE &amp; TIME
+                      </th>
+                      <th className="py-2.5 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px]">
+                        STATUS
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {upcomingAppointments.map((app) => (
+                      <tr key={app.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                        <td className="py-2.5 px-6 font-mono font-bold text-blue-600 dark:text-blue-400">
+                          {app.appointmentNumber ? `AP-${String(app.appointmentNumber).padStart(3, '0')}` : '—'}
+                        </td>
+                        <td className="py-2.5 px-6 font-semibold text-slate-900 dark:text-white">
+                          {app.patient.name || 'Patient'}
+                          {app.patient.fileNumber && (
+                            <span className="ml-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                              (FR-{String(app.patient.fileNumber).padStart(3, '0')})
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-6 text-slate-700 dark:text-slate-300">
+                          {app.service.name}
+                        </td>
+                        <td className="py-2.5 px-6 text-slate-600 dark:text-slate-400">
+                          {formatFriendlyDate(app.startsAt)}
+                        </td>
+                        <td className="py-2.5 px-6">
+                          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            {app.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="px-6 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Past Bookings ({pastAppointments.length})
+              </h3>
+            </div>
+            {pastAppointments.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-xs">
+                No past appointments recorded.
+              </div>
+            ) : (
+              <div className="p-6 text-xs text-slate-500 dark:text-slate-400">
+                {pastAppointments.length} completed appointments recorded.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 5: DOCTOR PROFILE OVERVIEW */}
+        {activeTab === 'overview' && (
+          <div>
+            <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <Stethoscope className="size-4 text-blue-600" />
+                  <span>Doctor Credentials &amp; Profile</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Configure professional details displayed to patients on WhatsApp and in the clinic portal.
+                </p>
               </div>
             </div>
-          )}
 
-          {/* TAB 5: DOCTOR PROFILE OVERVIEW */}
-          {activeTab === 'overview' && (
-            <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <Stethoscope className="size-4 text-blue-600" />
-                    <span>Doctor Credentials &amp; Profile</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Configure the professional details displayed to patients on WhatsApp and in the portal.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-6 max-w-3xl space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Doctor Full Name *
@@ -938,20 +1865,20 @@ export function DoctorDetailPortalView({
                     required
                     value={doctorName}
                     onChange={(e) => setDoctorName(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Specialty &amp; Professional Title *
+                    Specialty &amp; Title *
                   </label>
                   <input
                     type="text"
                     required
                     value={doctorSpecialty}
                     onChange={(e) => setDoctorSpecialty(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -964,7 +1891,7 @@ export function DoctorDetailPortalView({
                     placeholder="https://..."
                     value={doctorImageUrl}
                     onChange={(e) => setDoctorImageUrl(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -977,96 +1904,433 @@ export function DoctorDetailPortalView({
                     placeholder="Doctor qualifications, education, and clinical background..."
                     value={doctorDescription}
                     onChange={(e) => setDoctorDescription(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed"
                   />
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* TAB 6: COORDINATOR */}
-          {activeTab === 'coordinator' && (
-            <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <UserCheck className="size-4 text-emerald-600" />
-                    <span>Assigned Clinic Coordinator</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Designate a clinic staff member responsible for coordinating Dr. {doctorName}&apos;s appointments and inquiries.
-                  </p>
+        {/* TAB 6: COORDINATOR */}
+        {activeTab === 'coordinator' && (
+          <div>
+            <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <UserCheck className="size-4 text-emerald-600" />
+                  <span>Assigned Clinic Coordinator</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Designate a clinic staff member responsible for coordinating Dr. {doctorName}&apos;s appointments and inquiries.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCoordinatorModalOpen(true)}
+                className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-2xs transition-all cursor-pointer shrink-0"
+              >
+                <Plus className="size-3.5" />
+                <span>Add New Coordinator</span>
+              </button>
+            </div>
+
+            <div className="p-6 max-w-xl text-xs space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                  Search &amp; Select Coordinator
+                </label>
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Filter staff by name or email..."
+                    value={coordinatorSearch}
+                    onChange={(e) => setCoordinatorSearch(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddCoordinatorModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+
+                <select
+                  value={coordinatorId}
+                  onChange={(e) => setCoordinatorId(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                 >
-                  <Plus className="size-3.5" />
-                  <span>Add New Coordinator</span>
-                </button>
+                  <option value="">No coordinator assigned</option>
+                  {filteredStaff.map((staff) => (
+                    <option key={staff.id} value={staff.id}>
+                      {staff.name} ({staff.email})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="max-w-md text-xs space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Search &amp; Select Coordinator
-                  </label>
-                  <div className="relative mb-2">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Filter staff by name or email..."
-                      value={coordinatorSearch}
-                      onChange={(e) => setCoordinatorSearch(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    />
+              {doctor.coordinator && (
+                <div className="p-3.5 rounded-[8px] bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-black flex items-center justify-center text-xs">
+                      {doctor.coordinator.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 dark:text-white text-xs">
+                        {doctor.coordinator.name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                        {doctor.coordinator.email}
+                      </div>
+                    </div>
                   </div>
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-[6px]">
+                    Currently Assigned
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-                  <select
-                    value={coordinatorId}
-                    onChange={(e) => setCoordinatorId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                  >
-                    <option value="">No coordinator assigned</option>
-                    {filteredStaff.map((staff) => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.name} ({staff.email})
-                      </option>
-                    ))}
-                  </select>
+        {/* TAB 7: PAYMENT STRUCTURE */}
+        {activeTab === 'payment-structure' && (
+          <div>
+            {/* Header Bar */}
+            <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <div className="flex items-center gap-2.5 mb-1">
+                <div className="size-6 rounded-[6px] bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+                  <Coins className="size-3.5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Payment Structure — Dr. {doctorName}
+                </h3>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 ml-8.5">
+                How this doctor is paid. These figures feed the Doctor Payments run under Accounts &amp; Finance at month end.
+              </p>
+            </div>
+
+            <div className="p-6 max-w-4xl space-y-5">
+              {/* 1. Fixed Monthly Payment & 2. Revenue Incentive */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Fixed Monthly Payment Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">
+                      Fixed Monthly Payment (SAR)
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                      Paid regardless of volume. Enter 0 for commission-only doctors.
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      placeholder="e.g. 18000"
+                      value={fixedMonthlyAmount}
+                      onChange={(e) => setFixedMonthlyAmount(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                      SAR
+                    </span>
+                  </div>
                 </div>
 
-                {doctor.coordinator && (
-                  <div className="p-3 rounded-[8px] bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="size-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-black flex items-center justify-center text-xs">
-                        {doctor.coordinator.name.charAt(0).toUpperCase()}
+                {/* Incentive on Collected Revenue Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">
+                      Incentive on Collected Revenue (%)
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                      Applied to revenue actually collected against this doctor&apos;s invoices.
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      placeholder="e.g. 12"
+                      value={revenueIncentivePercent}
+                      onChange={(e) => setRevenueIncentivePercent(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Procedure-Based Fee Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Procedure-Based Fee
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure how procedure compensation is calculated per treatment performed.
+                    </p>
+                  </div>
+
+                  {/* Toggle Selector */}
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-[8px] text-xs font-semibold shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setProcedureFeeType('FIXED')}
+                      className={`px-3 py-1 rounded-[6px] transition-all cursor-pointer ${
+                        procedureFeeType === 'FIXED'
+                          ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-2xs font-bold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      Fixed amount (SAR)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProcedureFeeType('PERCENTAGE')}
+                      className={`px-3 py-1 rounded-[6px] transition-all cursor-pointer ${
+                        procedureFeeType === 'PERCENTAGE'
+                          ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-2xs font-bold'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      Percentage (%)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Procedure fee inputs */}
+                {procedureFeeType === 'FIXED' ? (
+                  <div className="max-w-md space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Procedure Fee (SAR)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        step="10"
+                        placeholder="e.g. 300"
+                        value={procedureFeeAmount}
+                        onChange={(e) => setProcedureFeeAmount(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                        SAR per procedure
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="max-w-md space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Share of Procedure Value (%)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          placeholder="e.g. 20"
+                          value={procedureFeePercent}
+                          onChange={(e) => setProcedureFeePercent(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                          %
+                        </span>
                       </div>
-                      <div>
-                        <div className="font-bold text-slate-900 dark:text-white text-xs">
-                          {doctor.coordinator.name}
+                    </div>
+
+                    {/* Live Calculation Preview Box */}
+                    <div className="p-3.5 rounded-[8px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2 text-xs">
+                      <div className="flex items-center justify-between font-bold text-blue-900 dark:text-blue-200">
+                        <span className="flex items-center gap-1.5">
+                          <Calculator className="size-3.5 text-blue-600 dark:text-blue-400" />
+                          <span>Live Calculation Preview</span>
+                        </span>
+                        <div className="flex items-center gap-1.5 font-normal text-[11px]">
+                          <span>Sample Procedure Value:</span>
+                          <input
+                            type="number"
+                            min="100"
+                            step="100"
+                            value={sampleProcedureValue}
+                            onChange={(e) => setSampleProcedureValue(Number(e.target.value) || 0)}
+                            className="w-20 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-right font-mono font-bold text-blue-900 dark:text-blue-100 text-xs"
+                          />
+                          <span>SAR</span>
                         </div>
-                        <div className="text-[11px] text-slate-500 font-mono">
-                          {doctor.coordinator.email}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700 dark:text-slate-300 text-xs pt-1">
+                        <div>
+                          <span className="text-slate-500 dark:text-slate-400">Doctor earns: </span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {calculatedProcedureDoctorShare} SAR
+                          </span>
+                        </div>
+                        <div className="font-mono text-slate-500 dark:text-slate-400">
+                          Calculation: {sampleProcedureValue.toLocaleString()} SAR × {procedureFeePctNum}% = {calculatedProcedureDoctorShare} SAR
                         </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-[6px]">
-                      Currently Assigned
-                    </span>
                   </div>
                 )}
               </div>
+
+              {/* 4. Other Payments Section */}
+              <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Other Payments &amp; Allowances
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Allowances, retainers or deductions specific to this doctor. Each can be a fixed amount or a percentage.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddOtherPayment}
+                    className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-semibold text-xs px-3 py-1.5 rounded-[8px] shadow-2xs transition-all cursor-pointer shrink-0"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Add other payment</span>
+                  </button>
+                </div>
+
+                {/* List of Other Payments */}
+                {otherPayments.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-xs italic bg-slate-50/50 dark:bg-slate-900/30 rounded-[8px]">
+                    No other payments or allowances configured for this doctor. Click &ldquo;Add other payment&rdquo; to add one.
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {otherPayments.map((op, idx) => (
+                      <div
+                        key={op.id || idx}
+                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs"
+                      >
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            Label
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. On-call allowance, Housing retainer"
+                            value={op.label}
+                            onChange={(e) => handleUpdateOtherPayment(idx, 'label', e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                          />
+                        </div>
+
+                        <div className="w-full sm:w-36">
+                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            Type
+                          </label>
+                          <select
+                            value={op.type}
+                            onChange={(e) => handleUpdateOtherPayment(idx, 'type', e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                          >
+                            <option value="AMOUNT">Amount (SAR)</option>
+                            <option value="PERCENTAGE">Percentage (%)</option>
+                          </select>
+                        </div>
+
+                        <div className="w-full sm:w-32">
+                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            Value
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="10"
+                            placeholder="e.g. 1500"
+                            value={op.value}
+                            onChange={(e) => handleUpdateOtherPayment(idx, 'value', e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-3 py-1.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div className="sm:pt-4 flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOtherPayment(idx)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[6px] transition-colors cursor-pointer"
+                            title="Remove other payment"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Monthly Payout Formula Summary Card */}
+              <div className="bg-slate-900 text-white rounded-[10px] p-5 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-400 uppercase">
+                  <Receipt className="size-4" />
+                  <span>Monthly Payout Formula</span>
+                </div>
+
+                <div className="space-y-1.5 font-mono text-xs text-slate-200 pl-6 border-l-2 border-amber-400/60">
+                  <div className="font-bold text-white text-sm">
+                    {fixedNum > 0 ? `SAR ${fixedNum.toLocaleString()} fixed` : 'Commission only (0 SAR fixed)'}
+                  </div>
+
+                  {incentiveNum > 0 && (
+                    <div className="text-emerald-400">
+                      + {incentiveNum}% of collected revenue
+                    </div>
+                  )}
+
+                  {procedureFeeType === 'PERCENTAGE' && procedureFeePctNum > 0 && (
+                    <div className="text-blue-300">
+                      + {procedureFeePctNum}% per procedure value
+                    </div>
+                  )}
+
+                  {procedureFeeType === 'FIXED' && procedureFeeAmtNum > 0 && (
+                    <div className="text-blue-300">
+                      + SAR {procedureFeeAmtNum.toLocaleString()} per procedure
+                    </div>
+                  )}
+
+                  {validOtherPayments.map((op, idx) => (
+                    <div key={idx} className="text-amber-200">
+                      + {op.type === 'AMOUNT' ? `SAR ${(Number(op.value) || 0).toLocaleString()}` : `${Number(op.value) || 0}%`} {op.label}
+                    </div>
+                  ))}
+
+                  {fixedNum === 0 && incentiveNum === 0 && procedureFeeAmtNum === 0 && procedureFeePctNum === 0 && validOtherPayments.length === 0 && (
+                    <div className="text-slate-400 italic font-sans text-xs">
+                      No payment structure configured yet. Enter values above to construct the formula.
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-slate-400 pt-2 border-t border-slate-800">
+                  * This formula will be applied to the doctor&apos;s verified invoices and procedures during the monthly Accounts &amp; Finance payout calculation.
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 4. MODAL: ADD BLOCKED PERIOD */}
       {isBlockedModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <CalendarOff className="size-4 text-rose-600" />
@@ -1154,13 +2418,13 @@ export function DoctorDetailPortalView({
                 <button
                   type="button"
                   onClick={() => setIsBlockedModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer"
                 >
                   Add Blocked Period
                 </button>
@@ -1173,7 +2437,7 @@ export function DoctorDetailPortalView({
       {/* 5. MODAL: ADD COORDINATOR */}
       {isAddCoordinatorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <UserCheck className="size-4 text-emerald-600" />
@@ -1234,14 +2498,14 @@ export function DoctorDetailPortalView({
                 <button
                   type="button"
                   onClick={() => setIsAddCoordinatorModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingCoordinator}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
                 >
                   {isSubmittingCoordinator ? 'Creating...' : 'Create Coordinator'}
                 </button>
@@ -1251,14 +2515,14 @@ export function DoctorDetailPortalView({
         </div>
       )}
 
-      {/* 6. MODAL: ADD SERVICE */}
+      {/* 6. MODAL: CREATE APPOINTMENT TYPE WITH SERVICE SCOPE DROPDOWN */}
       {isAddServiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Tag className="size-4 text-purple-600" />
-                <span>Create New Clinic Service</span>
+                <Tag className="size-4 text-blue-600" />
+                <span>Create Appointment Type</span>
               </h3>
               <button
                 type="button"
@@ -1269,53 +2533,115 @@ export function DoctorDetailPortalView({
               </button>
             </div>
 
-            <form onSubmit={handleCreateService} className="space-y-3.5">
+            <form onSubmit={handleCreateAppointmentType} className="space-y-3.5">
+              {/* Service Selection Dropdown */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Service Name *
+                  Applicable Service *
+                </label>
+                <select
+                  value={newServiceTargetServiceId}
+                  onChange={(e) => setNewServiceTargetServiceId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                >
+                  <option value="ALL">All Services (Global for Dr. {doctorName})</option>
+                  {doctorAssignedServices.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.durationMinutes || 30} min)
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Choose &ldquo;All Services&rdquo; to apply across all doctor&apos;s treatments, or assign to a specific service.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Appointment Type Name *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Hydrafacial & Deep Cleansing"
+                  placeholder="e.g. Follow-up Visit, Consultation, Treatment Session"
                   value={newServiceName}
                   onChange={(e) => setNewServiceName(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Duration (Minutes) *
+                  </label>
+                  <select
+                    value={newServiceDuration}
+                    onChange={(e) => setNewServiceDuration(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    <option value={10}>10 minutes</option>
+                    <option value={15}>15 minutes (Follow-up)</option>
+                    <option value={20}>20 minutes</option>
+                    <option value={30}>30 minutes (Standard)</option>
+                    <option value={45}>45 minutes</option>
+                    <option value={60}>60 minutes (1 Hour)</option>
+                    <option value={90}>90 minutes</option>
+                    <option value={120}>120 minutes (2 Hours)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Price (SAR, Optional)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="e.g. 150"
+                      value={newServicePrice}
+                      onChange={(e) => setNewServicePrice(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Duration (Minutes) *
+                  Description / Notes (Optional)
                 </label>
-                <select
-                  value={newServiceDuration}
-                  onChange={(e) => setNewServiceDuration(Number(e.target.value))}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-                >
-                  <option value={15}>15 minutes</option>
-                  <option value={20}>20 minutes</option>
-                  <option value={30}>30 minutes</option>
-                  <option value={45}>45 minutes</option>
-                  <option value={60}>60 minutes (1h)</option>
-                  <option value={90}>90 minutes</option>
-                </select>
+                <textarea
+                  rows={2}
+                  placeholder="Brief description for patients & coordinator..."
+                  value={newServiceDescription}
+                  onChange={(e) => setNewServiceDescription(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                />
+              </div>
+
+              <div className="p-2.5 rounded-[8px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-[11px] text-blue-900 dark:text-blue-200">
+                {newServiceTargetServiceId === 'ALL'
+                  ? `This appointment type will apply across all services for Dr. ${doctorName}.`
+                  : `This appointment type will be attached to ${doctorAssignedServices.find((s) => s.id === newServiceTargetServiceId)?.name || 'this service'}.`}
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddServiceModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingService}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
                 >
-                  {isSubmittingService ? 'Creating...' : 'Create & Link Service'}
+                  {isSubmittingService ? 'Creating...' : 'Create & Assign'}
                 </button>
               </div>
             </form>

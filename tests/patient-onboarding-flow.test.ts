@@ -27,7 +27,16 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
 
     it('creates a new PATIENT user account when none exists', async () => {
       let createdUserData: any = null;
+      vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({
+        id: 'pat-1',
+        phone: '966500000001',
+        email: 'sara@example.com',
+        fileNumber: 1,
+        userId: null,
+      } as any);
       vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
+      vi.spyOn(prisma.user, 'findFirst').mockResolvedValue(null);
+      vi.spyOn(prisma.user, 'findMany').mockResolvedValue([]);
       (vi.spyOn(prisma.user, 'create') as any).mockImplementation(async ({ data }: any) => {
         createdUserData = data;
         return { id: 'user-pat-1', ...data };
@@ -50,11 +59,25 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
     });
 
     it('links existing user account without generating new password', async () => {
+      vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({
+        id: 'pat-1',
+        phone: '966500000001',
+        email: 'sara@example.com',
+        fileNumber: 1,
+        userId: 'existing-user-1',
+        user: { id: 'existing-user-1', email: 'sara@example.com', username: 'PA-001' },
+      } as any);
       vi.spyOn(prisma.user, 'findUnique').mockResolvedValue({
         id: 'existing-user-1',
         email: 'sara@example.com',
+        username: 'PA-001',
         role: 'PATIENT',
         clinicId: 'clinic-1',
+      } as any);
+      vi.spyOn(prisma.user, 'findFirst').mockResolvedValue({
+        id: 'existing-user-1',
+        email: 'sara@example.com',
+        username: 'PA-001',
       } as any);
       vi.spyOn(prisma.patient, 'update').mockResolvedValue({} as any);
 
@@ -135,6 +158,13 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
       vi.spyOn(prisma, '$transaction').mockImplementation(async (callback: any) => {
         const txMock = {
           patient: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: 'pat-1',
+              phone: '966500000001',
+              email: 'sara@example.com',
+              fileNumber: 1,
+              userId: null,
+            }),
             findFirst: vi.fn().mockResolvedValue(null), // First patient in clinic => next file number = 1
             update: vi.fn().mockImplementation(async ({ data }: any) => {
               capturedPatientUpdates.push(data);
@@ -171,6 +201,8 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
           },
           user: {
             findUnique: vi.fn().mockResolvedValue(null),
+            findFirst: vi.fn().mockResolvedValue(null),
+            findMany: vi.fn().mockResolvedValue([]),
             create: vi.fn().mockResolvedValue({ id: 'user-1', email: 'sara@example.com', role: 'PATIENT' }),
           },
           lead: { update: vi.fn().mockResolvedValue({}) },
@@ -256,6 +288,16 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
       vi.spyOn(prisma, '$transaction').mockImplementation(async (callback: any) => {
         const txMock = {
           patient: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: 'pat-1',
+              clinicId: 'clinic-1',
+              name: 'Sara',
+              phone: '966500000001',
+              email: 'sara@example.com',
+              fileNumber: 1,
+              userId: 'user-1',
+              user: { id: 'user-1', email: 'sara@example.com', username: 'PA-001' },
+            }),
             findFirst: vi.fn(),
             update: vi.fn(),
           },
@@ -287,7 +329,9 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
             }),
           },
           user: {
-            findUnique: vi.fn().mockResolvedValue({ id: 'user-1', email: 'sara@example.com', role: 'PATIENT' }),
+            findUnique: vi.fn().mockResolvedValue({ id: 'user-1', email: 'sara@example.com', username: 'PA-001', role: 'PATIENT' }),
+            findFirst: vi.fn().mockResolvedValue({ id: 'user-1', email: 'sara@example.com', username: 'PA-001' }),
+            findMany: vi.fn().mockResolvedValue([]),
             create: vi.fn(),
           },
           lead: { update: vi.fn().mockResolvedValue({}) },
@@ -420,7 +464,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
       expect(res.handled).toBe(true);
       expect(res.intent).toBe('FILE_NUMBER_MATCHED');
       expect(res.reply).toContain('Sara Ahmed');
-      expect(res.reply).toContain('#1');
+      expect(res.reply).toContain('FR-001');
       expect(convUpdateSpy).toHaveBeenCalledWith({
         where: { id: 'conv-1' },
         data: { patientId: 'pat-existing-1' },
@@ -448,7 +492,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
 
       expect(res.handled).toBe(true);
       expect(res.intent).toBe('FILE_NUMBER_NOT_FOUND');
-      expect(res.reply).toContain('#9999');
+      expect(res.reply).toContain('FR-9999');
       expect(res.buttons).toEqual([
         { id: 'book_new', title: '📅 Book as New Patient' },
         { id: 'human_escalation', title: '👨‍💼 Speak to Staff' },
@@ -466,8 +510,8 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
         1,
       );
 
-      expect(msg).toContain('• *File Number:* #1');
-      expect(msg).toContain('• *Appointment Number:* #1');
+      expect(msg).toContain('• *File Number:* FR-001');
+      expect(msg).toContain('• *Appointment Number:* AP-001');
       expect(msg).toContain('• *Service:* Deep Cleansing Facial');
       expect(msg).toContain('• *Doctor:* Dr. Ahmad');
       expect(msg).toContain('We look forward to welcoming you!');
@@ -482,8 +526,8 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
         1,
       );
 
-      expect(msg).toContain('• *رقم الملف:* #1');
-      expect(msg).toContain('• *رقم الموعد:* #1');
+      expect(msg).toContain('• *رقم الملف:* FR-001');
+      expect(msg).toContain('• *رقم الموعد:* AP-001');
       expect(msg).toContain('• *الخدمة:* تنظيف البشرة');
       expect(msg).toContain('• *الطبيب:* د. أحمد');
       expect(msg).toContain('يسعدنا حضوركم ونتمنى لكم دوام الصحة والعافية.');

@@ -290,11 +290,12 @@ model Doctor {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  schedules    DoctorSchedule[]
-  breaks       DoctorBreak[]
-  timeOff      DoctorTimeOff[]
-  services     DoctorService[]
-  appointments Appointment[]
+  schedules        DoctorSchedule[]
+  breaks           DoctorBreak[]
+  timeOff          DoctorTimeOff[]
+  services         DoctorService[]
+  appointments     Appointment[]
+  paymentStructure DoctorPaymentStructure?
 
   @@index([clinicId, isActive])
   @@index([coordinatorId])
@@ -351,6 +352,48 @@ model DoctorTimeOff {
 
   @@index([doctorId, startDate, endDate])
   @@index([clinicId])
+}
+
+model DoctorPaymentStructure {
+  id                      String   @id @default(uuid())
+  clinicId                String
+  doctorId                String   @unique
+  doctor                  Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  /// Fixed monthly base payment in SAR (0 for commission-only).
+  fixedMonthlyAmount      Float    @default(0)
+  /// Incentive on collected revenue percentage (0..100).
+  revenueIncentivePercent Float    @default(0)
+  /// Procedure fee type: "FIXED" | "PERCENTAGE".
+  procedureFeeType        String   @default("PERCENTAGE")
+  /// Fixed amount per procedure in SAR (when procedureFeeType is "FIXED").
+  procedureFeeAmount      Float?   @default(0)
+  /// Percentage share of procedure value (when procedureFeeType is "PERCENTAGE").
+  procedureFeePercent     Float?   @default(0)
+
+  otherPayments           DoctorOtherPayment[]
+
+  createdAt               DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([clinicId])
+  @@index([doctorId])
+}
+
+model DoctorOtherPayment {
+  id                 String                 @id @default(uuid())
+  paymentStructureId String
+  paymentStructure   DoctorPaymentStructure @relation(fields: [paymentStructureId], references: [id], onDelete: Cascade)
+
+  label              String
+  /// Type: "AMOUNT" | "PERCENTAGE".
+  type               String                 @default("AMOUNT")
+  value              Float                  @default(0)
+
+  createdAt          DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(3)
+
+  @@index([paymentStructureId])
 }
 
 model Service {

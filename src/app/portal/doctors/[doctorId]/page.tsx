@@ -21,7 +21,15 @@ export default async function PortalDoctorDetailPage({
       getClinicDoctorDetail(scope, doctorId),
       prisma.service.findMany({
         where: { clinicId: clinicId!, isActive: true },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          durationMinutes: true,
+          priceMinor: true,
+          currency: true,
+          description: true,
+          isActive: true,
+        },
         orderBy: { name: 'asc' },
       }),
       prisma.user.findMany({

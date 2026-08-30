@@ -12,6 +12,8 @@ export interface SendAppointmentBookingNotificationParams {
   doctorName: string;
   appointmentTime: string; // e.g. "Tuesday, Sep 15, 2026 at 02:15 PM"
   status: string;
+  fileNumber?: number | null;
+  appointmentNumber?: number | null;
   username?: string;
   temporaryPassword?: string;
 }
@@ -28,6 +30,8 @@ export async function sendAppointmentWhatsAppNotification({
   doctorName,
   appointmentTime,
   status,
+  fileNumber,
+  appointmentNumber,
   username,
   temporaryPassword,
 }: SendAppointmentBookingNotificationParams): Promise<boolean> {
@@ -41,9 +45,14 @@ export async function sendAppointmentWhatsAppNotification({
     const appUrl = env.APP_URL || 'https://pulsehealthos.vercel.app';
     const loginUrl = `${appUrl}/login`;
 
+    const formattedFile = fileNumber ? `FR-${String(fileNumber).padStart(3, '0')}` : null;
+    const formattedAppt = appointmentNumber ? `AP-${String(appointmentNumber).padStart(3, '0')}` : null;
+
     let messageBody = `Hello *${patientName}*,\n\n`;
-    messageBody += `Your appointment at *${clinicTitle}* has been scheduled successfully!\n\n`;
+    messageBody += `Your appointment at *${clinicTitle}* has been scheduled successfully! ✅\n\n`;
     messageBody += `📋 *Appointment Details:*\n`;
+    if (formattedFile) messageBody += `• *File Number:* ${formattedFile}\n`;
+    if (formattedAppt) messageBody += `• *Appointment Number:* ${formattedAppt}\n`;
     messageBody += `• *Service:* ${serviceName}\n`;
     messageBody += `• *Doctor:* ${doctorName}\n`;
     messageBody += `• *Date & Time:* ${appointmentTime}\n`;
@@ -51,7 +60,7 @@ export async function sendAppointmentWhatsAppNotification({
 
     if (username) {
       messageBody += `🔐 *Your Patient Portal Login:*\n`;
-      messageBody += `• *Username:* ${username}\n`;
+      messageBody += `• *Username / File No:* ${username}\n`;
       if (temporaryPassword) {
         messageBody += `• *Temporary Password:* ${temporaryPassword}\n`;
       }

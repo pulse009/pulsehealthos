@@ -25,7 +25,8 @@ export const GET = withErrorHandling(async (request: Request) => {
 
   // 1. Single lookup by fileNumber
   if (fileNumberStr) {
-    const fileNumber = parseInt(fileNumberStr, 10);
+    const cleanNum = fileNumberStr.trim().replace(/^(?:FR-?|PA-?|#)/i, '');
+    const fileNumber = parseInt(cleanNum, 10);
     if (!isNaN(fileNumber)) {
       const patient = await prisma.patient.findFirst({
         where: {

@@ -43,6 +43,7 @@ export interface AppointmentDetail {
   fileNumber: number | null;
   patientCredentials?: {
     email: string;
+    username?: string;
     temporaryPassword?: string;
     isNewAccount: boolean;
   } | null;
@@ -82,7 +83,7 @@ type AppointmentRow = PrismaTypes.AppointmentGetPayload<{ include: typeof APPOIN
 
 function toDetail(
   row: AppointmentRow,
-  patientCredentials?: { email: string; temporaryPassword?: string; isNewAccount: boolean } | null,
+  patientCredentials?: { email: string; username?: string; temporaryPassword?: string; isNewAccount: boolean } | null,
 ): AppointmentDetail {
   return {
     id: row.id,
@@ -294,19 +295,17 @@ export async function createAppointment(
       });
       const nextAppointmentNumber = (lastAppointment?.appointmentNumber ?? 0) + 1;
 
-      // 3. Provision Patient Portal User Account if patient has email
-      let patientCredentials: { email: string; temporaryPassword?: string; isNewAccount: boolean } | null = null;
-      const targetEmail = input.email ?? patient.email;
-      if (targetEmail) {
-        patientCredentials = await ensurePatientUserAccount(
-          clinicId,
-          patient.id,
-          targetEmail,
-          patient.name,
-          currentFileNumber,
-          tx,
-        );
-      }
+      // 3. Provision Patient Portal User Account (Always provision credentials for patient portal login)
+      let patientCredentials: { email: string; username?: string; temporaryPassword?: string; isNewAccount: boolean } | null = null;
+      const contactInfo = input.email ?? patient.email ?? patient.phone;
+      patientCredentials = await ensurePatientUserAccount(
+        clinicId,
+        patient.id,
+        contactInfo,
+        patient.name,
+        currentFileNumber,
+        tx,
+      );
 
       const appointment = await tx.appointment.create({
         data: {

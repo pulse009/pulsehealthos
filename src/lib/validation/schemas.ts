@@ -193,6 +193,43 @@ export const clinicDoctorOperationalSchema = z.object({
     .array(localWindow.and(z.object({ weekday: weekdaySchema, label: optionalText(80) })))
     .max(50)
     .optional(),
+  paymentStructure: z.lazy(() => doctorPaymentStructureSchema).optional().nullable(),
+});
+
+export const doctorOtherPaymentSchema = z.object({
+  id: idSchema.optional(),
+  label: trimmed(120).min(1, 'Payment label is required'),
+  type: z.enum(['AMOUNT', 'PERCENTAGE']).default('AMOUNT'),
+  value: z.coerce.number().min(0, 'Value cannot be negative').max(1_000_000),
+});
+
+export const doctorPaymentStructureSchema = z.object({
+  fixedMonthlyAmount: z.coerce
+    .number()
+    .min(0, 'Fixed monthly payment cannot be negative')
+    .max(10_000_000)
+    .default(0),
+  revenueIncentivePercent: z.coerce
+    .number()
+    .min(0, 'Incentive percentage cannot be negative')
+    .max(100, 'Incentive percentage cannot exceed 100')
+    .default(0),
+  procedureFeeType: z.enum(['FIXED', 'PERCENTAGE']).default('PERCENTAGE'),
+  procedureFeeAmount: z.coerce
+    .number()
+    .min(0, 'Procedure fee cannot be negative')
+    .max(1_000_000)
+    .optional()
+    .nullable()
+    .default(0),
+  procedureFeePercent: z.coerce
+    .number()
+    .min(0, 'Procedure share percentage cannot be negative')
+    .max(100, 'Procedure share percentage cannot exceed 100')
+    .optional()
+    .nullable()
+    .default(0),
+  otherPayments: z.array(doctorOtherPaymentSchema).max(50).optional().default([]),
 });
 
 export const createCoordinatorSchema = z.object({

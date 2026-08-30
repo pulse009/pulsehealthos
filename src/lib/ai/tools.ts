@@ -319,7 +319,20 @@ const getDoctors: ToolDefinition<typeof doctorsSchema> = {
         name: true,
         specialty: true,
         description: true,
-        services: { select: { service: { select: { id: true, name: true, isActive: true } } } },
+        services: {
+          select: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                durationMinutes: true,
+                priceMinor: true,
+                currency: true,
+                isActive: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { name: 'asc' },
       take: 50,
@@ -332,6 +345,17 @@ const getDoctors: ToolDefinition<typeof doctorsSchema> = {
         name: d.name,
         specialty: d.specialty,
         about: d.description,
+        appointment_types: d.services
+          .filter((s) => s.service.isActive)
+          .map((s) => ({
+            service_id: s.service.id,
+            name: s.service.name,
+            duration_minutes: s.service.durationMinutes,
+            price:
+              s.service.priceMinor !== null
+                ? `${s.service.currency ?? 'SAR'} ${(s.service.priceMinor / 100).toFixed(2)}`.trim()
+                : null,
+          })),
         services: d.services.filter((s) => s.service.isActive).map((s) => s.service.name),
       })),
     };
@@ -488,10 +512,17 @@ const createAppointmentTool: ToolDefinition<typeof createSchema> = {
     return {
       ok: true,
       appointment_id: result.appointment.id,
-      file_number: result.appointment.fileNumber,
-      appointment_number: result.appointment.appointmentNumber,
+      file_number: result.appointment.fileNumber
+        ? `FR-${String(result.appointment.fileNumber).padStart(3, '0')}`
+        : null,
+      appointment_number: result.appointment.appointmentNumber
+        ? `AP-${String(result.appointment.appointmentNumber).padStart(3, '0')}`
+        : null,
       portal_account: result.appointment.patientCredentials
         ? {
+            username:
+              result.appointment.patientCredentials.username ||
+              result.appointment.patientCredentials.email,
             email: result.appointment.patientCredentials.email,
             temporary_password: result.appointment.patientCredentials.temporaryPassword,
             is_new_account: result.appointment.patientCredentials.isNewAccount,

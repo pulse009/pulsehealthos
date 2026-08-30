@@ -1115,7 +1115,7 @@ export function AppointmentsScheduleDashboard({
                             className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800"
                             title="Medical File Number"
                           >
-                            File #{row.fileNumber}
+                            FR-{String(row.fileNumber).padStart(3, '0')}
                           </span>
                         ) : (
                           <span className="text-slate-400 font-mono text-xs">-</span>
@@ -1129,7 +1129,7 @@ export function AppointmentsScheduleDashboard({
                             className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800"
                             title="Appointment Number"
                           >
-                            Appt #{row.appointmentNumber}
+                            AP-{String(row.appointmentNumber).padStart(3, '0')}
                           </span>
                         ) : (
                           <span className="text-slate-400 font-mono text-xs">-</span>
@@ -1378,7 +1378,7 @@ export function AppointmentsScheduleDashboard({
                             {foundPatient.name}
                           </span>
                           <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                            File #{foundPatient.fileNumber}
+                            FR-{String(foundPatient.fileNumber).padStart(3, '0')}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -1705,12 +1705,12 @@ export function AppointmentsScheduleDashboard({
                 <div className="flex items-center gap-1.5">
                   {appointmentToDelete.fileNumber && (
                     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                      File #{appointmentToDelete.fileNumber}
+                      FR-{String(appointmentToDelete.fileNumber).padStart(3, '0')}
                     </span>
                   )}
                   {appointmentToDelete.appointmentNumber && (
                     <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      Appt #{appointmentToDelete.appointmentNumber}
+                      AP-{String(appointmentToDelete.appointmentNumber).padStart(3, '0')}
                     </span>
                   )}
                 </div>

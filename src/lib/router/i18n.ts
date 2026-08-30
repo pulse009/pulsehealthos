@@ -17,9 +17,12 @@ export const i18n = {
     step4_subtitle: 'Please select your preferred time below:',
     step5_title: '📋 *Appointment Summary*',
     step5_subtitle: 'Please tap *Confirm Booking* to complete your booking:',
+    step_appointment_type_title: '📋 *Select Appointment Type*',
+    step_appointment_type_subtitle: 'Please choose the appointment type:',
 
     // Field labels
     service_label: 'Service',
+    appointment_type_label: 'Appointment Type',
     doctor_label: 'Doctor',
     date_label: 'When',
     patient_label: 'Patient',
@@ -68,11 +71,11 @@ export const i18n = {
     visited_before_title: (clinicName: string) =>
       `Welcome to ${clinicName}! 👋\n\nHave you visited our clinic before?`,
     ask_file_number:
-      '📋 *Please provide your Medical File Number:*\n\nKindly reply with your file number (e.g. *1* or *#1*) so we can locate your medical records and attach your booking to your existing file.',
+      '📋 *Please provide your Medical File Number:*\n\nKindly reply with your file number (e.g. *FR-001* or *1*) so we can locate your medical records and attach your booking to your existing file.',
     file_found_welcome: (name: string, fileNumber: number) =>
-      `Welcome back, *${name}*! ✅\nWe found your medical file (*#${fileNumber}*).\n\nHow can we help you today?`,
+      `Welcome back, *${name}*! ✅\nWe found your medical file (*FR-${String(fileNumber).padStart(3, '0')}*).\n\nHow can we help you today?`,
     file_not_found: (fileNum: string | number) =>
-      `We couldn't find a medical file with number *#${fileNum}* in our clinic.\n\nPlease double-check the number or choose an option below:`,
+      `We couldn't find a medical file with number *${typeof fileNum === 'number' ? `FR-${String(fileNum).padStart(3, '0')}` : fileNum}* in our clinic.\n\nPlease double-check the number or choose an option below:`,
     welcome_new_patient: (clinicName: string) =>
       `Welcome to ${clinicName}! 🎉 We are delighted to assist you with booking your first appointment.\n\nPlease choose an option below to get started:`,
     welcome_returning_patient: (clinicName: string) =>
@@ -89,12 +92,20 @@ export const i18n = {
       date: string,
       appointmentNumber?: number | null,
       fileNumber?: number | null,
-      _credentials?: { email: string; temporaryPassword?: string; portalUrl?: string } | null,
+      credentials?: { email?: string; username?: string; temporaryPassword?: string; portalUrl?: string } | null,
     ) => {
+      const formattedFile = fileNumber ? `FR-${String(fileNumber).padStart(3, '0')}` : null;
+      const formattedAppt = appointmentNumber ? `AP-${String(appointmentNumber).padStart(3, '0')}` : null;
       let msg = `Your appointment is confirmed ✅\n\n`;
-      if (fileNumber) msg += `• *File Number:* #${fileNumber}\n`;
-      if (appointmentNumber) msg += `• *Appointment Number:* #${appointmentNumber}\n`;
+      if (formattedFile) msg += `• *File Number:* ${formattedFile}\n`;
+      if (formattedAppt) msg += `• *Appointment Number:* ${formattedAppt}\n`;
       msg += `• *Service:* ${service}\n• *Doctor:* ${doctor}\n• *When:* ${date}\n\n`;
+
+      if (credentials?.temporaryPassword) {
+        const loginUser = credentials.username || credentials.email;
+        msg += `🔐 *Patient Portal Access:*\n• *Username / File No:* ${loginUser}\n• *Password:* ${credentials.temporaryPassword}\n\nYou can log in to your patient portal to view your medical appointments & file.\n\n`;
+      }
+
       msg += `We look forward to welcoming you!`;
       return msg;
     },
@@ -148,9 +159,12 @@ export const i18n = {
     step4_subtitle: 'يرجى الضغط على الوقت المناسب لك أدناه:',
     step5_title: '📋 *ملخص الموعد*',
     step5_subtitle: 'يرجى الضغط على زر *تأكيد الحجز* لإتمام الحجز فوراً:',
+    step_appointment_type_title: '📋 *اختيار نوع الموعد*',
+    step_appointment_type_subtitle: 'يرجى اختيار نوع الموعد المطلوب:',
 
     // Field labels
     service_label: 'الخدمة',
+    appointment_type_label: 'نوع الموعد',
     doctor_label: 'الطبيب',
     date_label: 'الموعد',
     patient_label: 'المراجع',
@@ -212,11 +226,11 @@ export const i18n = {
     visited_before_title: (clinicName: string) =>
       `مرحباً بك في ${clinicName}! 👋\n\nهل قمت بزيارة عيادتنا من قبل؟`,
     ask_file_number:
-      '📋 *يرجى تزويدنا برقم ملفك الطبي:*\n\nيرجى كتابة رقم ملفك في العيادة (مثال: *1* أو *#1*) لنتمكن من مطابقة سجلك الطبي وربط الموعد بملفك.',
+      '📋 *يرجى تزويدنا برقم ملفك الطبي:*\n\nيرجى كتابة رقم ملفك في العيادة (مثال: *FR-001* أو *1*) لنتمكن من مطابقة سجلك الطبي وربط الموعد بملفك.',
     file_found_welcome: (name: string, fileNumber: number) =>
-      `أهلاً بك مجدداً، *${name}*! ✅\nتم العثور على ملفك الطبي بنجاح (*#${fileNumber}*).\n\nكيف يمكننا مساعدتك اليوم؟`,
+      `أهلاً بك مجدداً، *${name}*! ✅\nتم العثور على ملفك الطبي بنجاح (*FR-${String(fileNumber).padStart(3, '0')}*).\n\nكيف يمكننا مساعدتك اليوم؟`,
     file_not_found: (fileNum: string | number) =>
-      `لم نتمكن من العثور على ملف طبي برقم *#${fileNum}* في العيادة.\n\nيرجى التأكد من الرقم أو اختيار ما يناسبك أدناه:`,
+      `لم نتمكن من العثور على ملف طبي برقم *${typeof fileNum === 'number' ? `FR-${String(fileNum).padStart(3, '0')}` : fileNum}* في العيادة.\n\nيرجى التأكد من الرقم أو اختيار ما يناسبك أدناه:`,
     welcome_new_patient: (clinicName: string) =>
       `أهلاً وسهلاً بك في ${clinicName}! 🎉 يسعدنا ويشرفنا استقبالك وحجز زيارتك الأولى.\n\nيرجى اختيار ما يناسبك أدناه:`,
     welcome_returning_patient: (clinicName: string) =>
@@ -233,12 +247,20 @@ export const i18n = {
       date: string,
       appointmentNumber?: number | null,
       fileNumber?: number | null,
-      _credentials?: { email: string; temporaryPassword?: string; portalUrl?: string } | null,
+      credentials?: { email?: string; username?: string; temporaryPassword?: string; portalUrl?: string } | null,
     ) => {
+      const formattedFile = fileNumber ? `FR-${String(fileNumber).padStart(3, '0')}` : null;
+      const formattedAppt = appointmentNumber ? `AP-${String(appointmentNumber).padStart(3, '0')}` : null;
       let msg = `تم تأكيد موعدك بنجاح ✅\n\n`;
-      if (fileNumber) msg += `• *رقم الملف:* #${fileNumber}\n`;
-      if (appointmentNumber) msg += `• *رقم الموعد:* #${appointmentNumber}\n`;
+      if (formattedFile) msg += `• *رقم الملف:* ${formattedFile}\n`;
+      if (formattedAppt) msg += `• *رقم الموعد:* ${formattedAppt}\n`;
       msg += `• *الخدمة:* ${service}\n• *الطبيب:* ${doctor}\n• *الموعد:* ${date}\n\n`;
+
+      if (credentials?.temporaryPassword) {
+        const userIdentifier = credentials.username || credentials.email;
+        msg += `🔐 *بيانات الدخول لبوابة المريض:*\n• *اسم المستخدم / رقم الملف:* ${userIdentifier}\n• *كلمة المرور:* ${credentials.temporaryPassword}\n\nيمكنك استخدام هذه البيانات لتسجيل الدخول إلى حسابك ومتابعة مواعيدك وسجلك الطبي.\n\n`;
+      }
+
       msg += `يسعدنا حضوركم ونتمنى لكم دوام الصحة والعافية.`;
       return msg;
     },

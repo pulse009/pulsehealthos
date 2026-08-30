@@ -136,12 +136,12 @@ export function AppointmentsTable({
                 <span className="font-medium">{appointment.patient.name ?? 'Unknown'}</span>
                 {typeof appointment.patient.fileNumber === 'number' && (
                   <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" title="File Number">
-                    File #{appointment.patient.fileNumber}
+                    FR-{String(appointment.patient.fileNumber).padStart(3, '0')}
                   </span>
                 )}
                 {typeof appointment.appointmentNumber === 'number' && (
                   <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800" title="Appointment Number">
-                    Appt #{appointment.appointmentNumber}
+                    AP-{String(appointment.appointmentNumber).padStart(3, '0')}
                   </span>
                 )}
               </div>

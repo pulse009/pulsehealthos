@@ -31,7 +31,15 @@ import {
   Flag,
   CalendarDays,
   UserPlus,
+  Coffee,
 } from 'lucide-react';
+
+export interface BreakSlot {
+  id: string;
+  startMinute: number;
+  endMinute: number;
+  label: string;
+}
 
 export interface DoctorCreateProps {
   clinicName?: string;
@@ -89,6 +97,53 @@ export function DoctorCreatePortalView({
     6: { isWorking: false, startMinute: 540, endMinute: 1020 },
     7: { isWorking: false, startMinute: 540, endMinute: 1020 },
   });
+
+  // Breaks Configuration
+  const [standardBreakEnabled, setStandardBreakEnabled] = useState(false);
+  const [standardBreakStart, setStandardBreakStart] = useState(780); // 13:00 (01:00 PM)
+  const [standardBreakEnd, setStandardBreakEnd] = useState(840); // 14:00 (02:00 PM)
+  const [breaksState, setBreaksState] = useState<Record<number, BreakSlot[]>>({
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
+    7: [],
+  });
+
+  const handleAddBreak = (dayNum: number) => {
+    const newBreak: BreakSlot = {
+      id: `brk-${dayNum}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      startMinute: 780,
+      endMinute: 840,
+      label: 'Lunch Break',
+    };
+    setBreaksState((prev) => ({
+      ...prev,
+      [dayNum]: [...(prev[dayNum] || []), newBreak],
+    }));
+  };
+
+  const handleRemoveBreak = (dayNum: number, breakId: string) => {
+    setBreaksState((prev) => ({
+      ...prev,
+      [dayNum]: (prev[dayNum] || []).filter((b) => b.id !== breakId),
+    }));
+  };
+
+  const handleUpdateBreak = (
+    dayNum: number,
+    breakId: string,
+    updates: Partial<BreakSlot>,
+  ) => {
+    setBreaksState((prev) => ({
+      ...prev,
+      [dayNum]: (prev[dayNum] || []).map((b) =>
+        b.id === breakId ? { ...b, ...updates } : b,
+      ),
+    }));
+  };
 
   // UI States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -239,15 +294,48 @@ export function DoctorCreatePortalView({
 
     setIsSubmitting(true);
     const activeSchedules: Array<{ weekday: number; startMinute: number; endMinute: number }> = [];
-    Object.entries(scheduleState).forEach(([day, cfg]) => {
-      if (cfg.isWorking) {
+    const activeBreaks: Array<{ weekday: number; startMinute: number; endMinute: number; label?: string }> = [];
+
+    if (scheduleMode === 'standard') {
+      for (let d = 1; d <= 5; d++) {
         activeSchedules.push({
-          weekday: Number(day),
-          startMinute: cfg.startMinute,
-          endMinute: cfg.endMinute,
+          weekday: d,
+          startMinute: 540,
+          endMinute: 1020,
         });
+        if (standardBreakEnabled && standardBreakStart < standardBreakEnd) {
+          activeBreaks.push({
+            weekday: d,
+            startMinute: standardBreakStart,
+            endMinute: standardBreakEnd,
+            label: 'Lunch Break',
+          });
+        }
       }
-    });
+    } else {
+      Object.entries(scheduleState).forEach(([day, cfg]) => {
+        const weekdayNum = Number(day);
+        if (cfg.isWorking) {
+          activeSchedules.push({
+            weekday: weekdayNum,
+            startMinute: cfg.startMinute,
+            endMinute: cfg.endMinute,
+          });
+
+          const dayBreaks = breaksState[weekdayNum] || [];
+          dayBreaks.forEach((b) => {
+            if (b.startMinute < b.endMinute) {
+              activeBreaks.push({
+                weekday: weekdayNum,
+                startMinute: b.startMinute,
+                endMinute: b.endMinute,
+                label: b.label?.trim() || 'Break',
+              });
+            }
+          });
+        }
+      });
+    }
 
     const isDoctorActive = doctorStatus === 'ACTIVE';
 
@@ -263,7 +351,7 @@ export function DoctorCreatePortalView({
       coordinatorId: coordinatorId || undefined,
       serviceIds: selectedServiceIds,
       schedules: activeSchedules,
-      breaks: [],
+      breaks: activeBreaks,
     };
 
     try {
@@ -707,6 +795,54 @@ export function DoctorCreatePortalView({
                 </div>
               </div>
 
+              {/* Standard Mode Break Option */}
+              {scheduleMode === 'standard' && (
+                <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-[10px] border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in duration-150">
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="standard-break-toggle"
+                      checked={standardBreakEnabled}
+                      onChange={(e) => setStandardBreakEnabled(e.target.checked)}
+                      className="size-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <label htmlFor="standard-break-toggle" className="font-semibold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-1.5">
+                      <Coffee className="size-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>Include Daily Break Time (Mon–Fri)</span>
+                    </label>
+                  </div>
+
+                  {standardBreakEnabled && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500 dark:text-slate-400 text-xs">Break:</span>
+                      {/* Start Time */}
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs">
+                        <input
+                          type="time"
+                          value={minuteToTimeStr(standardBreakStart)}
+                          onChange={(e) => setStandardBreakStart(timeStrToMinute(e.target.value))}
+                          className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
+                        />
+                        <Clock className="size-3.5 text-amber-500 shrink-0 pointer-events-none" />
+                      </div>
+
+                      <span className="text-slate-400 text-xs font-medium">to</span>
+
+                      {/* End Time */}
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs">
+                        <input
+                          type="time"
+                          value={minuteToTimeStr(standardBreakEnd)}
+                          onChange={(e) => setStandardBreakEnd(timeStrToMinute(e.target.value))}
+                          className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
+                        />
+                        <Clock className="size-3.5 text-amber-500 shrink-0 pointer-events-none" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {scheduleMode === 'custom' && (
                 <div className="bg-white dark:bg-slate-900/80 rounded-[12px] border border-slate-200/90 dark:border-slate-800 shadow-2xs divide-y divide-slate-100 dark:divide-slate-800/80 animate-in fade-in duration-150 overflow-hidden">
                   {WEEKDAYS.map((day) => {
@@ -715,94 +851,182 @@ export function DoctorCreatePortalView({
                       startMinute: 540,
                       endMinute: 1020,
                     };
+                    const dayBreaks = breaksState[day.num] || [];
 
                     return (
                       <div
                         key={day.num}
-                        className={`flex items-center justify-between px-4 py-3 transition-colors ${
+                        className={`px-4 py-3 transition-colors ${
                           cfg.isWorking
                             ? 'bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
                             : 'bg-slate-50/40 dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                         }`}
                       >
-                        {/* Day Label with Circular Checkbox */}
-                        <div
-                          className="flex items-center gap-3 cursor-pointer select-none group"
-                          onClick={() =>
-                            setScheduleState({
-                              ...scheduleState,
-                              [day.num]: { ...cfg, isWorking: !cfg.isWorking },
-                            })
-                          }
-                        >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          {/* Day Label with Circular Checkbox */}
                           <div
-                            className={`size-5 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                              cfg.isWorking
-                                ? 'bg-blue-600 text-white shadow-2xs ring-2 ring-blue-500/20'
-                                : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-500'
-                            }`}
+                            className="flex items-center gap-3 cursor-pointer select-none group"
+                            onClick={() =>
+                              setScheduleState({
+                                ...scheduleState,
+                                [day.num]: { ...cfg, isWorking: !cfg.isWorking },
+                              })
+                            }
                           >
-                            {cfg.isWorking && <Check className="size-3 stroke-[3]" />}
+                            <div
+                              className={`size-5 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                                cfg.isWorking
+                                  ? 'bg-blue-600 text-white shadow-2xs ring-2 ring-blue-500/20'
+                                  : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-500'
+                              }`}
+                            >
+                              {cfg.isWorking && <Check className="size-3 stroke-[3]" />}
+                            </div>
+
+                            <span
+                              className={`text-xs font-semibold tracking-tight transition-colors ${
+                                cfg.isWorking
+                                  ? 'text-slate-900 dark:text-white'
+                                  : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'
+                              }`}
+                            >
+                              {day.name}
+                            </span>
                           </div>
 
-                          <span
-                            className={`text-xs font-semibold tracking-tight transition-colors ${
-                              cfg.isWorking
-                                ? 'text-slate-900 dark:text-white'
-                                : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'
-                            }`}
-                          >
-                            {day.name}
-                          </span>
+                          {/* Working Hours Time Inputs or Day Off Label */}
+                          {cfg.isWorking ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              {/* Start Time Pill */}
+                              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                                <input
+                                  type="time"
+                                  value={minuteToTimeStr(cfg.startMinute)}
+                                  onChange={(e) =>
+                                    setScheduleState({
+                                      ...scheduleState,
+                                      [day.num]: {
+                                        ...cfg,
+                                        startMinute: timeStrToMinute(e.target.value),
+                                      },
+                                    })
+                                  }
+                                  className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
+                                />
+                                <Clock className="size-3.5 text-slate-400 shrink-0 pointer-events-none" />
+                              </div>
+
+                              <span className="text-slate-400 text-xs font-medium px-0.5">to</span>
+
+                              {/* End Time Pill */}
+                              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                                <input
+                                  type="time"
+                                  value={minuteToTimeStr(cfg.endMinute)}
+                                  onChange={(e) =>
+                                    setScheduleState({
+                                      ...scheduleState,
+                                      [day.num]: {
+                                        ...cfg,
+                                        endMinute: timeStrToMinute(e.target.value),
+                                      },
+                                    })
+                                  }
+                                  className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
+                                />
+                                <Clock className="size-3.5 text-slate-400 shrink-0 pointer-events-none" />
+                              </div>
+
+                              {/* Add Break Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleAddBreak(day.num)}
+                                className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 rounded-[8px] px-2.5 py-1 transition-all cursor-pointer shadow-2xs"
+                                title="Add break time for this day"
+                              >
+                                <Coffee className="size-3 text-blue-600 dark:text-blue-400" />
+                                <span>+ Break</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 italic text-xs font-normal px-2">
+                              Day Off
+                            </span>
+                          )}
                         </div>
 
-                        {/* Working Hours Time Inputs or Day Off Label */}
-                        {cfg.isWorking ? (
-                          <div className="flex items-center gap-2">
-                            {/* Start Time Pill */}
-                            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-                              <input
-                                type="time"
-                                value={minuteToTimeStr(cfg.startMinute)}
-                                onChange={(e) =>
-                                  setScheduleState({
-                                    ...scheduleState,
-                                    [day.num]: {
-                                      ...cfg,
-                                      startMinute: timeStrToMinute(e.target.value),
-                                    },
-                                  })
-                                }
-                                className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
-                              />
-                              <Clock className="size-3.5 text-slate-400 shrink-0 pointer-events-none" />
-                            </div>
+                        {/* Nested Breaks List for Working Day */}
+                        {cfg.isWorking && dayBreaks.length > 0 && (
+                          <div className="mt-3 ml-8 pl-3 border-l-2 border-amber-300 dark:border-amber-700/80 space-y-2">
+                            {dayBreaks.map((brk, bIdx) => (
+                              <div
+                                key={brk.id || bIdx}
+                                className="flex flex-wrap items-center justify-between gap-2 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-[8px] px-3 py-1.5 text-xs animate-in fade-in duration-100"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="flex items-center gap-1 font-bold text-amber-800 dark:text-amber-300 text-[11px]">
+                                    <Coffee className="size-3 text-amber-600 dark:text-amber-400" />
+                                    <span>Break:</span>
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={brk.label}
+                                    placeholder="e.g. Lunch Break"
+                                    onChange={(e) =>
+                                      handleUpdateBreak(day.num, brk.id, { label: e.target.value })
+                                    }
+                                    className="bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800/80 rounded-[6px] px-2 py-0.5 text-[11px] text-slate-800 dark:text-slate-200 w-28 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
+                                  />
+                                </div>
 
-                            <span className="text-slate-400 text-xs font-medium px-0.5">to</span>
+                                <div className="flex items-center gap-1.5">
+                                  {/* Break Start Time */}
+                                  <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800/80 rounded-[6px] px-2 py-0.5 text-xs shadow-2xs">
+                                    <input
+                                      type="time"
+                                      value={minuteToTimeStr(brk.startMinute)}
+                                      onChange={(e) =>
+                                        handleUpdateBreak(day.num, brk.id, {
+                                          startMinute: timeStrToMinute(e.target.value),
+                                        })
+                                      }
+                                      className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
+                                    />
+                                    <Clock className="size-3 text-amber-500 shrink-0 pointer-events-none" />
+                                  </div>
 
-                            {/* End Time Pill */}
-                            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
-                              <input
-                                type="time"
-                                value={minuteToTimeStr(cfg.endMinute)}
-                                onChange={(e) =>
-                                  setScheduleState({
-                                    ...scheduleState,
-                                    [day.num]: {
-                                      ...cfg,
-                                      endMinute: timeStrToMinute(e.target.value),
-                                    },
-                                  })
-                                }
-                                className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
-                              />
-                              <Clock className="size-3.5 text-slate-400 shrink-0 pointer-events-none" />
-                            </div>
+                                  <span className="text-amber-600 dark:text-amber-400 text-[11px] font-medium px-0.5">
+                                    to
+                                  </span>
+
+                                  {/* Break End Time */}
+                                  <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800/80 rounded-[6px] px-2 py-0.5 text-xs shadow-2xs">
+                                    <input
+                                      type="time"
+                                      value={minuteToTimeStr(brk.endMinute)}
+                                      onChange={(e) =>
+                                        handleUpdateBreak(day.num, brk.id, {
+                                          endMinute: timeStrToMinute(e.target.value),
+                                        })
+                                      }
+                                      className="bg-transparent text-xs text-slate-800 dark:text-slate-200 outline-none font-medium cursor-pointer"
+                                    />
+                                    <Clock className="size-3 text-amber-500 shrink-0 pointer-events-none" />
+                                  </div>
+
+                                  {/* Delete Break Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveBreak(day.num, brk.id)}
+                                    className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer ml-1"
+                                    title="Remove this break"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500 italic text-xs font-normal px-2">
-                            Day Off
-                          </span>
                         )}
                       </div>
                     );

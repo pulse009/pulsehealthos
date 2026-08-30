@@ -208,7 +208,7 @@ export function LeadDetailView({
               </h1>
               {typeof initialLead.patient.fileNumber === 'number' && (
                 <span className="px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
-                  File #{initialLead.patient.fileNumber}
+                  FR-{String(initialLead.patient.fileNumber).padStart(3, '0')}
                 </span>
               )}
               {getStatusBadge(leadStatus)}
@@ -374,7 +374,7 @@ export function LeadDetailView({
               <div className="pt-2 flex items-center justify-between">
                 <span className="text-slate-400 text-[11px]">File Number:</span>
                 <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                  {initialLead.patient.fileNumber ? `#${initialLead.patient.fileNumber}` : 'Not assigned'}
+                  {initialLead.patient.fileNumber ? `FR-${String(initialLead.patient.fileNumber).padStart(3, '0')}` : 'Not assigned'}
                 </span>
               </div>
               <div className="pt-2 flex items-center justify-between">
@@ -618,7 +618,7 @@ export function LeadDetailView({
                         <td className="py-2.5 px-4 whitespace-nowrap">
                           {typeof app.appointmentNumber === 'number' ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
-                              Appt #{app.appointmentNumber}
+                              AP-{String(app.appointmentNumber).padStart(3, '0')}
                             </span>
                           ) : (
                             <span className="text-slate-400 font-mono text-xs">-</span>

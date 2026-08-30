@@ -231,6 +231,8 @@ export const POST = withErrorHandling(async (request: Request) => {
     doctorName: doctor?.name || 'Doctor',
     appointmentTime: formattedTime,
     status: input.status,
+    fileNumber: resolvedPatient.fileNumber,
+    appointmentNumber: result.appointment?.appointmentNumber,
     username: accountResult?.username || (resolvedPatient.fileNumber ? `PA-${resolvedPatient.fileNumber}` : undefined),
     temporaryPassword: accountResult?.temporaryPassword,
   }).catch((e) => console.error('Failed to dispatch appointment WhatsApp notification:', e));

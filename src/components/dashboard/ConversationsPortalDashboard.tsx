@@ -650,7 +650,7 @@ export function ConversationsPortalDashboard({
                             </span>
                             {typeof thread.fileNumber === 'number' && (
                               <span className="px-1 py-0.2 rounded-[8px] text-[9px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
-                                #{thread.fileNumber}
+                                FR-{String(thread.fileNumber).padStart(3, '0')}
                               </span>
                             )}
                           </div>
@@ -700,7 +700,7 @@ export function ConversationsPortalDashboard({
                           </h3>
                           {typeof selectedConversation.fileNumber === 'number' && (
                             <span className="px-1.5 py-0.5 rounded-[8px] text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
-                              File #{selectedConversation.fileNumber}
+                              FR-{String(selectedConversation.fileNumber).padStart(3, '0')}
                             </span>
                           )}
                           {getStatusBadge(selectedConversation.status)}
@@ -917,7 +917,7 @@ export function ConversationsPortalDashboard({
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         {typeof row.fileNumber === 'number' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
-                            File #{row.fileNumber}
+                            FR-{String(row.fileNumber).padStart(3, '0')}
                           </span>
                         ) : (
                           <span className="text-slate-400 font-mono text-xs">-</span>

@@ -122,11 +122,22 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     return handleFetchSlotsForDate(input, serviceId, doctorId, dateKey, locale, now, startedAt, offset);
   }
 
-  // Action: Step 3 - Select Doctor -> Show Date Options
+  // Action: Select Appointment Type -> Show Date Options
+  if (actionPayload?.startsWith('select_appointment_type:')) {
+    const parts = actionPayload.replace('select_appointment_type:', '').trim().split(':');
+    const serviceId = parts[0] ?? '';
+    const doctorId = parts[1] ?? 'any';
+    return handleShowDatesForDoctor(input, serviceId, doctorId, locale, now, startedAt);
+  }
+
+  // Action: Step 3 - Select Doctor -> Check for appointment types or Show Date Options
   if (actionPayload?.startsWith('select_doctor:')) {
     const parts = actionPayload.replace('select_doctor:', '').trim().split(':');
     const serviceId = parts[0] ?? '';
     const doctorId = parts[1] ?? 'any';
+    if (doctorId !== 'any') {
+      return handleCheckDoctorAppointmentTypes(input, serviceId, doctorId, locale, now, startedAt);
+    }
     return handleShowDatesForDoctor(input, serviceId, doctorId, locale, now, startedAt);
   }
 
@@ -220,9 +231,9 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     // ignore
   }
 
-  const explicitFileMatch = rawText.match(/(?:file|ملف|رقم\s*الملف|#)\s*(\d+)/i);
+  const explicitFileMatch = rawText.match(/(?:file|ملف|رقم\s*الملف|FR-?|#)\s*(\d+)/i);
   const plainDigitMatch =
-    isAwaitingFileNumber && /^\s*#?\s*(\d+)\s*$/.test(rawText) ? rawText.match(/^\s*#?\s*(\d+)\s*$/) : null;
+    isAwaitingFileNumber && /^\s*(?:FR-?)?#?\s*(\d+)\s*$/i.test(rawText) ? rawText.match(/^\s*(?:FR-?)?#?\s*(\d+)\s*$/i) : null;
   const fileMatch = explicitFileMatch || plainDigitMatch;
 
   if (fileMatch && fileMatch[1]) {
@@ -434,10 +445,10 @@ async function handleShowDoctorsForService(
 
   const serviceName = translateServiceName(service?.name, locale);
 
-  // If only 1 doctor exists, automatically proceed to date selection for that doctor!
+  // If only 1 doctor exists, check if they have multiple appointment types or advance to date selection
   if (doctors.length === 1) {
     const singleDoc = doctors[0]!;
-    return handleShowDatesForDoctor(input, serviceId, singleDoc.id, locale, now, startedAt);
+    return handleCheckDoctorAppointmentTypes(input, serviceId, singleDoc.id, locale, now, startedAt);
   }
 
   // If 0 doctors found, proceed with 'any' doctor to date selection
@@ -467,6 +478,93 @@ async function handleShowDoctorsForService(
   });
 
   return { handled: true, reply, buttons: doctorButtons, locale, intent: 'SELECT_DOCTOR' };
+}
+
+/**
+ * STEP 2.5: Doctor selected -> Check if doctor has multiple appointment types / services.
+ * If yes, present appointment type choices (e.g. Follow-up 15m, Consultation 30m).
+ * If no, proceed directly to date selection.
+ */
+async function handleCheckDoctorAppointmentTypes(
+  input: FastRouterInput,
+  initialServiceId: string,
+  doctorId: string,
+  locale: SupportedLocale,
+  now: Date,
+  startedAt: number,
+): Promise<FastRouterResult> {
+  const dict = i18n[locale];
+  try {
+    const doctor = await prisma.doctor.findUnique({
+      where: { id: doctorId },
+      select: {
+        id: true,
+        name: true,
+        services: {
+          where: { service: { isActive: true } },
+          select: {
+            service: {
+              select: {
+                id: true,
+                name: true,
+                durationMinutes: true,
+                priceMinor: true,
+                currency: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (doctor && doctor.services.length > 1) {
+      // Doctor has multiple appointment types / services configured!
+      const apptTypes = doctor.services.map((ds) => ds.service);
+      const doctorName = translateDoctorName(doctor.name, locale);
+
+      const buttons: WhatsAppButton[] = apptTypes.slice(0, 3).map((s) => ({
+        id: `select_appointment_type:${s.id}:${doctor.id}`,
+        title: `${translateServiceName(s.name, locale)} (${s.durationMinutes}m)`.slice(0, 20),
+      }));
+
+      const list = apptTypes
+        .map((s, idx) => {
+          const localizedName = translateServiceName(s.name, locale);
+          const priceStr =
+            s.priceMinor !== null && s.priceMinor !== undefined
+              ? ` • ${(s.priceMinor / 100).toFixed(0)} ${s.currency || 'SAR'}`
+              : '';
+          return `${idx + 1}. *${localizedName}* (${s.durationMinutes} ${dict.minutes_label}${priceStr})`;
+        })
+        .join('\n');
+
+      const reply = `${dict.step_appointment_type_title}\n\n• *${dict.doctor_label}:* ${doctorName}\n${dict.step_appointment_type_subtitle}\n\n${list}`;
+
+      logger.info(Events.ROUTER_COMPLETED, 'Fast router presented appointment types for doctor', {
+        clinicId: input.clinicId,
+        doctorId: doctor.id,
+        count: apptTypes.length,
+        ms: Date.now() - startedAt,
+      });
+
+      return {
+        handled: true,
+        reply,
+        buttons,
+        locale,
+        intent: 'SELECT_APPOINTMENT_TYPE',
+      };
+    } else if (doctor && doctor.services.length === 1) {
+      // Doctor has exactly 1 appointment type -> use its serviceId
+      const singleServiceId = doctor.services[0]!.service.id;
+      return handleShowDatesForDoctor(input, singleServiceId, doctorId, locale, now, startedAt);
+    }
+  } catch (err) {
+    console.error('Error checking doctor appointment types:', err);
+  }
+
+  // Fallback if doctor has no specific appointment types -> proceed with initialServiceId
+  return handleShowDatesForDoctor(input, initialServiceId, doctorId, locale, now, startedAt);
 }
 
 /**

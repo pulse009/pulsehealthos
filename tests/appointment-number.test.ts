@@ -16,14 +16,14 @@ describe('Unique Per-Clinic Appointment Number', () => {
 
   it('1. Formats English confirmation with Appointment Number', () => {
     const msg = i18n.en.booking_confirmed('Dental Checkup', 'Dr. Smith', 'Monday, Aug 27 at 2:00 PM', 1);
-    expect(msg).toContain('• *Appointment Number:* #1');
+    expect(msg).toContain('• *Appointment Number:* AP-001');
     expect(msg).toContain('• *Service:* Dental Checkup');
     expect(msg).toContain('• *Doctor:* Dr. Smith');
   });
 
   it('2. Formats Arabic confirmation with Appointment Number', () => {
     const msg = i18n.ar.booking_confirmed('فحص الأسنان', 'د. سميث', 'الإثنين 27 أغسطس في 2:00 م', 5);
-    expect(msg).toContain('• *رقم الموعد:* #5');
+    expect(msg).toContain('• *رقم الموعد:* AP-005');
     expect(msg).toContain('• *الخدمة:* فحص الأسنان');
     expect(msg).toContain('• *الطبيب:* د. سميث');
   });
@@ -86,11 +86,22 @@ describe('Unique Per-Clinic Appointment Number', () => {
     vi.spyOn(prisma, '$transaction').mockImplementation(async (callback: any) => {
       const txMock = {
         patient: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'pat-1',
+            clinicId: 'clinic-A',
+            name: 'John Doe',
+            phone: '966500000001',
+            email: null,
+            fileNumber: 1,
+            userId: null,
+          }),
           findFirst: vi.fn().mockResolvedValue(null),
           update: vi.fn().mockResolvedValue({}),
         },
         user: {
           findUnique: vi.fn().mockResolvedValue(null),
+          findFirst: vi.fn().mockResolvedValue(null),
+          findMany: vi.fn().mockResolvedValue([]),
           create: vi.fn().mockResolvedValue({ id: 'u1' }),
         },
         appointment: {
@@ -194,11 +205,22 @@ describe('Unique Per-Clinic Appointment Number', () => {
     vi.spyOn(prisma, '$transaction').mockImplementation(async (callback: any) => {
       const txMock = {
         patient: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'pat-1',
+            clinicId: 'clinic-A',
+            name: 'John Doe',
+            phone: '966500000001',
+            email: null,
+            fileNumber: 1,
+            userId: null,
+          }),
           findFirst: vi.fn().mockResolvedValue({ fileNumber: 1 }),
           update: vi.fn().mockResolvedValue({}),
         },
         user: {
           findUnique: vi.fn().mockResolvedValue(null),
+          findFirst: vi.fn().mockResolvedValue(null),
+          findMany: vi.fn().mockResolvedValue([]),
           create: vi.fn().mockResolvedValue({ id: 'u1' }),
         },
         appointment: {

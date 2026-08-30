@@ -629,7 +629,7 @@ export function LeadsPortalDashboard({
                               </div>
                               {typeof lead.fileNumber === 'number' && (
                                 <span className="px-1.5 py-0.5 rounded-[8px] text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 shrink-0">
-                                  #{lead.fileNumber}
+                                  FR-{String(lead.fileNumber).padStart(3, '0')}
                                 </span>
                               )}
                             </div>
@@ -707,7 +707,7 @@ export function LeadsPortalDashboard({
                             className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800"
                             title="Medical File Number"
                           >
-                            File #{row.fileNumber}
+                            FR-{String(row.fileNumber).padStart(3, '0')}
                           </span>
                         ) : (
                           <span className="text-slate-400 font-mono text-xs">-</span>

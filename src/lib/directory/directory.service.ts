@@ -8,6 +8,7 @@ import { assertOwned, assertPlatformScope, clinicWhere, resolveClinicId, type Te
 import type {
   doctorSchema,
   clinicDoctorOperationalSchema,
+  doctorPaymentStructureSchema,
   createCoordinatorSchema,
   doctorTimeOffSchema,
   serviceSchema,
@@ -201,12 +202,29 @@ export async function getClinicDoctorDetail(scope: TenantScope, doctorId: string
       services: {
         select: {
           serviceId: true,
-          service: { select: { id: true, name: true, durationMinutes: true, isActive: true } },
+          service: {
+            select: {
+              id: true,
+              name: true,
+              durationMinutes: true,
+              isActive: true,
+              priceMinor: true,
+              currency: true,
+              description: true,
+            },
+          },
         },
       },
       schedules: { orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }] },
       breaks: { orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }] },
       timeOff: { orderBy: { startDate: 'desc' } },
+      paymentStructure: {
+        include: {
+          otherPayments: {
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      },
       appointments: {
         orderBy: { startsAt: 'desc' },
         take: 50,
@@ -301,6 +319,46 @@ export async function updateClinicDoctorOperational(
       }
     }
 
+    if (input.paymentStructure !== undefined) {
+      if (input.paymentStructure === null) {
+        await tx.doctorPaymentStructure.deleteMany({ where: { doctorId } });
+      } else {
+        const ps = await tx.doctorPaymentStructure.upsert({
+          where: { doctorId },
+          create: {
+            clinicId,
+            doctorId,
+            fixedMonthlyAmount: input.paymentStructure.fixedMonthlyAmount ?? 0,
+            revenueIncentivePercent: input.paymentStructure.revenueIncentivePercent ?? 0,
+            procedureFeeType: input.paymentStructure.procedureFeeType ?? 'PERCENTAGE',
+            procedureFeeAmount: input.paymentStructure.procedureFeeAmount ?? 0,
+            procedureFeePercent: input.paymentStructure.procedureFeePercent ?? 0,
+          },
+          update: {
+            fixedMonthlyAmount: input.paymentStructure.fixedMonthlyAmount ?? 0,
+            revenueIncentivePercent: input.paymentStructure.revenueIncentivePercent ?? 0,
+            procedureFeeType: input.paymentStructure.procedureFeeType ?? 'PERCENTAGE',
+            procedureFeeAmount: input.paymentStructure.procedureFeeAmount ?? 0,
+            procedureFeePercent: input.paymentStructure.procedureFeePercent ?? 0,
+          },
+        });
+
+        if (input.paymentStructure.otherPayments !== undefined) {
+          await tx.doctorOtherPayment.deleteMany({ where: { paymentStructureId: ps.id } });
+          if (input.paymentStructure.otherPayments.length > 0) {
+            await tx.doctorOtherPayment.createMany({
+              data: input.paymentStructure.otherPayments.map((op) => ({
+                paymentStructureId: ps.id,
+                label: op.label.trim(),
+                type: op.type,
+                value: op.value,
+              })),
+            });
+          }
+        }
+      }
+    }
+
     return row;
   });
 
@@ -313,6 +371,111 @@ export async function updateClinicDoctorOperational(
   });
 
   return updated;
+}
+
+export async function getDoctorPaymentStructure(
+  scope: TenantScope,
+  clinicId: string,
+  doctorId: string,
+) {
+  const resolvedId = resolveClinicId(scope, clinicId);
+  const doctor = await prisma.doctor.findFirst({
+    where: { id: doctorId, clinicId: resolvedId },
+    select: { id: true, clinicId: true, name: true },
+  });
+  if (!doctor) throw notFound('Doctor not found.');
+  assertOwned(scope, doctor, 'Doctor');
+
+  const ps = await prisma.doctorPaymentStructure.findUnique({
+    where: { doctorId },
+    include: {
+      otherPayments: {
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+  });
+
+  return ps || {
+    id: '',
+    clinicId: resolvedId,
+    doctorId,
+    fixedMonthlyAmount: 0,
+    revenueIncentivePercent: 0,
+    procedureFeeType: 'PERCENTAGE',
+    procedureFeeAmount: 0,
+    procedureFeePercent: 0,
+    otherPayments: [],
+  };
+}
+
+export async function saveDoctorPaymentStructure(
+  scope: TenantScope,
+  clinicId: string,
+  doctorId: string,
+  input: z.infer<typeof doctorPaymentStructureSchema>,
+) {
+  const resolvedId = resolveClinicId(scope, clinicId);
+  const doctor = await prisma.doctor.findFirst({
+    where: { id: doctorId, clinicId: resolvedId },
+    select: { id: true, clinicId: true, name: true },
+  });
+  if (!doctor) throw notFound('Doctor not found.');
+  assertOwned(scope, doctor, 'Doctor');
+
+  const result = await prisma.$transaction(async (tx) => {
+    const ps = await tx.doctorPaymentStructure.upsert({
+      where: { doctorId },
+      create: {
+        clinicId: resolvedId,
+        doctorId,
+        fixedMonthlyAmount: input.fixedMonthlyAmount ?? 0,
+        revenueIncentivePercent: input.revenueIncentivePercent ?? 0,
+        procedureFeeType: input.procedureFeeType ?? 'PERCENTAGE',
+        procedureFeeAmount: input.procedureFeeAmount ?? 0,
+        procedureFeePercent: input.procedureFeePercent ?? 0,
+      },
+      update: {
+        fixedMonthlyAmount: input.fixedMonthlyAmount ?? 0,
+        revenueIncentivePercent: input.revenueIncentivePercent ?? 0,
+        procedureFeeType: input.procedureFeeType ?? 'PERCENTAGE',
+        procedureFeeAmount: input.procedureFeeAmount ?? 0,
+        procedureFeePercent: input.procedureFeePercent ?? 0,
+      },
+    });
+
+    if (input.otherPayments !== undefined) {
+      await tx.doctorOtherPayment.deleteMany({ where: { paymentStructureId: ps.id } });
+      if (input.otherPayments.length > 0) {
+        await tx.doctorOtherPayment.createMany({
+          data: input.otherPayments.map((op: { label: string; type: string; value: number }) => ({
+            paymentStructureId: ps.id,
+            label: op.label.trim(),
+            type: op.type,
+            value: op.value,
+          })),
+        });
+      }
+    }
+
+    return tx.doctorPaymentStructure.findUnique({
+      where: { id: ps.id },
+      include: {
+        otherPayments: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+  });
+
+  await recordAudit(scope, {
+    action: 'doctor.payment_structure_update',
+    entityType: 'DoctorPaymentStructure',
+    entityId: result?.id || doctorId,
+    clinicId: resolvedId,
+    metadata: { doctorId, doctorName: doctor.name },
+  });
+
+  return result;
 }
 
 export async function addDoctorTimeOff(
