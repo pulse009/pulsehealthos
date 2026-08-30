@@ -50,34 +50,34 @@ describe('webhook signature verification', () => {
   const body = JSON.stringify({ object: 'whatsapp_business_account', entry: [] });
   const valid = `sha256=${hmacSha256Hex(secret, body)}`;
 
-  it('accepts a correctly signed body', () => {
-    expect(verifyWebhookSignature(body, valid, secret).valid).toBe(true);
+  it('accepts a correctly signed body', async () => {
+    expect((await verifyWebhookSignature(body, valid, secret)).valid).toBe(true);
   });
 
-  it('rejects a body that has been modified after signing', () => {
-    expect(verifyWebhookSignature(`${body} `, valid, secret).valid).toBe(false);
+  it('rejects a body that has been modified after signing', async () => {
+    expect((await verifyWebhookSignature(`${body} `, valid, secret)).valid).toBe(false);
   });
 
-  it('rejects a signature made with a different secret', () => {
+  it('rejects a signature made with a different secret', async () => {
     const forged = `sha256=${hmacSha256Hex('wrong-secret', body)}`;
-    expect(verifyWebhookSignature(body, forged, secret).valid).toBe(false);
+    expect((await verifyWebhookSignature(body, forged, secret)).valid).toBe(false);
   });
 
-  it('rejects a missing header', () => {
-    const result = verifyWebhookSignature(body, null, secret);
+  it('rejects a missing header', async () => {
+    const result = await verifyWebhookSignature(body, null, secret);
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('missing_signature_header');
   });
 
-  it('rejects an unsupported algorithm prefix', () => {
-    expect(verifyWebhookSignature(body, `sha1=${hmacSha256Hex(secret, body)}`, secret).valid).toBe(
+  it('rejects an unsupported algorithm prefix', async () => {
+    expect((await verifyWebhookSignature(body, `sha1=${hmacSha256Hex(secret, body)}`, secret)).valid).toBe(
       false,
     );
   });
 
-  it('fails closed when no app secret is configured', () => {
+  it('fails closed when no app secret is configured', async () => {
     // An unset secret must never be read as "every signature is valid".
-    const result = verifyWebhookSignature(body, valid, '');
+    const result = await verifyWebhookSignature(body, valid, '');
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('app_secret_not_configured');
   });

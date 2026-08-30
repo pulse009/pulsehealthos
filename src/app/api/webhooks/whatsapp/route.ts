@@ -12,11 +12,12 @@ export const runtime = 'nodejs';
 /** Meta's subscription handshake. */
 export const GET = withErrorHandling(async (request: Request) => {
   const url = new URL(request.url);
-  const challenge = verifySubscription(url.searchParams);
+  const challenge = await verifySubscription(url.searchParams);
 
   if (!challenge) {
     logger.warn(Events.WEBHOOK_REJECTED, 'Webhook verification failed', {
       mode: url.searchParams.get('hub.mode'),
+      verifyToken: url.searchParams.get('hub.verify_token'),
     });
     return new NextResponse('Forbidden', { status: 403 });
   }
@@ -41,7 +42,7 @@ export const POST = withErrorHandling(async (request: Request) => {
   const signatureHeader = request.headers.get('x-hub-signature-256');
   console.log('🔵 [WEBHOOK] x-hub-signature-256 header:', signatureHeader ?? 'MISSING');
 
-  const signature = verifyWebhookSignature(rawBody, signatureHeader);
+  const signature = await verifyWebhookSignature(rawBody, signatureHeader);
   console.log('🔵 [WEBHOOK] Signature valid:', signature.valid, signature.reason ?? '');
 
   if (!signature.valid) {
