@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button, Card } from '@/components/ui/primitives';
 
 
+
 export default function NotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
