@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useDoctorActiveTab } from '@/lib/stores/doctorTabStore';
 import {
   ArrowLeft,
   Stethoscope,
@@ -163,9 +165,11 @@ export function DoctorDetailPortalView({
     return Array.from(map.values());
   });
 
-  const [activeTab, setActiveTab] = useState<
-    'schedule' | 'appointment-types' | 'blocked' | 'appointments' | 'overview' | 'coordinator' | 'payment-structure'
-  >('schedule');
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+
+  // Instant shared synchronous activeTab state (0ms latency, ClickUp style)
+  const [activeTab, setActiveTab] = useDoctorActiveTab(tabFromUrl);
 
   // Master & Profile Form State
   const [doctorName, setDoctorName] = useState(doctor.name);
@@ -893,124 +897,7 @@ export function DoctorDetailPortalView({
         </div>
       </div>
 
-      {/* 2. TAB NAVIGATION BAR */}
-      <div className="px-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center overflow-x-auto scrollbar-none shrink-0">
-        <div className="flex items-center gap-1 -mb-px">
-          {/* Tab 1: Working Schedule (Blue) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('schedule')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'schedule'
-                ? 'border-blue-600 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-blue-600 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <Clock className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Working Schedule</span>
-          </button>
-
-          {/* Tab 2: Appointment Types (Purple) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('appointment-types')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'appointment-types'
-                ? 'border-purple-600 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-purple-600 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <Tag className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Appointment Types ({appointmentTypesList.length})</span>
-          </button>
-
-          {/* Tab 3: Blocked Periods (Rose/Red) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('blocked')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'blocked'
-                ? 'border-rose-600 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-rose-500 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <CalendarOff className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Blocked Periods ({timeOffList.length})</span>
-          </button>
-
-          {/* Tab 4: Appointments (Orange) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('appointments')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'appointments'
-                ? 'border-orange-600 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-orange-500 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <Calendar className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Appointments ({doctor.appointments.length})</span>
-          </button>
-
-          {/* Tab 5: Doctor Profile (Indigo) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('overview')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'overview'
-                ? 'border-indigo-600 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-indigo-600 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <Info className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Doctor Profile</span>
-          </button>
-
-          {/* Tab 6: Assigned Coordinator (Green) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('coordinator')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'coordinator'
-                ? 'border-emerald-600 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-emerald-600 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <UserCheck className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Assigned Coordinator</span>
-          </button>
-
-          {/* Tab 7: Payment Structure (Amber) */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('payment-structure')}
-            className={`py-2 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'payment-structure'
-                ? 'border-amber-500 text-slate-900 dark:text-white'
-                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300'
-            }`}
-          >
-            <div className="size-5 rounded-[5px] bg-amber-500 text-white flex items-center justify-center shadow-2xs shrink-0">
-              <Coins className="size-3 stroke-[2.5]" />
-            </div>
-            <span>Payment Structure</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. MAIN CONTENT CONTAINER (ATTACHED BORDER-TO-BORDER, NO FLOATING PADDING) */}
+      {/* 2. MAIN CONTENT CONTAINER */}
       <div className="flex-1 overflow-y-auto min-h-0 bg-white dark:bg-slate-950">
         {/* TAB 1: SCHEDULE CONFIGURATION & BREAKS */}
         {activeTab === 'schedule' && (

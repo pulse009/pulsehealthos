@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import React, { type ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   MobileNavToggle,
   SidebarNav,
@@ -7,12 +10,13 @@ import {
   SignOutButton,
   type NavItem,
 } from '@/components/layout/nav';
-import { Badge } from '@/components/ui/primitives';
+import { DoctorSecondarySidebar } from '@/components/layout/DoctorSecondarySidebar';
+import { Badge, cn } from '@/components/ui/primitives';
 import { Bell, ChevronDown } from 'lucide-react';
 import { TopProgressBar } from '@/components/layout/TopProgressBar';
 
 /**
- * Application shell: matches exact layout structure from Clinic OS design.
+ * Application shell: matches exact 2-sidebar layout structure from Clinic OS design.
  */
 export function AppShell({
   navItems,
@@ -31,6 +35,8 @@ export function AppShell({
   homeHref: string;
   children: ReactNode;
 }) {
+  const pathname = usePathname();
+
   const clinicInitials = (workspaceName || 'RS')
     .split(' ')
     .filter(Boolean)
@@ -39,17 +45,27 @@ export function AppShell({
     .join('')
     .toUpperCase();
 
-  const userInitials = (
-    userName
-      ? userName.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('')
-      : (userEmail?.[0] || 'RS')
-  ).toUpperCase();
+  const showSecondarySidebar =
+    workspaceKind === 'Clinic' &&
+    (pathname === '/portal' ||
+      pathname.startsWith('/portal/doctors') ||
+      pathname.startsWith('/portal/services') ||
+      pathname.startsWith('/portal/patients') ||
+      pathname.startsWith('/portal/appointments'));
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans">
       <TopProgressBar />
-      {/* 1. FIXED LIGHT SIDEBAR */}
-      <aside className="surface hidden w-60 shrink-0 flex-col border-r border-slate-200/80 dark:border-slate-800 lg:flex sticky top-0 h-screen z-30 bg-white dark:bg-slate-900 overflow-hidden">
+
+      {/* 1. FIXED PRIMARY MAIN SIDEBAR (LEFTMOST SLIM RAIL) */}
+      <aside
+        className={cn(
+          'surface hidden shrink-0 flex-col border-r border-slate-200/90 dark:border-slate-800 lg:flex sticky top-0 h-screen z-30 overflow-hidden select-none',
+          workspaceKind === 'Clinic'
+            ? 'w-[72px] bg-[#E6E7EB] dark:bg-[#090d16] border-r border-slate-300/80 dark:border-slate-800'
+            : 'w-60 bg-white dark:bg-slate-900'
+        )}
+      >
         {/* Brand Header (Admin Portal Only) */}
         {workspaceKind === 'Admin' ? (
           <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-2.5 shrink-0">
@@ -74,8 +90,8 @@ export function AppShell({
           </div>
         ) : null}
 
-        {/* Fixed Non-Scrollable Nav Links */}
-        <div className="flex-1 overflow-hidden py-1">
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-hidden">
           {workspaceKind === 'Clinic' ? (
             <ClinicPortalSidebarNav />
           ) : (
@@ -83,31 +99,36 @@ export function AppShell({
           )}
         </div>
 
-        {/* Sidebar Footer User/Clinic Profile Card & Sign Out */}
-        <div className="p-3 shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 p-2.5 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between gap-2 shadow-2xs">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="size-8 rounded-full bg-[#0f172a] dark:bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                {clinicInitials}
+        {/* Sidebar Footer (Admin Portal Only) */}
+        {workspaceKind === 'Admin' && (
+          <div className="p-3 shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 p-2.5 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between gap-2 shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-8 rounded-full bg-[#0f172a] dark:bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                  {clinicInitials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                    {workspaceName}
+                  </p>
+                  <p className="truncate text-[10px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
+                    {userEmail}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                  {workspaceName}
-                </p>
-                <p className="truncate text-[10px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
-                  {userEmail}
-                </p>
-              </div>
+              <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
             </div>
-            <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
+            <div className="mt-2 px-1">
+              <SignOutButton />
+            </div>
           </div>
-          <div className="mt-2 px-1">
-            <SignOutButton />
-          </div>
-        </div>
+        )}
       </aside>
 
-      {/* 2. MAIN CONTENT AREA WITH TOP HEADER */}
+      {/* 2. SECONDARY SIDEBAR (RENDERED FOR DASHBOARD & DOCTORS MODULE) */}
+      {showSecondarySidebar && <DoctorSecondarySidebar />}
+
+      {/* 3. MAIN CONTENT AREA WITH TOP HEADER */}
       <div className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
         {/* COMPACT TOP HEADER */}
         <header className="surface sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-6 py-3 bg-white dark:bg-slate-900 backdrop-blur-md shrink-0">

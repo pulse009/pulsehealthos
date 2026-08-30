@@ -86,21 +86,6 @@ const DEFAULT_DEPARTMENTS = [
   'Anti-Aging & Collagen Therapy',
 ];
 
-const DEFAULT_SAMPLE_APPOINTMENTS: AppointmentItem[] = [
-  {
-    id: 'sample-1',
-    appointmentNumber: 1,
-    fileNumber: 3,
-    time: '2:15 PM',
-    patientName: 'Sami',
-    patientDetails: '923160054922',
-    department: 'Laser Genesis & Skin Tightening',
-    doctor: 'Dr. Abdulrahman Alhuzimi',
-    status: 'Confirmed',
-    date: 1,
-  },
-];
-
 const DEFAULT_DAILY_TIME_SLOTS: string[] = [
   '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
   '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
@@ -124,17 +109,13 @@ export function AppointmentsScheduleDashboard({
   doctorServiceMap = {},
   servicesList = [],
   doctorsList = [],
-  metrics = { totalCount: 1, bookedCount: 1, pendingCount: 0, cancellationsCount: 0 },
+  metrics = { totalCount: 0, bookedCount: 0, pendingCount: 0, cancellationsCount: 0 },
 }: AppointmentsScheduleDashboardProps) {
-  const [appointments, setAppointments] = useState<AppointmentItem[]>(
-    initialAppointments.length > 0 ? initialAppointments : DEFAULT_SAMPLE_APPOINTMENTS
-  );
+  const [appointments, setAppointments] = useState<AppointmentItem[]>(initialAppointments);
 
   // Sync with server appointments when updated
   useEffect(() => {
-    if (initialAppointments && initialAppointments.length > 0) {
-      setAppointments(initialAppointments);
-    }
+    setAppointments(initialAppointments);
   }, [initialAppointments]);
 
   // Filter States
@@ -543,7 +524,7 @@ export function AppointmentsScheduleDashboard({
   const handleAddAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (patientTab === 'EXISTING' && !foundPatient) {
-      setFormError('Please search and select an existing patient by File Number first.');
+      setFormError('Please search and select an existing patient by Patient ID first.');
       return;
     }
     if (patientTab === 'NEW' && (!newPatientName.trim() || !newPhone.trim())) {
@@ -555,25 +536,43 @@ export function AppointmentsScheduleDashboard({
       return;
     }
 
+    const effectiveServiceId = selectedServiceId || servicesList[0]?.id || '';
+    const effectiveDoctorId = selectedDoctorId || modalCompatibleDoctors[0]?.id || doctorsList[0]?.id || '';
+
+    if (!effectiveServiceId) {
+      setFormError('Please select a valid service.');
+      return;
+    }
+    if (!effectiveDoctorId) {
+      setFormError('Please select a valid doctor.');
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError(null);
 
     try {
+      const pName = patientTab === 'NEW' ? newPatientName.trim() : (foundPatient?.name || '');
+      const pPhone = patientTab === 'NEW' ? newPhone.trim() : (foundPatient?.phone || '');
+      const pTitle = patientTab === 'NEW' ? patientTitle : (foundPatient?.title || undefined);
+      const pGender = patientTab === 'NEW' ? patientGender : (foundPatient?.gender || undefined);
+      const pNationality = patientTab === 'NEW' ? (patientNationality.trim() || undefined) : (foundPatient?.nationality || undefined);
+
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clinicId,
-          doctorId: selectedDoctorId,
-          serviceId: selectedServiceId,
+          doctorId: effectiveDoctorId,
+          serviceId: effectiveServiceId,
           patientType: patientTab,
           fileNumber: patientTab === 'EXISTING' ? foundPatient?.fileNumber : undefined,
           patientId: patientTab === 'EXISTING' ? foundPatient?.id : undefined,
-          title: patientTitle,
-          gender: patientGender,
-          nationality: patientNationality.trim() || undefined,
-          patientName: newPatientName.trim(),
-          patientPhone: newPhone.trim(),
+          title: pTitle,
+          gender: pGender,
+          nationality: pNationality,
+          patientName: pName,
+          patientPhone: pPhone,
           pendingPayment: pendingPayment.trim() || undefined,
           notes: appointmentNotes.trim() || undefined,
           startsAt: selectedSlotStartsAt,
@@ -597,8 +596,8 @@ export function AppointmentsScheduleDashboard({
         return;
       }
 
-      const serviceObj = servicesList.find((s) => s.id === selectedServiceId);
-      const doctorObj = doctorsList.find((d) => d.id === selectedDoctorId);
+      const serviceObj = servicesList.find((s) => s.id === effectiveServiceId);
+      const doctorObj = doctorsList.find((d) => d.id === effectiveDoctorId);
       const startsAtDate = new Date(selectedSlotStartsAt);
       const formattedTime = startsAtDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -607,8 +606,8 @@ export function AppointmentsScheduleDashboard({
         appointmentNumber: data.appointment?.appointmentNumber || appointments.length + 1,
         fileNumber: data.appointment?.fileNumber || (patientTab === 'EXISTING' ? foundPatient?.fileNumber : null),
         time: formattedTime,
-        patientName: (patientTitle ? `${patientTitle} ` : '') + newPatientName.trim(),
-        patientDetails: newPhone.trim(),
+        patientName: (pTitle ? `${pTitle} ` : '') + pName,
+        patientDetails: pPhone,
         department: serviceObj?.name || 'Service',
         doctor: doctorObj?.name || 'Doctor',
         status: newStatus,
@@ -1322,18 +1321,18 @@ export function AppointmentsScheduleDashboard({
                 </div>
               )}
 
-              {/* TAB 1: EXISTING PATIENT FILE SEARCH */}
+              {/* TAB 1: EXISTING PATIENT ID SEARCH */}
               {patientTab === 'EXISTING' && (
                 <div className="space-y-2.5 bg-blue-50/50 dark:bg-slate-800/40 p-3 rounded-[10px] border border-blue-100 dark:border-slate-700/80">
                   <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Search Patient by File Number *
+                    Search Patient by Patient ID *
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <FileText className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
                       <input
-                        type="number"
-                        placeholder="Enter File Number (e.g. 1, 2, 3...)"
+                        type="text"
+                        placeholder="e.g. PID-0001, 1001, or phone number"
                         value={searchFileNumber}
                         onChange={(e) => setSearchFileNumber(e.target.value)}
                         onKeyDown={(e) => {
@@ -1378,7 +1377,7 @@ export function AppointmentsScheduleDashboard({
                             {foundPatient.name}
                           </span>
                           <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                            FR-{String(foundPatient.fileNumber).padStart(3, '0')}
+                            {foundPatient.fileNumber ? `PID-${String(foundPatient.fileNumber).padStart(4, '0')}` : `PID-${foundPatient.id.slice(0, 6).toUpperCase()}`}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">

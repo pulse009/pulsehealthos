@@ -56,7 +56,7 @@ export default async function PortalDashboard() {
         name: true,
         doctors: {
           select: {
-            doctor: { select: { name: true } },
+            doctor: { select: { id: true, name: true } },
           },
         },
       },
@@ -69,7 +69,7 @@ export default async function PortalDashboard() {
         specialty: true,
         services: {
           select: {
-            service: { select: { name: true } },
+            service: { select: { id: true, name: true } },
           },
         },
       },
@@ -139,6 +139,7 @@ export default async function PortalDashboard() {
 
   return (
     <AppointmentsScheduleDashboard
+      clinicId={clinicId!}
       clinicName={clinic?.name ?? 'Clinic'}
       timezone={effectiveTimezone}
       initialAppointments={initialAppointments}
@@ -152,6 +153,17 @@ export default async function PortalDashboard() {
       }
       serviceDoctorMap={serviceDoctorMap}
       doctorServiceMap={doctorServiceMap}
+      servicesList={rawServices.map((s) => ({
+        id: s.id,
+        name: s.name,
+        doctorIds: s.doctors.map((d) => d.doctor.id),
+      }))}
+      doctorsList={rawDoctors.map((d) => ({
+        id: d.id,
+        name: d.name,
+        specialty: d.specialty,
+        serviceIds: d.services.map((s) => s.service.id),
+      }))}
       metrics={{
         todaysCount: todaysAppointmentsCount,
         pendingCount: pendingConfirmationsCount,
