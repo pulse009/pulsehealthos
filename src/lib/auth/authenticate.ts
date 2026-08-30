@@ -162,5 +162,8 @@ export async function authenticate(
 }
 
 /** Where a principal lands after signing in. */
-export const landingPathFor = (user: SessionUser): string =>
-  user.role === 'SUPER_ADMIN' ? '/admin' : '/portal';
+export const landingPathFor = (user: SessionUser): string => {
+  if (user.role === 'SUPER_ADMIN') return '/admin';
+  if (user.role === 'RECEPTIONIST') return '/portal/appointments';
+  return '/portal';
+};

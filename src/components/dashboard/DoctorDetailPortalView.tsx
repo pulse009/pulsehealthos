@@ -32,6 +32,10 @@ import {
   Star,
   Filter,
   Folder,
+  Key,
+  Copy,
+  Lock,
+  CheckCheck,
 } from 'lucide-react';
 
 export interface DoctorAppointmentTypeItem {
@@ -55,6 +59,17 @@ export interface ServiceItem {
   isActive?: boolean;
 }
 
+export interface StaffItem {
+  id: string;
+  name: string;
+  username?: string | null;
+  email: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: string | Date;
+  coordinatedDoctors?: Array<{ id: string; name: string }>;
+}
+
 export interface BreakItem {
   id?: string;
   weekday: number;
@@ -73,10 +88,9 @@ export interface OtherPaymentItem {
 export interface PaymentStructureItem {
   id?: string;
   clinicId?: string;
-  doctorId?: string;
-  fixedMonthlyAmount: number;
-  revenueIncentivePercent: number;
-  procedureFeeType: string;
+  fixedMonthlyAmount?: number;
+  revenueIncentivePercent?: number;
+  procedureFeeType?: string;
   procedureFeeAmount?: number | null;
   procedureFeePercent?: number | null;
   otherPayments?: OtherPaymentItem[];
@@ -94,7 +108,7 @@ export interface DoctorDetailProps {
     appointmentMinutes: number | null;
     bufferMinutes: number | null;
     coordinatorId: string | null;
-    coordinator?: { id: string; name: string; email: string } | null;
+    coordinator?: { id: string; name: string; username?: string | null; email: string } | null;
     clinic: { id: string; name: string; timezone: string };
     services: Array<{
       serviceId: string;
@@ -141,7 +155,7 @@ export interface DoctorDetailProps {
     _count?: { appointments: number };
   };
   availableServices?: ServiceItem[];
-  availableStaff?: Array<{ id: string; name: string; email: string }>;
+  availableStaff?: StaffItem[];
   backHref?: string;
 }
 
@@ -152,7 +166,7 @@ export function DoctorDetailPortalView({
   backHref = '/portal/doctors',
 }: DoctorDetailProps) {
   const [doctor, setDoctor] = useState(initialDoctor);
-  const [staffList, setStaffList] = useState(initialStaff);
+  const [staffList, setStaffList] = useState<StaffItem[]>(initialStaff);
   const [servicesList, setServicesList] = useState<ServiceItem[]>(() => {
     // Combine initialServices and doctor's attached services to ensure full info
     const map = new Map<string, ServiceItem>();
@@ -239,39 +253,8 @@ export function DoctorDetailPortalView({
   );
   const [appointmentTypeSearch, setAppointmentTypeSearch] = useState('');
 
-  // Doctor Appointment Types State (with Service Scope: 'ALL' or specific serviceId)
-  const [appointmentTypesList, setAppointmentTypesList] = useState<DoctorAppointmentTypeItem[]>([
-    {
-      id: 'apt-1',
-      name: 'Follow-up Consultation',
-      durationMinutes: 15,
-      price: 100,
-      currency: 'SAR',
-      serviceId: 'ALL',
-      description: 'Quick check-up and post-treatment follow-up',
-      isActive: true,
-    },
-    {
-      id: 'apt-2',
-      name: 'Initial Consultation & Assessment',
-      durationMinutes: 30,
-      price: 200,
-      currency: 'SAR',
-      serviceId: 'ALL',
-      description: 'Comprehensive initial evaluation and treatment plan',
-      isActive: true,
-    },
-    {
-      id: 'apt-3',
-      name: 'Specialized Procedure Session',
-      durationMinutes: 60,
-      price: 500,
-      currency: 'SAR',
-      serviceId: 'ALL',
-      description: 'Full clinical treatment and procedure session',
-      isActive: true,
-    },
-  ]);
+  // Doctor Appointment Types State (attached to real services)
+  const [appointmentTypesList, setAppointmentTypesList] = useState<DoctorAppointmentTypeItem[]>([]);
 
   // Expand / Collapse State for Service Rows (all expanded by default)
   const [expandedServiceIds, setExpandedServiceIds] = useState<Set<string>>(() => {
@@ -290,8 +273,10 @@ export function DoctorDetailPortalView({
     });
   };
 
-  // Target Service Dropdown State for Create Appointment Type Modal ('ALL' or specific serviceId)
-  const [newServiceTargetServiceId, setNewServiceTargetServiceId] = useState<string>('ALL');
+  // Target Service Dropdown State for Create Appointment Type Modal (specific serviceId)
+  const [newServiceTargetServiceId, setNewServiceTargetServiceId] = useState<string>(
+    doctor.services[0]?.serviceId || ''
+  );
 
   // Payment Structure Form State
   const initialPS = doctor.paymentStructure;
@@ -326,12 +311,26 @@ export function DoctorDetailPortalView({
   const [newBlockedStartHour, setNewBlockedStartHour] = useState('');
   const [newBlockedEndHour, setNewBlockedEndHour] = useState('');
 
-  // Add Coordinator Modal State
+  // Add Coordinator Modal State (Full name + Set Password)
   const [isAddCoordinatorModalOpen, setIsAddCoordinatorModalOpen] = useState(false);
   const [isSubmittingCoordinator, setIsSubmittingCoordinator] = useState(false);
   const [newCoordinatorName, setNewCoordinatorName] = useState('');
-  const [newCoordinatorEmail, setNewCoordinatorEmail] = useState('');
   const [newCoordinatorPassword, setNewCoordinatorPassword] = useState('');
+
+  // Reset Coordinator Password Modal State
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+  const [coordinatorToReset, setCoordinatorToReset] = useState<StaffItem | null>(null);
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
+
+  // Delete Coordinator Modal State
+  const [isDeleteCoordinatorModalOpen, setIsDeleteCoordinatorModalOpen] = useState(false);
+  const [coordinatorToDelete, setCoordinatorToDelete] = useState<StaffItem | null>(null);
+  const [isDeletingCoordinator, setIsDeletingCoordinator] = useState(false);
+
+  // Username Copied Feedback State
+  const [copiedStaffId, setCopiedStaffId] = useState<string | null>(null);
 
   // Add Appointment Type / Service Modal State
   const [isAddServiceModalOpen, setIsAddServiceModalOpen] = useState(false);
@@ -439,7 +438,10 @@ export function DoctorDetailPortalView({
     if (!coordinatorSearch.trim()) return staffList;
     const q = coordinatorSearch.toLowerCase();
     return staffList.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.username && s.username.toLowerCase().includes(q)) ||
+        s.email.toLowerCase().includes(q)
     );
   }, [staffList, coordinatorSearch]);
 
@@ -627,10 +629,38 @@ export function DoctorDetailPortalView({
     }
   };
 
-  // Create Coordinator Handler
+  // Instantly assign/unassign coordinator and persist to DB
+  const [isAssigningStaffId, setIsAssigningStaffId] = useState<string | null>(null);
+
+  const handleAssignCoordinator = async (targetStaffId: string | null) => {
+    setIsAssigningStaffId(targetStaffId || 'none');
+    const newId = targetStaffId || '';
+    setCoordinatorId(newId);
+    setDoctor((prev) => ({
+      ...prev,
+      coordinatorId: targetStaffId || null,
+      coordinator: targetStaffId ? staffList.find((s) => s.id === targetStaffId) || null : null,
+    }));
+
+    try {
+      await fetch(`/api/doctors/${doctor.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coordinatorId: targetStaffId || null,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to assign coordinator:', err);
+    } finally {
+      setIsAssigningStaffId(null);
+    }
+  };
+
+  // Create Coordinator Handler (name + password, auto-generates username)
   const handleCreateCoordinator = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCoordinatorName.trim() || !newCoordinatorEmail.trim()) return;
+    if (!newCoordinatorName.trim() || !newCoordinatorPassword.trim()) return;
 
     setIsSubmittingCoordinator(true);
     try {
@@ -639,17 +669,17 @@ export function DoctorDetailPortalView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newCoordinatorName.trim(),
-          email: newCoordinatorEmail.trim(),
-          password: newCoordinatorPassword.trim() || undefined,
+          password: newCoordinatorPassword.trim(),
         }),
       });
       const data = await res.json();
       if (data.ok && data.coordinator) {
-        setStaffList([data.coordinator, ...staffList]);
-        setCoordinatorId(data.coordinator.id);
+        setStaffList((prev) => [data.coordinator, ...prev]);
+        if (!coordinatorId) {
+          await handleAssignCoordinator(data.coordinator.id);
+        }
         setIsAddCoordinatorModalOpen(false);
         setNewCoordinatorName('');
-        setNewCoordinatorEmail('');
         setNewCoordinatorPassword('');
       }
     } catch (err) {
@@ -659,72 +689,117 @@ export function DoctorDetailPortalView({
     }
   };
 
-  // Create Appointment Type Handler (with service scope & DB persistence)
+  // Reset Coordinator Password Handlers
+  const promptResetPassword = (staff: StaffItem) => {
+    setCoordinatorToReset(staff);
+    setResetNewPassword('');
+    setResetSuccessMessage(null);
+    setIsResetPasswordModalOpen(true);
+  };
+
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!coordinatorToReset || !resetNewPassword.trim()) return;
+
+    setIsResettingPassword(true);
+    try {
+      const res = await fetch('/api/coordinators', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coordinatorId: coordinatorToReset.id,
+          password: resetNewPassword.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setResetSuccessMessage('Password updated successfully!');
+        setTimeout(() => {
+          setIsResetPasswordModalOpen(false);
+          setCoordinatorToReset(null);
+          setResetNewPassword('');
+          setResetSuccessMessage(null);
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Failed to reset password:', err);
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // Delete Coordinator Handlers
+  const promptDeleteCoordinator = (staff: StaffItem) => {
+    setCoordinatorToDelete(staff);
+    setIsDeleteCoordinatorModalOpen(true);
+  };
+
+  const handleConfirmDeleteCoordinator = async () => {
+    if (!coordinatorToDelete) return;
+    setIsDeletingCoordinator(true);
+    try {
+      const res = await fetch(`/api/coordinators?id=${coordinatorToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setStaffList((prev) => prev.filter((s) => s.id !== coordinatorToDelete.id));
+        if (coordinatorId === coordinatorToDelete.id) {
+          setCoordinatorId('');
+        }
+        setIsDeleteCoordinatorModalOpen(false);
+        setCoordinatorToDelete(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete coordinator:', err);
+    } finally {
+      setIsDeletingCoordinator(false);
+    }
+  };
+
+  // Copy Login Username Helper
+  const handleCopyUsername = (staff: StaffItem) => {
+    const loginText = staff.username || staff.email;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(loginText);
+      setCopiedStaffId(staff.id);
+      setTimeout(() => setCopiedStaffId(null), 2000);
+    }
+  };
+
+  // Create Appointment Type Handler (creates only appointment type attached to target service)
   const handleCreateAppointmentType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName.trim()) return;
 
     setIsSubmittingService(true);
     try {
-      // Save appointment type as a service in database via API
-      let dbId = `apt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      try {
-        const res = await fetch('/api/services', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newServiceName.trim(),
-            durationMinutes: Number(newServiceDuration),
-            price: newServicePrice ? Number(newServicePrice) : undefined,
-            description: newServiceDescription.trim() || undefined,
-            isActive: true,
-            doctorIds: [doctor.id],
-          }),
-        });
-        const data = await res.json();
-        if (data.ok && data.service) {
-          dbId = data.service.id;
-          const createdSrv: ServiceItem = {
-            id: data.service.id,
-            name: data.service.name,
-            durationMinutes: data.service.durationMinutes,
-            priceMinor: data.service.priceMinor,
-            currency: data.service.currency || 'SAR',
-            description: data.service.description,
-            isActive: data.service.isActive,
-          };
-          setServicesList((prev) => [createdSrv, ...prev]);
-          setSelectedServiceIds((prev) => [...prev, data.service.id]);
-        }
-      } catch (apiErr) {
-        console.warn('Non-blocking DB service creation issue:', apiErr);
-      }
+      const targetServiceId = newServiceTargetServiceId || doctorAssignedServices[0]?.id || '';
+      const generatedId = `apt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
       const newApt: DoctorAppointmentTypeItem = {
-        id: dbId,
+        id: generatedId,
         name: newServiceName.trim(),
         durationMinutes: Number(newServiceDuration),
         price: newServicePrice ? Number(newServicePrice) : null,
         currency: 'SAR',
         description: newServiceDescription.trim() || null,
-        serviceId: newServiceTargetServiceId, // 'ALL' or specific serviceId
+        serviceId: targetServiceId,
         isActive: true,
       };
 
       setAppointmentTypesList((prev) => [newApt, ...prev]);
 
-      // Auto-expand the target service or all services so the new child type is immediately visible
-      if (newServiceTargetServiceId !== 'ALL') {
-        setExpandedServiceIds((prev) => new Set(prev).add(newServiceTargetServiceId));
-      } else {
-        setExpandedServiceIds(new Set(doctorAssignedServices.map((s) => s.id)));
+      // Auto-expand the target service so the new appointment type is immediately visible
+      if (targetServiceId) {
+        setExpandedServiceIds((prev) => new Set(prev).add(targetServiceId));
       }
 
       setIsAddServiceModalOpen(false);
       setNewServiceName('');
       setNewServicePrice('');
       setNewServiceDescription('');
-      setNewServiceTargetServiceId('ALL');
+      setNewServiceTargetServiceId(doctorAssignedServices[0]?.id || '');
     } catch (err) {
       console.error('Failed to create appointment type:', err);
     } finally {
@@ -738,40 +813,22 @@ export function DoctorDetailPortalView({
     setIsDeleteAptModalOpen(true);
   };
 
-  // Confirm Delete Appointment Type (Deletes from DB and local state)
+  // Confirm Delete Appointment Type (removes appointment type only)
   const confirmDeleteAppointmentType = async () => {
     if (!aptToDelete) return;
     setIsDeletingApt(true);
 
     try {
-      // If appointment type has a persistent DB id, delete from DB via API
-      if (aptToDelete.id && !aptToDelete.id.startsWith('apt-')) {
-        await fetch(`/api/services/${aptToDelete.id}`, { method: 'DELETE' });
-      }
-
       // Remove from appointment types list
       setAppointmentTypesList((prev) => prev.filter((at) => at.id !== aptToDelete.id));
-
-      // Remove from assigned services list if it was a service
-      setServicesList((prev) => prev.filter((s) => s.id !== aptToDelete.id));
-      setSelectedServiceIds((prev) => prev.filter((id) => id !== aptToDelete.id));
 
       setIsDeleteAptModalOpen(false);
       setAptToDelete(null);
     } catch (err) {
-      console.error('Failed to delete appointment type from database:', err);
+      console.error('Failed to delete appointment type:', err);
     } finally {
       setIsDeletingApt(false);
     }
-  };
-
-  // Quick Preset Helper for Appointment Types
-  const handleQuickAddPreset = (name: string, duration: number, price?: number, targetServiceId = 'ALL') => {
-    setNewServiceName(name);
-    setNewServiceDuration(duration);
-    setNewServicePrice(price ? String(price) : '');
-    setNewServiceTargetServiceId(targetServiceId);
-    setIsAddServiceModalOpen(true);
   };
 
   const formatFriendlyDate = (isoString: string) => {
@@ -1159,237 +1216,92 @@ export function DoctorDetailPortalView({
           </div>
         )}
 
-        {/* TAB 2: APPOINTMENT TYPES & SERVICES (PROPER UI/UX FORMAT) */}
+        {/* TAB 2: APPOINTMENT TYPES & SERVICES (CLEAN COLLAPSIBLE SERVICES TABLE) */}
         {activeTab === 'appointment-types' && (
-          <div className="space-y-6 p-6">
-            {/* 1. Global / Universal Appointment Types Section */}
+          <div className="p-6">
             <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/40 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-7 rounded-[7px] bg-blue-600 text-white flex items-center justify-center shadow-2xs shrink-0">
-                    <Tag className="size-3.5 stroke-[2.5]" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                        General Appointment Types (All Services)
-                      </h3>
-                      <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 whitespace-nowrap">
-                        Universal Scope
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Universally available when patients book consultations or treatments with Dr. {doctorName}.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewServiceTargetServiceId('ALL');
-                      setIsAddServiceModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    <Plus className="size-3.5 stroke-[2.5]" />
-                    <span>+ Add General Type</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Presets Bar */}
-              <div className="px-5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-950/20 flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-bold text-blue-950 dark:text-blue-200 text-[11px] flex items-center gap-1 whitespace-nowrap">
-                  <Sparkles className="size-3 text-blue-600" /> Quick Presets:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleQuickAddPreset('Follow-up Consultation', 15, 100, 'ALL')}
-                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                >
-                  + Follow-up (15 min)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickAddPreset('Initial Consultation', 30, 200, 'ALL')}
-                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                >
-                  + Consultation (30 min)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickAddPreset('Comprehensive Examination', 45, 300, 'ALL')}
-                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                >
-                  + Detailed Exam (45 min)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickAddPreset('Clinical Treatment / Procedure', 60, 500, 'ALL')}
-                  className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-blue-50 border border-blue-200 dark:border-slate-700 text-blue-700 dark:text-blue-300 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                >
-                  + Procedure (60 min)
-                </button>
-              </div>
-
-              {/* Global Appointment Types Table */}
-              {appointmentTypesList.filter((at) => at.serviceId === 'ALL').length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs italic">
-                  No general appointment types configured. Click &ldquo;+ Add General Type&rdquo; above to create one.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700">
-                      <tr>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider">
-                          APPOINTMENT TYPE
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          SCOPE
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          DURATION
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          PRICE
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          WHATSAPP STATUS
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
-                          ACTION
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {appointmentTypesList
-                        .filter((at) => at.serviceId === 'ALL')
-                        .map((at) => (
-                          <tr
-                            key={at.id}
-                            className="hover:bg-slate-50/70 dark:hover:bg-slate-850/40 transition-colors"
-                          >
-                            <td className="py-3 px-5">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="size-5 rounded-[5px] bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
-                                  <Tag className="size-3 stroke-[2.5]" />
-                                </div>
-                                <div className="min-w-0">
-                                  <span className="font-bold text-xs text-slate-900 dark:text-white block truncate">
-                                    {at.name}
-                                  </span>
-                                  {at.description && (
-                                    <span className="text-[11px] text-slate-400 block truncate max-w-md">
-                                      {at.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-5 whitespace-nowrap">
-                              <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 whitespace-nowrap">
-                                All Services
-                              </span>
-                            </td>
-                            <td className="py-3 px-5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
-                              <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[5px] text-[11px] font-semibold">
-                                <Clock className="size-3 text-blue-500" />
-                                {at.durationMinutes} min
-                              </span>
-                            </td>
-                            <td className="py-3 px-5 whitespace-nowrap">
-                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-[5px]">
-                                {at.price ? `${at.price} ${at.currency || 'SAR'}` : 'Standard'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-5 whitespace-nowrap">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="size-1.5 rounded-full bg-emerald-500" />
-                                Active on WhatsApp
-                              </span>
-                            </td>
-                            <td className="py-3 px-5 text-right whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => promptDeleteAppointmentType(at)}
-                                className="p-1.5 rounded-[6px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                                title="Delete appointment type"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* 2. Doctor Assigned Services & Service-Specific Types Section */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
+              {/* Header Toolbar */}
               <div className="px-5 py-3.5 border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/40 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="size-7 rounded-[7px] bg-purple-600 text-white flex items-center justify-center shadow-2xs shrink-0">
                     <Layers className="size-3.5 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Assigned Services &amp; Specialized Procedures ({doctorAssignedServices.length})
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                        Assigned Services &amp; Appointment Types
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 whitespace-nowrap">
+                        {doctorAssignedServices.length} Services Assigned
+                      </span>
+                    </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Clinical treatments performed by Dr. {doctorName}. Expand any service to add custom service-specific durations and pricing.
+                      Clinical treatments performed by Dr. {doctorName}. Expand any service to view or add custom appointment types.
                     </p>
                   </div>
                 </div>
 
-                <div className="relative w-72">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search doctor services..."
-                    value={appointmentTypeSearch}
-                    onChange={(e) => setAppointmentTypeSearch(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[7px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
-                  />
+                <div className="flex items-center gap-2">
+                  <div className="relative w-64">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search doctor services..."
+                      value={appointmentTypeSearch}
+                      onChange={(e) => setAppointmentTypeSearch(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[7px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewServiceTargetServiceId(doctorAssignedServices[0]?.id || '');
+                      setIsAddServiceModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-purple-600 dark:hover:bg-purple-500 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    <Plus className="size-3.5 stroke-[2.5]" />
+                    <span>+ Create Appointment Type</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Services Table */}
-              {filteredAssignedServices.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs italic">
-                  No doctor services found.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700">
+              {/* Single Unified Collapsible Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700">
+                    <tr>
+                      <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider">
+                        SERVICE NAME / APPOINTMENT TYPE
+                      </th>
+                      <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                        CUSTOM SUB-TYPES
+                      </th>
+                      <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                        BASE DURATION
+                      </th>
+                      <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                        BASE PRICE
+                      </th>
+                      <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                        STATUS
+                      </th>
+                      <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
+                        ACTION
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+
+                    {/* 2. ASSIGNED SERVICES & SPECIALIZED PROCEDURES ACCORDION GROUPS */}
+                    {filteredAssignedServices.length === 0 ? (
                       <tr>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider">
-                          SERVICE NAME
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          SPECIFIC TYPES
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          BASE DURATION
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          BASE PRICE
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
-                          STATUS
-                        </th>
-                        <th className="py-2.5 px-5 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
-                          ACTION
-                        </th>
+                        <td colSpan={6} className="p-8 text-center text-slate-400 text-xs italic">
+                          No doctor services found.
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredAssignedServices.map((srv) => {
+                    ) : (
+                      filteredAssignedServices.map((srv) => {
                         const isExpanded = expandedServiceIds.has(srv.id);
                         const specificTypes = appointmentTypesList.filter(
                           (at) => at.serviceId === srv.id
@@ -1417,6 +1329,9 @@ export function DoctorDetailPortalView({
                                       <ChevronRight className="size-4 stroke-[2.5]" />
                                     )}
                                   </button>
+                                  <div className="size-5 rounded-[5px] bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                                    <Layers className="size-3 stroke-[2.5]" />
+                                  </div>
                                   <div className="min-w-0">
                                     <span className="font-bold text-xs text-slate-900 dark:text-white block truncate">
                                       {srv.name}
@@ -1559,11 +1474,11 @@ export function DoctorDetailPortalView({
                             )}
                           </React.Fragment>
                         );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -1799,79 +1714,185 @@ export function DoctorDetailPortalView({
           </div>
         )}
 
-        {/* TAB 6: COORDINATOR */}
+        {/* TAB 6: COORDINATOR TABLE VIEW */}
         {activeTab === 'coordinator' && (
-          <div>
-            <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+          <div className="space-y-4 p-6">
+            {/* Top Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <UserCheck className="size-4 text-emerald-600" />
-                  <span>Assigned Clinic Coordinator</span>
+                  <span>Clinic Coordinators &amp; Staff</span>
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Designate a clinic staff member responsible for coordinating Dr. {doctorName}&apos;s appointments and inquiries.
+                  Manage login credentials and designate staff to manage Dr. {doctorName}&apos;s schedule and patient appointments.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsAddCoordinatorModalOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-2xs transition-all cursor-pointer shrink-0"
-              >
-                <Plus className="size-3.5" />
-                <span>Add New Coordinator</span>
-              </button>
-            </div>
-
-            <div className="p-6 max-w-xl text-xs space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                  Search &amp; Select Coordinator
-                </label>
-                <div className="relative mb-2">
+              <div className="flex items-center gap-2.5">
+                <div className="relative w-64">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Filter staff by name or email..."
+                    placeholder="Search by name, username..."
                     value={coordinatorSearch}
                     onChange={(e) => setCoordinatorSearch(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
-
-                <select
-                  value={coordinatorId}
-                  onChange={(e) => setCoordinatorId(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                <button
+                  type="button"
+                  onClick={() => setIsAddCoordinatorModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-2xs transition-all cursor-pointer shrink-0"
                 >
-                  <option value="">No coordinator assigned</option>
-                  {filteredStaff.map((staff) => (
-                    <option key={staff.id} value={staff.id}>
-                      {staff.name} ({staff.email})
-                    </option>
-                  ))}
-                </select>
+                  <Plus className="size-3.5" />
+                  <span>Add Coordinator</span>
+                </button>
               </div>
+            </div>
 
-              {doctor.coordinator && (
-                <div className="p-3.5 rounded-[8px] bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-black flex items-center justify-center text-xs">
-                      {doctor.coordinator.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900 dark:text-white text-xs">
-                        {doctor.coordinator.name}
-                      </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                        {doctor.coordinator.email}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-[6px]">
-                    Currently Assigned
-                  </span>
-                </div>
-              )}
+            {/* Coordinator Table */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    <th className="py-3 px-4">Coordinator Name</th>
+                    <th className="py-3 px-4">Login Username</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Doctor Assignment</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                  {filteredStaff.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-slate-400 italic">
+                        {coordinatorSearch
+                          ? 'No coordinator matches your search.'
+                          : 'No coordinators created yet. Click "+ Add Coordinator" to create login credentials.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredStaff.map((staff) => {
+                      const isAssignedToThisDoctor = coordinatorId === staff.id;
+                      const isCopied = copiedStaffId === staff.id;
+                      const displayUsername = staff.username || staff.email;
+
+                      return (
+                        <tr
+                          key={staff.id}
+                          className={`hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors ${
+                            isAssignedToThisDoctor ? 'bg-emerald-50/30 dark:bg-emerald-950/20' : ''
+                          }`}
+                        >
+                          {/* 1. Name & Avatar */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-xs border border-slate-200 dark:border-slate-700">
+                                {staff.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                  <span>{staff.name}</span>
+                                  {isAssignedToThisDoctor && (
+                                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-400">
+                                  {staff.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 2. Login Username with Copy Button */}
+                          <td className="py-3 px-4">
+                            <div className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-[6px] font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                              <span>{displayUsername}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyUsername(staff)}
+                                className="p-0.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                title="Copy login username"
+                              >
+                                {isCopied ? (
+                                  <CheckCheck className="size-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="size-3" />
+                                )}
+                              </button>
+                            </div>
+                            {isCopied && (
+                              <span className="text-[10px] text-emerald-600 font-semibold ml-1.5 animate-in fade-in">
+                                Copied!
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 3. Status */}
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-[10px]">
+                              <span className="size-1.5 rounded-full bg-emerald-500" />
+                              Active
+                            </span>
+                          </td>
+
+                          {/* 4. Assignment Toggle */}
+                          <td className="py-3 px-4">
+                            {isAssignedToThisDoctor ? (
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-emerald-600 text-white font-semibold text-[11px] shadow-2xs">
+                                  <Check className="size-3 stroke-[3]" />
+                                  <span>Assigned to Dr. {doctorName}</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={isAssigningStaffId !== null}
+                                  onClick={() => handleAssignCoordinator(null)}
+                                  className="text-[10px] text-slate-400 hover:text-rose-600 underline font-medium cursor-pointer disabled:opacity-50"
+                                >
+                                  {isAssigningStaffId === 'none' ? 'Unassigning...' : 'Unassign'}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={isAssigningStaffId !== null}
+                                onClick={() => handleAssignCoordinator(staff.id)}
+                                className="px-2.5 py-1 rounded-[6px] border border-slate-200 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {isAssigningStaffId === staff.id ? 'Assigning...' : `Assign to Dr. ${doctorName}`}
+                              </button>
+                            )}
+                          </td>
+
+                          {/* 5. Actions: Reset Password + Delete */}
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => promptResetPassword(staff)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-semibold text-xs transition-colors cursor-pointer"
+                                title="Reset coordinator password"
+                              >
+                                <Key className="size-3" />
+                                <span>Reset Password</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => promptDeleteCoordinator(staff)}
+                                className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                                title="Delete coordinator"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -2350,35 +2371,26 @@ export function DoctorDetailPortalView({
                   placeholder="e.g. Sara Ahmed"
                   value={newCoordinatorName}
                   onChange={(e) => setNewCoordinatorName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="sara@example.com"
-                  value={newCoordinatorEmail}
-                  onChange={(e) => setNewCoordinatorEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Temporary Password (Optional)
+                  Set Password *
                 </label>
                 <input
                   type="password"
-                  placeholder="Defaults to ClinicStaff123!"
+                  required
+                  placeholder="Enter login password (min 6 characters)"
                   value={newCoordinatorPassword}
                   onChange={(e) => setNewCoordinatorPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
+              </div>
+
+              <div className="p-2.5 rounded-[8px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-[11px] text-blue-900 dark:text-blue-200 leading-relaxed">
+                A unique login username (e.g. <span className="font-mono font-bold">{newCoordinatorName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '.') || 'sara.ahmed'}</span>) will be generated automatically. You can provide this username and password to the coordinator to log in and manage appointments.
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
@@ -2398,6 +2410,130 @@ export function DoctorDetailPortalView({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: RESET COORDINATOR PASSWORD */}
+      {isResetPasswordModalOpen && coordinatorToReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Key className="size-4 text-amber-600" />
+                <span>Reset Coordinator Password</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResetPasswordModalOpen(false);
+                  setCoordinatorToReset(null);
+                }}
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-[8px] border border-slate-200 dark:border-slate-700 mb-3.5 space-y-1">
+              <div className="text-[11px] text-slate-500">Coordinator:</div>
+              <div className="font-bold text-slate-900 dark:text-white text-xs">{coordinatorToReset.name}</div>
+              <div className="font-mono text-[11px] text-slate-500">Username: {coordinatorToReset.username || coordinatorToReset.email}</div>
+            </div>
+
+            <form onSubmit={handleConfirmResetPassword} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  New Password *
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter new password (min 6 characters)"
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                />
+              </div>
+
+              {resetSuccessMessage && (
+                <div className="p-2 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-semibold text-xs text-center animate-in fade-in">
+                  {resetSuccessMessage}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResetPasswordModalOpen(false);
+                    setCoordinatorToReset(null);
+                  }}
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResettingPassword}
+                  className="px-4 py-1.5 rounded-[8px] bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+                >
+                  {isResettingPassword ? 'Saving...' : 'Set New Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRM DELETE COORDINATOR */}
+      {isDeleteCoordinatorModalOpen && coordinatorToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="size-9 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <Trash2 className="size-4 stroke-[2.5]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Delete Coordinator
+                </h3>
+                <p className="text-[11px] text-slate-400">Remove staff member</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+              Are you sure you want to delete coordinator <span className="font-bold text-slate-900 dark:text-white">&ldquo;{coordinatorToDelete.name}&rdquo;</span>? This user will no longer be able to log in or manage doctor schedules.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                disabled={isDeletingCoordinator}
+                onClick={() => {
+                  setIsDeleteCoordinatorModalOpen(false);
+                  setCoordinatorToDelete(null);
+                }}
+                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingCoordinator}
+                onClick={handleConfirmDeleteCoordinator}
+                className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
+              >
+                {isDeletingCoordinator ? (
+                  <span>Deleting...</span>
+                ) : (
+                  <>
+                    <Trash2 className="size-3.5" />
+                    <span>Delete Coordinator</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2429,9 +2565,8 @@ export function DoctorDetailPortalView({
                 <select
                   value={newServiceTargetServiceId}
                   onChange={(e) => setNewServiceTargetServiceId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer"
                 >
-                  <option value="ALL">All Services (Global for Dr. {doctorName})</option>
                   {doctorAssignedServices.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.durationMinutes || 30} min)
@@ -2439,7 +2574,7 @@ export function DoctorDetailPortalView({
                   ))}
                 </select>
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Choose &ldquo;All Services&rdquo; to apply across all doctor&apos;s treatments, or assign to a specific service.
+                  Select the doctor treatment service this appointment type belongs to.
                 </p>
               </div>
 
@@ -2453,7 +2588,7 @@ export function DoctorDetailPortalView({
                   placeholder="e.g. Follow-up Visit, Consultation, Treatment Session"
                   value={newServiceName}
                   onChange={(e) => setNewServiceName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                 />
               </div>
 
@@ -2465,7 +2600,7 @@ export function DoctorDetailPortalView({
                   <select
                     value={newServiceDuration}
                     onChange={(e) => setNewServiceDuration(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer"
                   >
                     <option value={10}>10 minutes</option>
                     <option value={15}>15 minutes (Follow-up)</option>
@@ -2490,7 +2625,7 @@ export function DoctorDetailPortalView({
                       placeholder="e.g. 150"
                       value={newServicePrice}
                       onChange={(e) => setNewServicePrice(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                     />
                   </div>
                 </div>
@@ -2505,14 +2640,12 @@ export function DoctorDetailPortalView({
                   placeholder="Brief description for patients & coordinator..."
                   value={newServiceDescription}
                   onChange={(e) => setNewServiceDescription(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 resize-none"
                 />
               </div>
 
-              <div className="p-2.5 rounded-[8px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-[11px] text-blue-900 dark:text-blue-200">
-                {newServiceTargetServiceId === 'ALL'
-                  ? `This appointment type will apply across all services for Dr. ${doctorName}.`
-                  : `This appointment type will be attached to ${doctorAssignedServices.find((s) => s.id === newServiceTargetServiceId)?.name || 'this service'}.`}
+              <div className="p-2.5 rounded-[8px] bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-900/60 text-[11px] text-purple-900 dark:text-purple-200">
+                This appointment type will be attached to <span className="font-bold">{doctorAssignedServices.find((s) => s.id === newServiceTargetServiceId)?.name || 'the selected service'}</span>.
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">

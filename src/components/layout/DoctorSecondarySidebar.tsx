@@ -9,6 +9,8 @@ import {
   Wrench,
   ChevronRight,
   Plus,
+  LogOut,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/components/ui/primitives';
 import {
@@ -34,11 +36,13 @@ export function setCachedDoctors(docs: DoctorSummary[]) {
   listeners.forEach((fn) => fn(docs));
 }
 
-export function DoctorSecondarySidebar() {
+export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlTab = searchParams.get('tab');
+
+  const isCoordinator = userRole === 'COORDINATOR';
 
   // Instant shared synchronous activeTab state
   const [currentTab, setActiveTab] = useDoctorActiveTab(urlTab);
@@ -46,6 +50,19 @@ export function DoctorSecondarySidebar() {
   // Instant render from in-memory cache if available
   const [doctors, setDoctors] = useState<DoctorSummary[]>(() => DOCTORS_CACHE || []);
   const [isLoading, setIsLoading] = useState(() => DOCTORS_CACHE === null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.replace('/login');
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to log out:', err);
+      setIsLoggingOut(false);
+    }
+  };
 
   // Check if we are viewing a specific doctor detail page: /portal/doctors/[doctorId]
   const doctorIdMatch = pathname.match(/^\/portal\/doctors\/([^\/]+)$/);
@@ -59,24 +76,19 @@ export function DoctorSecondarySidebar() {
     };
     listeners.add(updateListener);
 
-    // If cache is empty, fetch once on first load only
-    if (!DOCTORS_CACHE && !isFetchingGlobal) {
-      isFetchingGlobal = true;
-      fetch('/api/doctors')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.ok && Array.isArray(data.doctors)) {
-            DOCTORS_CACHE = data.doctors;
-            setDoctors(data.doctors);
-            listeners.forEach((fn) => fn(data.doctors));
-          }
-        })
-        .catch((err) => console.error('Failed to load doctors list:', err))
-        .finally(() => {
-          isFetchingGlobal = false;
-          setIsLoading(false);
-        });
-    }
+    fetch('/api/doctors')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.doctors)) {
+          DOCTORS_CACHE = data.doctors;
+          setDoctors(data.doctors);
+          listeners.forEach((fn) => fn(data.doctors));
+        }
+      })
+      .catch((err) => console.error('Failed to load doctors list:', err))
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     return () => {
       listeners.delete(updateListener);
@@ -89,6 +101,9 @@ export function DoctorSecondarySidebar() {
   const handleTabClick = (tabKey: DoctorTabKey) => {
     setActiveTab(tabKey);
   };
+
+  const isRolesPage = pathname.startsWith('/portal/roles');
+  const roleTab = searchParams.get('tab') || 'all';
 
   return (
     <aside
@@ -107,9 +122,16 @@ export function DoctorSecondarySidebar() {
 
       {/* Single Main Scrollable Container */}
       <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-5 min-h-0">
-        {/* 2. Top Highlighted Button (Clean Inline Single-Line Format) */}
+        {/* 2. Top Highlighted Button */}
         <div>
-          {currentDoctorId ? (
+          {isRolesPage ? (
+            <Link
+              href="/portal/roles"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs"
+            >
+              <span>Roles &amp; Staff</span>
+            </Link>
+          ) : currentDoctorId ? (
             <Link
               href="/portal/doctors"
               className="flex items-center gap-1.5 w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs whitespace-nowrap overflow-hidden"
@@ -138,12 +160,55 @@ export function DoctorSecondarySidebar() {
           )}
         </div>
 
-        {/* 3. Doctor Configuration Section */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
-            <CreditCard className="size-4 stroke-[2.2]" />
-            <span>Doctor Configuration</span>
+        {/* 3. Roles Tabs OR Doctor Configuration Section */}
+        {isRolesPage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              <Users className="size-4 stroke-[2.2]" />
+              <span>Staff Roles</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/roles?tab=all"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  roleTab === 'all'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>All Roles</span>
+              </Link>
+              <Link
+                href="/portal/roles?tab=coordinators"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  roleTab === 'coordinators'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>Medical Coordinators</span>
+              </Link>
+              <Link
+                href="/portal/roles?tab=receptionists"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  roleTab === 'receptionists'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>Receptionists</span>
+              </Link>
+            </div>
           </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              <CreditCard className="size-4 stroke-[2.2]" />
+              <span>Doctor Configuration</span>
+            </div>
 
           {currentDoctorId ? (
             /* Continuous 7 Tabs with Instant 0ms In-Memory Click Handlers */
@@ -275,6 +340,7 @@ export function DoctorSecondarySidebar() {
             </div>
           )}
         </div>
+        )}
 
         {/* 4. Section 2: Utilities & Settings (Shown only on general views) */}
         {!currentDoctorId && (
@@ -296,17 +362,19 @@ export function DoctorSecondarySidebar() {
               >
                 <span>Appointments Schedule</span>
               </Link>
-              <Link
-                href="/portal/services"
-                className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                  pathname.startsWith('/portal/services')
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white font-bold'
-                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                )}
-              >
-                <span>Clinical Services</span>
-              </Link>
+              {!isCoordinator && (
+                <Link
+                  href="/portal/services"
+                  className={cn(
+                    'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                    pathname.startsWith('/portal/services')
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                  )}
+                >
+                  <span>Clinical Services</span>
+                </Link>
+              )}
               <Link
                 href="/portal/patients"
                 className={cn(
@@ -318,6 +386,19 @@ export function DoctorSecondarySidebar() {
               >
                 <span>Patients Directory</span>
               </Link>
+              {!isCoordinator && (
+                <Link
+                  href="/portal/roles"
+                  className={cn(
+                    'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                    pathname.startsWith('/portal/roles')
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                  )}
+                >
+                  <span>Roles &amp; Staff</span>
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -346,15 +427,17 @@ export function DoctorSecondarySidebar() {
         )}
       </div>
 
-      {/* Bottom Action */}
+      {/* Bottom Action: Log Out */}
       <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-        <Link
-          href="/portal/doctors/create"
-          className="flex items-center justify-center gap-1.5 w-full bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
+        <button
+          type="button"
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+          className="flex items-center justify-center gap-2 w-full bg-[#0f172a] hover:bg-rose-600 dark:bg-slate-800 dark:hover:bg-rose-600 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-60"
         >
-          <Plus className="size-3.5 stroke-[2.5]" />
-          <span>+ Add Doctor</span>
-        </Link>
+          <LogOut className="size-3.5" />
+          <span>{isLoggingOut ? 'Signing out…' : 'Log Out'}</span>
+        </button>
       </div>
     </aside>
   );

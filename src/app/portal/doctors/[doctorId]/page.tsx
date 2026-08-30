@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireClientUser } from '@/lib/auth/guards';
 import { prisma } from '@/lib/db/prisma';
 import { getClinicDoctorDetail } from '@/lib/directory/directory.service';
@@ -13,12 +13,22 @@ export default async function PortalDoctorDetailPage({
 }: {
   params: Promise<{ doctorId: string }>;
 }) {
-  const { clinicId, scope } = await requireClientUser();
+  const { user, clinicId, scope } = await requireClientUser();
   const { doctorId } = await params;
 
+  if (user.role === 'RECEPTIONIST') {
+    redirect('/portal/appointments');
+  }
+
   try {
-    const [rawDoctor, availableServices, availableStaff] = await Promise.all([
-      getClinicDoctorDetail(scope, doctorId),
+    const rawDoctor = await getClinicDoctorDetail(scope, doctorId);
+
+    // If logged in as a coordinator, restrict access strictly to assigned doctor
+    if (user.role === 'COORDINATOR' && rawDoctor.coordinatorId !== user.id) {
+      notFound();
+    }
+
+    const [availableServices, availableStaff] = await Promise.all([
       prisma.service.findMany({
         where: { clinicId: clinicId!, isActive: true },
         select: {
@@ -33,8 +43,16 @@ export default async function PortalDoctorDetailPage({
         orderBy: { name: 'asc' },
       }),
       prisma.user.findMany({
-        where: { clinicId: clinicId!, isActive: true },
-        select: { id: true, name: true, email: true },
+        where: { clinicId: clinicId!, isActive: true, role: 'COORDINATOR' },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          role: true,
+          isActive: true,
+          coordinatedDoctors: { select: { id: true, name: true } },
+        },
         orderBy: { name: 'asc' },
       }),
     ]);

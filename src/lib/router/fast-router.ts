@@ -122,6 +122,17 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     return handleFetchSlotsForDate(input, serviceId, doctorId, dateKey, locale, now, startedAt, offset);
   }
 
+  // Action: More Doctors Pagination
+  if (actionPayload?.startsWith('more_doctors:')) {
+    const parts = actionPayload.replace('more_doctors:', '').trim().split(':');
+    const serviceId = parts[0] ?? 'all';
+    const offset = parseInt(parts[1] ?? '0', 10);
+    if (serviceId === 'all' || serviceId === 'any') {
+      return handleDoctors(input, locale, startedAt, offset);
+    }
+    return handleShowDoctorsForService(input, serviceId, locale, now, startedAt, offset);
+  }
+
   // Action: Select Appointment Type -> Show Date Options
   if (actionPayload?.startsWith('select_appointment_type:')) {
     const parts = actionPayload.replace('select_appointment_type:', '').trim().split(':');
@@ -144,7 +155,15 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   // Action: Step 2 - Select Service -> Show Doctor Selection (or advance to date)
   if (actionPayload?.startsWith('select_service:')) {
     const serviceId = actionPayload.replace('select_service:', '').trim();
-    return handleShowDoctorsForService(input, serviceId, locale, now, startedAt);
+    return handleShowDoctorsForService(input, serviceId, locale, now, startedAt, 0);
+  }
+
+  // Action: Show Doctors List
+  if (actionPayload === 'get_doctors' || actionPayload?.startsWith('get_doctors:')) {
+    const offset = actionPayload.startsWith('get_doctors:')
+      ? parseInt(actionPayload.replace('get_doctors:', ''), 10)
+      : 0;
+    return handleDoctors(input, locale, startedAt, offset);
   }
 
   // Action: Step 1 - Start Booking -> Show Services Selection
@@ -218,29 +237,32 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   }
 
   // -------------------------------------------------------------------------
-  // FILE NUMBER LOOKUP FOR RETURNING PATIENTS
+  // PATIENT ID / FILE NUMBER LOOKUP FOR RETURNING PATIENTS
   // -------------------------------------------------------------------------
-  let isAwaitingFileNumber = false;
+  let isAwaitingPatientId = false;
   try {
     const currentPatient = await prisma.patient.findUnique({
       where: { id: input.patientId },
       select: { tags: true },
     });
-    isAwaitingFileNumber = (currentPatient?.tags ?? []).includes('awaiting:file_number');
+    isAwaitingPatientId = (currentPatient?.tags ?? []).some(
+      (t) => t === 'awaiting:file_number' || t === 'awaiting:patient_id',
+    );
   } catch {
     // ignore
   }
 
-  const explicitFileMatch = rawText.match(/(?:file|ملف|رقم\s*الملف|FR-?|#)\s*(\d+)/i);
-  const plainDigitMatch =
-    isAwaitingFileNumber && /^\s*(?:FR-?)?#?\s*(\d+)\s*$/i.test(rawText) ? rawText.match(/^\s*(?:FR-?)?#?\s*(\d+)\s*$/i) : null;
-  const fileMatch = explicitFileMatch || plainDigitMatch;
+  const explicitPatientMatch = rawText.match(
+    /(?:pid|patient|file|ملف|رقم\s*الملف|رقم\s*المريض|fr|pa|#)\s*[-:]?\s*([a-z0-9\-_]+)/i,
+  );
+  const plainPatientMatch =
+    isAwaitingPatientId && /^\s*(?:pid-?|pa-?|fr-?|#)?\s*([a-z0-9\-_]+)\s*$/i.test(rawText)
+      ? rawText.match(/^\s*(?:pid-?|pa-?|fr-?|#)?\s*([a-z0-9\-_]+)\s*$/i)
+      : null;
+  const patientIdMatch = explicitPatientMatch || plainPatientMatch;
 
-  if (fileMatch && fileMatch[1]) {
-    const fileNum = parseInt(fileMatch[1], 10);
-    if (!isNaN(fileNum)) {
-      return handleFileNumberLookup(input, fileNum, locale, startedAt);
-    }
+  if (patientIdMatch && patientIdMatch[1]) {
+    return handleFileNumberLookup(input, patientIdMatch[1], locale, startedAt);
   }
 
   // Action: Cancel Booking (Before Confirmation)
@@ -413,29 +435,36 @@ async function handleShowDoctorsForService(
   locale: SupportedLocale,
   now: Date,
   startedAt: number,
+  offset: number = 0,
 ): Promise<FastRouterResult> {
   const dict = i18n[locale];
   let service: { id: string; name: string } | null = null;
   let doctors: Array<{ id: string; name: string; specialty: string | null }> = [];
 
   try {
-    service = await prisma.service.findUnique({
-      where: { id: serviceId },
-      select: { id: true, name: true },
-    });
+    if (serviceId && serviceId !== 'any' && serviceId !== 'all') {
+      service = await prisma.service.findUnique({
+        where: { id: serviceId },
+        select: { id: true, name: true },
+      });
+    }
 
     // Find doctors linked specifically to this service
-    const linked = await prisma.doctorService.findMany({
-      where: { serviceId, doctor: { isActive: true } },
-      select: { doctor: { select: { id: true, name: true, specialty: true } } },
-    });
+    if (serviceId && serviceId !== 'any' && serviceId !== 'all') {
+      const linked = await prisma.doctorService.findMany({
+        where: { serviceId, doctor: { isActive: true } },
+        select: { doctor: { select: { id: true, name: true, specialty: true } } },
+      });
+      if (linked.length > 0) {
+        doctors = linked.map((l) => l.doctor);
+      }
+    }
 
-    if (linked.length > 0) {
-      doctors = linked.map((l) => l.doctor);
-    } else {
+    if (doctors.length === 0) {
       // Fallback: all active clinic doctors
       doctors = await prisma.doctor.findMany({
         where: { clinicId: input.clinicId, isActive: true },
+        orderBy: { name: 'asc' },
         select: { id: true, name: true, specialty: true },
       });
     }
@@ -443,10 +472,10 @@ async function handleShowDoctorsForService(
     doctors = [];
   }
 
-  const serviceName = translateServiceName(service?.name, locale);
+  const serviceName = service?.name ? translateServiceName(service.name, locale) : dict.any_available_doctor;
 
   // If only 1 doctor exists, check if they have multiple appointment types or advance to date selection
-  if (doctors.length === 1) {
+  if (doctors.length === 1 && offset === 0) {
     const singleDoc = doctors[0]!;
     return handleCheckDoctorAppointmentTypes(input, serviceId, singleDoc.id, locale, now, startedAt);
   }
@@ -456,23 +485,47 @@ async function handleShowDoctorsForService(
     return handleShowDatesForDoctor(input, serviceId, 'any', locale, now, startedAt);
   }
 
-  // If multiple doctors exist, present doctor choices:
-  const doctorButtons: WhatsAppButton[] = doctors.slice(0, 2).map((d) => ({
+  // Page 5 doctors at a time
+  const PAGE_SIZE = 5;
+  const pageDoctors = doctors.slice(offset, offset + PAGE_SIZE);
+  const hasMore = doctors.length > offset + PAGE_SIZE;
+
+  // Build doctor quick buttons: up to WhatsApp limit, including More button if pagination needed
+  const doctorButtons: WhatsAppButton[] = pageDoctors.slice(0, hasMore ? 2 : 3).map((d) => ({
     id: `select_doctor:${serviceId}:${d.id}`,
     title: translateDoctorName(d.name, locale).slice(0, 20),
   }));
 
-  // Add "Any Doctor" option
-  doctorButtons.push({
-    id: `select_doctor:${serviceId}:any`,
-    title: dict.any_doctor,
-  });
+  if (hasMore) {
+    doctorButtons.push({
+      id: `more_doctors:${serviceId}:${offset + PAGE_SIZE}`,
+      title: dict.btn_more_doctors || '➕ More Doctors',
+    });
+  } else if (doctorButtons.length < 3 && offset === 0) {
+    // Add Any Doctor button if there is room
+    doctorButtons.push({
+      id: `select_doctor:${serviceId}:any`,
+      title: dict.any_doctor,
+    });
+  }
 
-  const reply = `${dict.step2_title}\n\n• *${dict.service_label}:* ${serviceName}\n${dict.step2_subtitle}`;
+  const list = pageDoctors
+    .map((d, idx) => {
+      const docName = translateDoctorName(d.name, locale);
+      const spec = translateSpecialty(d.specialty, locale);
+      return `${offset + idx + 1}. *${docName}*${spec ? ` — ${spec}` : ''}`;
+    })
+    .join('\n');
+
+  const reply = `${dict.step2_title}\n\n• *${dict.service_label}:* ${serviceName}\n${dict.step2_subtitle}\n\n${list}${
+    hasMore ? `\n\n_Tap *${dict.btn_more_doctors}* to see more doctors._` : ''
+  }`;
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router presented doctor selection', {
     clinicId: input.clinicId,
     serviceId,
+    offset,
+    total: doctors.length,
     intent: 'SELECT_DOCTOR',
     ms: Date.now() - startedAt,
   });
@@ -975,6 +1028,7 @@ async function handleVisitedBeforeResponse(
     const newTags = Array.from(
       new Set([
         ...currentTags,
+        visitedBefore ? 'awaiting:patient_id' : 'visited:done',
         visitedBefore ? 'awaiting:file_number' : 'visited:done',
         visitedBefore ? 'visited:yes' : 'visited:no',
       ]),
@@ -988,7 +1042,7 @@ async function handleVisitedBeforeResponse(
   }
 
   if (visitedBefore) {
-    logger.info(Events.ROUTER_COMPLETED, 'Fast router asking returning patient for file number', {
+    logger.info(Events.ROUTER_COMPLETED, 'Fast router asking returning patient for patient ID', {
       clinicId: input.clinicId,
       intent: 'ASK_FILE_NUMBER',
       ms: Date.now() - startedAt,
@@ -1013,6 +1067,7 @@ async function handleVisitedBeforeResponse(
     reply: dict.welcome_new_patient(clinicName),
     buttons: [
       { id: 'book_appointment', title: dict.btn_book_appointment },
+      { id: 'get_doctors', title: dict.btn_doctors },
       { id: 'get_services', title: dict.btn_services },
     ],
   };
@@ -1020,17 +1075,24 @@ async function handleVisitedBeforeResponse(
 
 async function handleFileNumberLookup(
   input: FastRouterInput,
-  fileNumber: number,
+  rawIdOrNumber: string | number,
   locale: SupportedLocale,
   startedAt: number,
 ): Promise<FastRouterResult> {
   const dict = i18n[locale];
 
   try {
+    const rawValStr = String(rawIdOrNumber).trim();
+    const cleanNum = parseInt(rawValStr.replace(/[^\d]/g, ''), 10);
+
     const existingPatient = await prisma.patient.findFirst({
       where: {
         clinicId: input.clinicId,
-        fileNumber: fileNumber,
+        OR: [
+          ...(!isNaN(cleanNum) ? [{ fileNumber: cleanNum }] : []),
+          { id: rawValStr },
+          { id: { startsWith: rawValStr } },
+        ],
       },
       select: {
         id: true,
@@ -1042,13 +1104,15 @@ async function handleFileNumberLookup(
       },
     });
 
-    // Remove 'awaiting:file_number' tag from current patient
+    // Remove 'awaiting:patient_id' and 'awaiting:file_number' tags from current patient
     try {
       const currentPatient = await prisma.patient.findUnique({
         where: { id: input.patientId },
         select: { tags: true },
       });
-      const cleanTags = (currentPatient?.tags ?? []).filter((t) => t !== 'awaiting:file_number');
+      const cleanTags = (currentPatient?.tags ?? []).filter(
+        (t) => t !== 'awaiting:file_number' && t !== 'awaiting:patient_id',
+      );
       cleanTags.push('visited:done', 'visited:yes');
       await prisma.patient.update({
         where: { id: input.patientId },
@@ -1083,17 +1147,17 @@ async function handleFileNumberLookup(
       }
 
       const patientName = existingPatient.name || (locale === 'ar' ? 'عزيزي المراجع' : 'Valued Patient');
-      const reply = dict.file_found_welcome(patientName, existingPatient.fileNumber ?? fileNumber);
+      const reply = dict.file_found_welcome(patientName, existingPatient.fileNumber ?? cleanNum);
 
       const buttons: WhatsAppButton[] = [
         { id: 'book_appointment', title: dict.btn_book_appointment },
+        { id: 'get_doctors', title: dict.btn_doctors },
         { id: 'get_services', title: dict.btn_services },
-        { id: 'get_hours', title: dict.btn_hours },
       ];
 
       logger.info(Events.ROUTER_COMPLETED, 'Fast router matched existing patient file', {
         clinicId: input.clinicId,
-        fileNumber,
+        rawIdOrNumber,
         matchedPatientId: existingPatient.id,
         intent: 'FILE_NUMBER_MATCHED',
         ms: Date.now() - startedAt,
@@ -1107,16 +1171,16 @@ async function handleFileNumberLookup(
         intent: 'FILE_NUMBER_MATCHED',
       };
     } else {
-      // File number not found in DB
-      const reply = dict.file_not_found(fileNumber);
+      // Patient ID not found in DB
+      const reply = dict.file_not_found(rawValStr);
       const buttons: WhatsAppButton[] = [
         { id: 'book_new', title: dict.btn_book_as_new },
         { id: 'human_escalation', title: dict.btn_speak_to_staff },
       ];
 
-      logger.info(Events.ROUTER_COMPLETED, 'Fast router file number not found', {
+      logger.info(Events.ROUTER_COMPLETED, 'Fast router patient ID not found', {
         clinicId: input.clinicId,
-        fileNumber,
+        rawIdOrNumber,
         intent: 'FILE_NUMBER_NOT_FOUND',
         ms: Date.now() - startedAt,
       });
@@ -1130,12 +1194,12 @@ async function handleFileNumberLookup(
       };
     }
   } catch (error) {
-    logger.error(Events.AI_FAILED, 'File number lookup failed in fast router', { error: String(error) });
+    logger.error(Events.AI_FAILED, 'Patient ID lookup failed in fast router', { error: String(error) });
     return {
       handled: true,
       locale,
       intent: 'FILE_LOOKUP_ERROR',
-      reply: dict.file_not_found(fileNumber),
+      reply: dict.file_not_found(String(rawIdOrNumber)),
       buttons: [
         { id: 'book_new', title: dict.btn_book_as_new },
         { id: 'human_escalation', title: dict.btn_speak_to_staff },
@@ -1151,7 +1215,7 @@ async function handleGreeting(
 ): Promise<FastRouterResult> {
   const dict = i18n[locale];
   let clinicName = locale === 'ar' ? 'العيادة' : 'the clinic';
-  let isVisitedDone = false;
+  let isExistingPatient = false;
 
   try {
     const [clinic, patient] = await Promise.all([
@@ -1161,20 +1225,25 @@ async function handleGreeting(
       }),
       prisma.patient.findUnique({
         where: { id: input.patientId },
-        select: { tags: true, appointments: { select: { id: true }, take: 1 } },
+        select: {
+          fileNumber: true,
+          tags: true,
+          appointments: { select: { id: true }, take: 1 },
+        },
       }),
     ]);
     if (clinic?.name) clinicName = clinic.name;
-    isVisitedDone = Boolean(
-      (patient?.tags ?? []).includes('visited:done') ||
+    isExistingPatient = Boolean(
+      (patient?.fileNumber !== null && patient?.fileNumber !== undefined) ||
+        (patient?.tags ?? []).includes('visited:done') ||
         (patient?.appointments && patient.appointments.length > 0),
     );
   } catch {
     // fallback
   }
 
-  // 1. If this is a new caller who hasn't answered "Have you visited before?", prompt them:
-  if (!isVisitedDone) {
+  // 1. If number does NOT exist in DB and hasn't answered "Have you visited before?", prompt them:
+  if (!isExistingPatient) {
     logger.info(Events.ROUTER_COMPLETED, 'Fast router prompting new patient onboarding', {
       clinicId: input.clinicId,
       intent: 'VISITED_BEFORE_PROMPT',
@@ -1196,8 +1265,8 @@ async function handleGreeting(
 
   const buttons: WhatsAppButton[] = [
     { id: 'book_appointment', title: dict.btn_book_appointment },
+    { id: 'get_doctors', title: dict.btn_doctors },
     { id: 'get_services', title: dict.btn_services },
-    { id: 'get_hours', title: dict.btn_hours },
   ];
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router handled greeting', {
@@ -1356,6 +1425,7 @@ async function handleDoctors(
   input: FastRouterInput,
   locale: SupportedLocale,
   startedAt: number,
+  offset: number = 0,
 ): Promise<FastRouterResult> {
   const dict = i18n[locale];
   let doctors: Array<{ id: string; name: string; specialty: string | null }> = [];
@@ -1363,7 +1433,6 @@ async function handleDoctors(
     doctors = await prisma.doctor.findMany({
       where: { clinicId: input.clinicId, isActive: true },
       orderBy: { name: 'asc' },
-      take: 10,
       select: { id: true, name: true, specialty: true },
     });
   } catch {
@@ -1380,28 +1449,44 @@ async function handleDoctors(
     };
   }
 
-  const list = doctors
-    .map((d) => {
+  const PAGE_SIZE = 5;
+  const pageDoctors = doctors.slice(offset, offset + PAGE_SIZE);
+  const hasMore = doctors.length > offset + PAGE_SIZE;
+
+  // Build doctor quick buttons (up to 2 or 3, with more button if pagination needed)
+  const doctorButtons: WhatsAppButton[] = pageDoctors.slice(0, hasMore ? 2 : 3).map((d) => ({
+    id: `select_doctor:any:${d.id}`,
+    title: translateDoctorName(d.name, locale).slice(0, 20),
+  }));
+
+  if (hasMore) {
+    doctorButtons.push({
+      id: `more_doctors:all:${offset + PAGE_SIZE}`,
+      title: dict.btn_more_doctors || '➕ More Doctors',
+    });
+  }
+
+  const list = pageDoctors
+    .map((d, idx) => {
       const docName = translateDoctorName(d.name, locale);
       const specialty = translateSpecialty(d.specialty, locale);
-      return `• *${docName}*${specialty ? ` — ${specialty}` : ''}`;
+      return `${offset + idx + 1}. *${docName}*${specialty ? ` — ${specialty}` : ''}`;
     })
     .join('\n');
 
-  const reply = `${dict.doctors_title}\n\n${list}`;
-
-  const buttons: WhatsAppButton[] = [
-    { id: 'book_appointment', title: dict.btn_book_appointment },
-    { id: 'get_services', title: dict.btn_services },
-  ];
+  const reply = `${dict.doctors_title}\n\n${list}${
+    hasMore ? `\n\n_Tap *${dict.btn_more_doctors}* to view more doctors._` : ''
+  }`;
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router handled doctors', {
     clinicId: input.clinicId,
+    offset,
+    total: doctors.length,
     intent: 'DOCTORS',
     ms: Date.now() - startedAt,
   });
 
-  return { handled: true, reply, buttons, locale, intent: 'DOCTORS' };
+  return { handled: true, reply, buttons: doctorButtons, locale, intent: 'DOCTORS' };
 }
 
 async function handleCancelPrompt(

@@ -65,6 +65,11 @@ export function ServicesPortalDashboard({
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Delete Confirmation Modal State
+  const [serviceToDelete, setServiceToDelete] = useState<ServiceItem | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Form Fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -251,14 +256,26 @@ export function ServicesPortalDashboard({
     }
   };
 
-  // Delete Service
-  const handleDeleteService = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this service?')) return;
-    setServices((prev) => prev.filter((s) => s.id !== id));
+  // Delete Service Handlers (with modal confirmation)
+  const promptDeleteService = (srv: ServiceItem) => {
+    setServiceToDelete(srv);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteService = async () => {
+    if (!serviceToDelete) return;
+    setIsDeleting(true);
+    const idToDelete = serviceToDelete.id;
+
     try {
-      await fetch(`/api/services/${id}`, { method: 'DELETE' });
+      await fetch(`/api/services/${idToDelete}`, { method: 'DELETE' });
+      setServices((prev) => prev.filter((s) => s.id !== idToDelete));
+      setIsDeleteModalOpen(false);
+      setServiceToDelete(null);
     } catch (err) {
       console.error('Failed to delete service:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -519,7 +536,7 @@ export function ServicesPortalDashboard({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteService(srv.id)}
+                        onClick={() => promptDeleteService(srv)}
                         className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
                         title="Delete Service"
                       >
@@ -625,7 +642,7 @@ export function ServicesPortalDashboard({
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteService(srv.id)}
+                            onClick={() => promptDeleteService(srv)}
                             className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
                             title="Delete Service"
                           >
@@ -827,6 +844,58 @@ export function ServicesPortalDashboard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. MODAL: CONFIRM DELETE SERVICE */}
+      {isDeleteModalOpen && serviceToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="size-9 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <Trash2 className="size-4 stroke-[2.5]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Delete Service &amp; Treatment
+                </h3>
+                <p className="text-[11px] text-slate-400">Permanently remove from catalog</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">&ldquo;{serviceToDelete.name}&rdquo;</span>? This will remove this treatment offering from the clinic catalog, automated WhatsApp booking, and unassign it from all specialists.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setServiceToDelete(null);
+                }}
+                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={confirmDeleteService}
+                className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
+              >
+                {isDeleting ? (
+                  <span>Deleting...</span>
+                ) : (
+                  <>
+                    <Trash2 className="size-3.5" />
+                    <span>Delete Service</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

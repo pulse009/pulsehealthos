@@ -28,6 +28,7 @@ enum Role {
   COORDINATOR
   DOCTOR
   PATIENT
+  RECEPTIONIST
 }
 
 enum AppointmentStatus {

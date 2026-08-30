@@ -90,19 +90,30 @@ function isPathActive(pathname: string, href: string): boolean {
  * - Vertically stacked icon buttons (Dashboard, Doctors, Services, Patients, Appointments, Inbox)
  * - Bottom items: Security & Upgrade (replacing profile & sign out)
  */
-export function ClinicPortalSidebarNav() {
+export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
-  const clinicItems = [
-    { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
-    { href: '/portal/doctors', label: 'Doctors', icon: Stethoscope },
-    { href: '/portal/services', label: 'Services', icon: ClipboardList },
-    { href: '/portal/patients', label: 'Patients', icon: Users },
-    { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-    { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
-  ];
+  const isCoordinator = userRole === 'COORDINATOR';
+  const isReceptionist = userRole === 'RECEPTIONIST';
+  const isOwnerOrAdmin = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN';
+
+  const clinicItems = isReceptionist
+    ? [
+        { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+        { href: '/portal/patients', label: 'Patients', icon: Users },
+        { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+      ]
+    : [
+        { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
+        { href: '/portal/doctors', label: 'Doctors', icon: Stethoscope },
+        ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
+        ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
+        { href: '/portal/patients', label: 'Patients', icon: Users },
+        { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+        { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+      ];
 
   const bottomItems = [
     { href: '/portal/organization', label: 'Security', icon: Shield },

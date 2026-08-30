@@ -10,6 +10,8 @@ import type {
   clinicDoctorOperationalSchema,
   doctorPaymentStructureSchema,
   createCoordinatorSchema,
+  createStaffRoleSchema,
+  resetStaffPasswordSchema,
   doctorTimeOffSchema,
   serviceSchema,
 } from '@/lib/validation/schemas';
@@ -26,9 +28,17 @@ import type {
 
 // --- Doctors ---------------------------------------------------------------
 
-export async function listDoctors(scope: TenantScope, clinicId?: string | null) {
+export async function listDoctors(
+  scope: TenantScope,
+  clinicId?: string | null,
+  coordinatorId?: string | null,
+) {
+  const whereClause: any = clinicWhere(scope, clinicId);
+  if (coordinatorId) {
+    whereClause.coordinatorId = coordinatorId;
+  }
   return prisma.doctor.findMany({
-    where: clinicWhere(scope, clinicId),
+    where: whereClause,
     orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     select: {
       id: true,
@@ -198,7 +208,7 @@ export async function getClinicDoctorDetail(scope: TenantScope, doctorId: string
     where: { id: doctorId },
     include: {
       clinic: { select: { id: true, name: true, timezone: true } },
-      coordinator: { select: { id: true, name: true, email: true } },
+      coordinator: { select: { id: true, name: true, username: true, email: true } },
       services: {
         select: {
           serviceId: true,
@@ -643,8 +653,19 @@ export async function deleteService(scope: TenantScope, clinicId: string, servic
 export async function listClinicCoordinators(scope: TenantScope, clinicId: string) {
   const id = resolveClinicId(scope, clinicId);
   return prisma.user.findMany({
-    where: { clinicId: id, isActive: true },
-    select: { id: true, name: true, email: true, role: true },
+    where: { clinicId: id, isActive: true, role: 'COORDINATOR' },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      coordinatedDoctors: {
+        select: { id: true, name: true },
+      },
+    },
     orderBy: { name: 'asc' },
   });
 }
@@ -659,24 +680,70 @@ export async function createClinicCoordinator(
     throw forbidden('Cannot manage staff for another clinic.');
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { email: input.email },
+  // Generate a clean unique username from the coordinator's name
+  let baseUsername = input.name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '');
+
+  if (!baseUsername || baseUsername.length < 2) {
+    baseUsername = 'coordinator';
+  }
+
+  let uniqueUsername = baseUsername;
+  let attempt = 0;
+  while (true) {
+    const candidate = attempt === 0 ? baseUsername : `${baseUsername}${Math.floor(10 + Math.random() * 90)}`;
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ username: candidate }, { username: candidate.toUpperCase() }],
+      },
+      select: { id: true },
+    });
+    if (!existing) {
+      uniqueUsername = candidate;
+      break;
+    }
+    attempt++;
+    if (attempt > 20) {
+      uniqueUsername = `${baseUsername}${Date.now().toString().slice(-4)}`;
+      break;
+    }
+  }
+
+  // Email fallback
+  const userEmail = input.email || `${uniqueUsername}@clinic.internal`;
+
+  const existingEmail = await prisma.user.findUnique({
+    where: { email: userEmail },
     select: { id: true },
   });
-  if (existing) throw conflict('An account with that email already exists.');
+  if (existingEmail) {
+    throw conflict('An account with this email already exists.');
+  }
 
-  const rawPassword = input.password && input.password.length >= 8 ? input.password : 'ClinicStaff123!';
+  const rawPassword = input.password;
   const passwordHash = await hashPassword(rawPassword);
 
   const user = await prisma.user.create({
     data: {
-      email: input.email,
-      name: input.name,
+      email: userEmail,
+      username: uniqueUsername,
+      name: input.name.trim(),
       passwordHash,
-      role: 'CLIENT',
+      role: 'COORDINATOR',
       clinicId: id,
     },
-    select: { id: true, name: true, email: true, role: true, clinicId: true },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      clinicId: true,
+      createdAt: true,
+    },
   });
 
   await recordAudit(scope, {
@@ -684,8 +751,259 @@ export async function createClinicCoordinator(
     entityType: 'User',
     entityId: user.id,
     clinicId: id,
-    metadata: { name: user.name, email: user.email },
+    metadata: { name: user.name, username: user.username, email: user.email },
   });
 
   return user;
+}
+
+export async function resetCoordinatorPassword(
+  scope: TenantScope,
+  clinicId: string,
+  coordinatorId: string,
+  newPassword: string,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  const user = await prisma.user.findFirst({
+    where: { id: coordinatorId, clinicId: id },
+  });
+  if (!user) throw notFound('Coordinator not found.');
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: coordinatorId },
+    data: {
+      passwordHash,
+      sessionVersion: { increment: 1 },
+    },
+  });
+
+  await recordAudit(scope, {
+    action: 'coordinator.reset_password',
+    entityType: 'User',
+    entityId: coordinatorId,
+    clinicId: id,
+    metadata: { name: user.name, username: user.username },
+  });
+
+  return { ok: true };
+}
+
+export async function deleteClinicCoordinator(
+  scope: TenantScope,
+  clinicId: string,
+  coordinatorId: string,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  const user = await prisma.user.findFirst({
+    where: { id: coordinatorId, clinicId: id },
+  });
+  if (!user) throw notFound('Coordinator not found.');
+
+  // Unassign from any doctors
+  await prisma.doctor.updateMany({
+    where: { coordinatorId: coordinatorId },
+    data: { coordinatorId: null },
+  });
+
+  await prisma.user.delete({
+    where: { id: coordinatorId },
+  });
+
+  await recordAudit(scope, {
+    action: 'coordinator.delete',
+    entityType: 'User',
+    entityId: coordinatorId,
+    clinicId: id,
+  });
+
+  return { ok: true };
+}
+
+// --- Roles & Staff Management (Coordinators & Receptionists) -----------------
+
+export async function listClinicStaff(scope: TenantScope, clinicId: string) {
+  const id = resolveClinicId(scope, clinicId);
+  return prisma.user.findMany({
+    where: {
+      clinicId: id,
+      isActive: true,
+      role: { in: ['COORDINATOR', 'RECEPTIONIST'] },
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      isActive: true,
+      createdAt: true,
+      coordinatedDoctors: {
+        select: { id: true, name: true },
+      },
+    },
+    orderBy: [{ role: 'asc' }, { name: 'asc' }],
+  });
+}
+
+export async function createClinicStaff(
+  scope: TenantScope,
+  clinicId: string,
+  input: z.infer<typeof createStaffRoleSchema>,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  if (scope.kind !== 'PLATFORM' && scope.clinicId !== id) {
+    throw forbidden('Cannot manage staff for another clinic.');
+  }
+
+  const role = input.role || 'COORDINATOR';
+
+  // Determine or generate a clean unique username
+  let candidateUsername = input.username?.trim().toLowerCase();
+  if (!candidateUsername) {
+    let base = input.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/^\.+|\.+$/g, '');
+    if (!base || base.length < 2) {
+      base = role === 'RECEPTIONIST' ? 'reception' : 'coordinator';
+    }
+    candidateUsername = base;
+  }
+
+  let uniqueUsername = candidateUsername;
+  let attempt = 0;
+  while (true) {
+    const candidate = attempt === 0 ? candidateUsername : `${candidateUsername}${Math.floor(10 + Math.random() * 90)}`;
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ username: candidate }, { username: candidate.toUpperCase() }],
+      },
+      select: { id: true },
+    });
+    if (!existing) {
+      uniqueUsername = candidate;
+      break;
+    }
+    attempt++;
+    if (attempt > 20) {
+      uniqueUsername = `${candidateUsername}${Date.now().toString().slice(-4)}`;
+      break;
+    }
+  }
+
+  const userEmail = input.email?.trim().toLowerCase() || `${uniqueUsername}@clinic.internal`;
+
+  const existingEmail = await prisma.user.findUnique({
+    where: { email: userEmail },
+    select: { id: true },
+  });
+  if (existingEmail) {
+    throw conflict('An account with this email already exists.');
+  }
+
+  const rawPassword = input.password;
+  const passwordHash = await hashPassword(rawPassword);
+
+  const user = await prisma.user.create({
+    data: {
+      email: userEmail,
+      username: uniqueUsername,
+      name: input.name.trim(),
+      passwordHash,
+      role,
+      clinicId: id,
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      clinicId: true,
+      createdAt: true,
+    },
+  });
+
+  // If coordinator and doctorId is specified, assign doctor
+  if (role === 'COORDINATOR' && input.doctorId) {
+    await prisma.doctor.updateMany({
+      where: { id: input.doctorId, clinicId: id },
+      data: { coordinatorId: user.id },
+    });
+  }
+
+  await recordAudit(scope, {
+    action: 'staff.create',
+    entityType: 'User',
+    entityId: user.id,
+    clinicId: id,
+    metadata: { name: user.name, username: user.username, role: user.role, email: user.email },
+  });
+
+  return user;
+}
+
+export async function resetStaffPassword(
+  scope: TenantScope,
+  clinicId: string,
+  userId: string,
+  newPassword: string,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  const user = await prisma.user.findFirst({
+    where: { id: userId, clinicId: id },
+  });
+  if (!user) throw notFound('Staff user not found.');
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      passwordHash,
+      sessionVersion: { increment: 1 },
+    },
+  });
+
+  await recordAudit(scope, {
+    action: 'staff.reset_password',
+    entityType: 'User',
+    entityId: userId,
+    clinicId: id,
+    metadata: { name: user.name, username: user.username, role: user.role },
+  });
+
+  return { ok: true };
+}
+
+export async function deleteClinicStaff(
+  scope: TenantScope,
+  clinicId: string,
+  userId: string,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  const user = await prisma.user.findFirst({
+    where: { id: userId, clinicId: id },
+  });
+  if (!user) throw notFound('Staff user not found.');
+
+  // Unassign from any coordinated doctors
+  await prisma.doctor.updateMany({
+    where: { coordinatorId: userId },
+    data: { coordinatorId: null },
+  });
+
+  await prisma.user.delete({
+    where: { id: userId },
+  });
+
+  await recordAudit(scope, {
+    action: 'staff.delete',
+    entityType: 'User',
+    entityId: userId,
+    clinicId: id,
+  });
+
+  return { ok: true };
 }

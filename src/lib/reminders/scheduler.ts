@@ -32,18 +32,27 @@ export async function scheduleRemindersFor(
     where: { clinicId: appointment.clinicId, isActive: true },
     select: { id: true, offsetMinutes: true },
   });
-  if (rules.length === 0) return 0;
 
-  const rows = rules
+  const ruleOffsets = rules.map((r) => r.offsetMinutes);
+  const effectiveRules: Array<{ ruleId: string | null; offsetMinutes: number }> = rules.map((r) => ({
+    ruleId: r.id,
+    offsetMinutes: r.offsetMinutes,
+  }));
+  // Always ensure a 2-hour (120 min) prior reminder is scheduled for all scenarios
+  if (!ruleOffsets.includes(120)) {
+    effectiveRules.push({ ruleId: null, offsetMinutes: 120 });
+  }
+
+  const rows = effectiveRules
     .map((rule) => ({
       clinicId: appointment.clinicId,
       appointmentId: appointment.id,
-      ruleId: rule.id,
+      ruleId: rule.ruleId,
       offsetMinutes: rule.offsetMinutes,
       scheduledFor: new Date(appointment.startsAt.getTime() - rule.offsetMinutes * 60_000),
     }))
     // A reminder whose moment has already passed (e.g. a same-day booking made
-    // inside the 24h window) is simply not created.
+    // inside the 2h window) is simply not created.
     .filter((r) => r.scheduledFor.getTime() > now.getTime());
 
   if (rows.length === 0) return 0;

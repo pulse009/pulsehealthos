@@ -7,7 +7,12 @@ export const metadata: Metadata = { title: 'Patients Directory' };
 export const dynamic = 'force-dynamic';
 
 export default async function PortalPatientsPage() {
-  const { clinicId } = await requireClientUser();
+  const { user, clinicId } = await requireClientUser();
+
+  const isCoordinator = user.role === 'COORDINATOR';
+  const coordinatorPatientFilter = isCoordinator
+    ? { appointments: { some: { doctor: { coordinatorId: user.id } } } }
+    : {};
 
   const [clinic, rawPatients] = await Promise.all([
     prisma.clinic.findUnique({
@@ -15,7 +20,7 @@ export default async function PortalPatientsPage() {
       select: { name: true },
     }),
     prisma.patient.findMany({
-      where: { clinicId: clinicId! },
+      where: { clinicId: clinicId!, ...coordinatorPatientFilter },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

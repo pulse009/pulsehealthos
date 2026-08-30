@@ -26,7 +26,7 @@ export async function requireScope(): Promise<{ user: SessionUser; scope: Tenant
   return { user, scope: scopeFor(user) };
 }
 
-/** A clinic-bound user (CLIENT, PATIENT, DOCTOR, COORDINATOR). Super admins are rejected here so
+/** A clinic-bound user (CLIENT, PATIENT, DOCTOR, COORDINATOR, RECEPTIONIST). Super admins are rejected here so
  *  that portal code paths cannot accidentally run cross-tenant. */
 export async function requireClientUser(): Promise<{
   user: SessionUser;
@@ -34,7 +34,14 @@ export async function requireClientUser(): Promise<{
   clinicId: string;
 }> {
   const user = await requireSessionUser();
-  if (!user.clinicId || (user.role !== 'CLIENT' && user.role !== 'PATIENT' && user.role !== 'DOCTOR' && user.role !== 'COORDINATOR')) {
+  if (
+    !user.clinicId ||
+    (user.role !== 'CLIENT' &&
+      user.role !== 'PATIENT' &&
+      user.role !== 'DOCTOR' &&
+      user.role !== 'COORDINATOR' &&
+      user.role !== 'RECEPTIONIST')
+  ) {
     throw forbidden('This area is restricted to clinic accounts.');
   }
   return { user, scope: clinicScope(user.clinicId, user.id), clinicId: user.clinicId };

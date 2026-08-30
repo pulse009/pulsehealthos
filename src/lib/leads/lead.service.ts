@@ -189,6 +189,7 @@ export async function updateLead(
 export async function listAppointments(
   scope: TenantScope,
   query: z.infer<typeof appointmentListSchema>,
+  coordinatorId?: string | null,
 ) {
   const base = clinicWhere(scope, query.clinicId);
 
@@ -207,6 +208,7 @@ export async function listAppointments(
     ...base,
     ...(query.status ? { status: query.status } : {}),
     ...(query.doctorId ? { doctorId: query.doctorId } : {}),
+    ...(coordinatorId ? { doctor: { coordinatorId } } : {}),
     ...(query.from || query.to
       ? {
           startsAt: {

@@ -27,6 +27,7 @@ export default async function PortalLayout({ children }: { children: React.React
       workspaceKind="Clinic"
       userName={user.name}
       userEmail={user.email}
+      userRole={user.role}
       homeHref="/portal"
     >
       {children}

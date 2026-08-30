@@ -234,8 +234,27 @@ export const doctorPaymentStructureSchema = z.object({
 
 export const createCoordinatorSchema = z.object({
   name: trimmed(120).min(1),
-  email: z.string().trim().toLowerCase().email().max(200),
-  password: z.string().min(8).max(200).optional(),
+  email: z.string().trim().toLowerCase().email().max(200).optional(),
+  password: z.string().min(6).max(200),
+});
+
+export const resetCoordinatorPasswordSchema = z.object({
+  coordinatorId: z.string().uuid(),
+  password: z.string().min(6).max(200),
+});
+
+export const createStaffRoleSchema = z.object({
+  name: trimmed(120).min(1),
+  username: z.string().trim().min(2).max(100).optional(),
+  email: z.string().trim().toLowerCase().email().max(200).optional(),
+  password: z.string().min(6).max(200),
+  role: z.enum(['COORDINATOR', 'RECEPTIONIST']).default('COORDINATOR'),
+  doctorId: z.string().uuid().optional().nullable(),
+});
+
+export const resetStaffPasswordSchema = z.object({
+  userId: z.string().uuid(),
+  password: z.string().min(6).max(200),
 });
 
 export const doctorTimeOffSchema = z

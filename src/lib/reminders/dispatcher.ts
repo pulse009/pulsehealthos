@@ -49,6 +49,7 @@ function renderReminder(params: {
   timezone: string;
   clinicName: string;
   canSelfServe: boolean;
+  offsetMinutes?: number;
 }): string {
   const when = formatInstant(params.startsAt, params.timezone);
 
@@ -61,11 +62,16 @@ function renderReminder(params: {
       .replaceAll('{{clinic}}', params.clinicName);
   }
 
-  const greeting = params.patientName ? `Hi ${params.patientName}, ` : '';
+  const greeting = params.patientName ? `Hi *${params.patientName}*, ` : 'Hi, ';
   const action = params.canSelfServe
-    ? ' Reply CONFIRM to confirm, CANCEL to cancel, or RESCHEDULE to change it.'
+    ? '\n\n_Reply CONFIRM to confirm, CANCEL to cancel, or RESCHEDULE to change it._'
     : '';
-  return `${greeting}this is a reminder of your ${params.serviceName} with ${params.doctorName} at ${params.clinicName} on ${when}.${action}`;
+
+  if (params.offsetMinutes === 120) {
+    return `⏰ *Appointment Reminder (2 Hours Ahead):*\n\n${greeting}this is a friendly reminder that your upcoming *${params.serviceName}* appointment with *${params.doctorName}* at *${params.clinicName}* is in *2 hours* (${when}).${action}`;
+  }
+
+  return `⏰ *Appointment Reminder:*\n\n${greeting}this is a reminder of your upcoming *${params.serviceName}* appointment with *${params.doctorName}* at *${params.clinicName}* on ${when}.${action}`;
 }
 
 export async function dispatchDueReminders(
@@ -169,6 +175,7 @@ export async function dispatchDueReminders(
         canSelfServe:
           (appointment.clinic.settings?.allowPatientCancellation ?? true) ||
           (appointment.clinic.settings?.allowPatientReschedule ?? true),
+        offsetMinutes: reminder.offsetMinutes,
       });
 
       const result = await sendAndRecordOutbound({

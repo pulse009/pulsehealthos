@@ -21,11 +21,16 @@ function formatPatientId(fileNumber: number | null, id: string): string {
  */
 export const GET = withErrorHandling(async (request: Request) => {
   limitByIp(request, 'api-read', RateLimits.API_READ);
-  const { scope } = await requireScope();
+  const { user, scope } = await requireScope();
 
   if (scope.kind !== 'CLINIC') {
     return NextResponse.json({ error: 'Clinic scope required' }, { status: 403 });
   }
+
+  const isCoordinator = user.role === 'COORDINATOR';
+  const coordinatorPatientCondition = isCoordinator
+    ? { appointments: { some: { doctor: { coordinatorId: user.id } } } }
+    : {};
 
   const { searchParams } = new URL(request.url);
   const fileNumberStr = searchParams.get('fileNumber') || searchParams.get('patientId');
@@ -48,6 +53,7 @@ export const GET = withErrorHandling(async (request: Request) => {
       where: {
         clinicId: scope.clinicId,
         OR: orConditions,
+        ...coordinatorPatientCondition,
       },
       include: {
         user: { select: { username: true, email: true } },
@@ -83,6 +89,7 @@ export const GET = withErrorHandling(async (request: Request) => {
       where: {
         clinicId: scope.clinicId,
         phone: { contains: cleanPhone },
+        ...coordinatorPatientCondition,
       },
       include: {
         user: { select: { username: true, email: true } },
@@ -112,7 +119,7 @@ export const GET = withErrorHandling(async (request: Request) => {
   }
 
   // 3. General search
-  const whereFilter: any = { clinicId: scope.clinicId };
+  const whereFilter: any = { clinicId: scope.clinicId, ...coordinatorPatientCondition };
   if (query) {
     const cleanNum = query.replace(/^(?:PID-?|FR-?|PA-?|#)/i, '');
     const isNum = !isNaN(parseInt(cleanNum, 10));

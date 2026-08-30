@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { requireClientUser } from '@/lib/auth/guards';
 import { prisma } from '@/lib/db/prisma';
 import {
@@ -10,7 +11,11 @@ export const metadata: Metadata = { title: 'Doctors & Specialists' };
 export const dynamic = 'force-dynamic';
 
 export default async function PortalDoctorsPage() {
-  const { clinicId } = await requireClientUser();
+  const { user, clinicId } = await requireClientUser();
+
+  if (user.role === 'RECEPTIONIST') {
+    redirect('/portal/appointments');
+  }
 
   const now = new Date();
 
@@ -20,7 +25,10 @@ export default async function PortalDoctorsPage() {
       select: { name: true, timezone: true },
     }),
     prisma.doctor.findMany({
-      where: { clinicId: clinicId! },
+      where: {
+        clinicId: clinicId!,
+        ...(user.role === 'COORDINATOR' ? { coordinatorId: user.id } : {}),
+      },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
       select: {
         id: true,
@@ -61,7 +69,7 @@ export default async function PortalDoctorsPage() {
       orderBy: { name: 'asc' },
     }),
     prisma.user.findMany({
-      where: { clinicId: clinicId!, isActive: true },
+      where: { clinicId: clinicId!, isActive: true, role: 'COORDINATOR' },
       select: { id: true, name: true, email: true },
       orderBy: { name: 'asc' },
     }),

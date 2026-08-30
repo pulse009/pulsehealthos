@@ -16,9 +16,10 @@ export const runtime = 'nodejs';
 
 export const GET = withErrorHandling(async (request: Request) => {
   limitByIp(request, 'api-read', RateLimits.API_READ);
-  const { scope } = await requireScope();
+  const { user, scope } = await requireScope();
   const query = parseQuery(request, appointmentListSchema);
-  return NextResponse.json(await listAppointments(scope, query));
+  const coordinatorId = user.role === 'COORDINATOR' ? user.id : undefined;
+  return NextResponse.json(await listAppointments(scope, query, coordinatorId));
 });
 
 /**

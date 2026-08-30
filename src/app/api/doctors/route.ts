@@ -11,9 +11,10 @@ export const runtime = 'nodejs';
 export async function GET(request: Request) {
   try {
     limitByIp(request, 'api-read', RateLimits.API_READ);
-    const { scope } = await requireScope();
+    const { user, scope } = await requireScope();
     const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : undefined;
-    const doctors = await listDoctors(scope, clinicId);
+    const coordinatorId = user.role === 'COORDINATOR' ? user.id : undefined;
+    const doctors = await listDoctors(scope, clinicId, coordinatorId);
     return NextResponse.json({ ok: true, doctors });
   } catch (error) {
     return errorResponse(error);

@@ -24,6 +24,7 @@ export function AppShell({
   workspaceKind,
   userName,
   userEmail,
+  userRole,
   homeHref,
   children,
 }: {
@@ -32,6 +33,7 @@ export function AppShell({
   workspaceKind: 'Admin' | 'Clinic';
   userName: string;
   userEmail: string;
+  userRole?: string;
   homeHref: string;
   children: ReactNode;
 }) {
@@ -45,13 +47,17 @@ export function AppShell({
     .join('')
     .toUpperCase();
 
+  const isReceptionist = userRole === 'RECEPTIONIST';
+
   const showSecondarySidebar =
     workspaceKind === 'Clinic' &&
+    !isReceptionist &&
     (pathname === '/portal' ||
       pathname.startsWith('/portal/doctors') ||
       pathname.startsWith('/portal/services') ||
       pathname.startsWith('/portal/patients') ||
-      pathname.startsWith('/portal/appointments'));
+      pathname.startsWith('/portal/appointments') ||
+      pathname.startsWith('/portal/roles'));
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans">
@@ -93,7 +99,7 @@ export function AppShell({
         {/* Navigation Links */}
         <div className="flex-1 overflow-hidden">
           {workspaceKind === 'Clinic' ? (
-            <ClinicPortalSidebarNav />
+            <ClinicPortalSidebarNav userRole={userRole} />
           ) : (
             <SidebarNav items={navItems} />
           )}
@@ -126,7 +132,7 @@ export function AppShell({
       </aside>
 
       {/* 2. SECONDARY SIDEBAR (RENDERED FOR DASHBOARD & DOCTORS MODULE) */}
-      {showSecondarySidebar && <DoctorSecondarySidebar />}
+      {showSecondarySidebar && <DoctorSecondarySidebar userRole={userRole} />}
 
       {/* 3. MAIN CONTENT AREA WITH TOP HEADER */}
       <div className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">

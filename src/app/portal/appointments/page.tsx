@@ -11,13 +11,17 @@ export const metadata: Metadata = { title: 'Appointments Schedule' };
 export const dynamic = 'force-dynamic';
 
 export default async function PortalAppointmentsPage() {
-  const { clinicId } = await requireClientUser();
+  const { user, clinicId } = await requireClientUser();
 
   const timezone = 'Asia/Riyadh';
   const now = new Date();
   const todayKey = toDateKey(now, timezone);
   const todayStart = startOfLocalDay(todayKey, timezone);
   const todayEnd = endOfLocalDay(todayKey, timezone);
+
+  const isCoordinator = user.role === 'COORDINATOR';
+  const coordinatorDoctorFilter = isCoordinator ? { coordinatorId: user.id } : {};
+  const coordinatorAppointmentFilter = isCoordinator ? { doctor: { coordinatorId: user.id } } : {};
 
   // Fetch all dashboard data concurrently in a single parallel batch
   const [
@@ -34,7 +38,7 @@ export default async function PortalAppointmentsPage() {
       select: { name: true, timezone: true },
     }),
     prisma.appointment.findMany({
-      where: { clinicId: clinicId! },
+      where: { clinicId: clinicId!, ...coordinatorAppointmentFilter },
       orderBy: { startsAt: 'desc' },
       take: 100,
       select: {
@@ -63,7 +67,7 @@ export default async function PortalAppointmentsPage() {
       orderBy: { name: 'asc' },
     }),
     prisma.doctor.findMany({
-      where: { clinicId: clinicId!, isActive: true },
+      where: { clinicId: clinicId!, isActive: true, ...coordinatorDoctorFilter },
       select: {
         id: true,
         name: true,
@@ -80,12 +84,14 @@ export default async function PortalAppointmentsPage() {
       where: {
         clinicId: clinicId!,
         startsAt: { gte: todayStart, lt: todayEnd },
+        ...coordinatorAppointmentFilter,
       },
     }),
     prisma.appointment.count({
       where: {
         clinicId: clinicId!,
         status: 'PENDING',
+        ...coordinatorAppointmentFilter,
       },
     }),
     prisma.appointment.count({
@@ -93,6 +99,7 @@ export default async function PortalAppointmentsPage() {
         clinicId: clinicId!,
         status: 'CANCELLED',
         startsAt: { gte: todayStart, lt: todayEnd },
+        ...coordinatorAppointmentFilter,
       },
     }),
   ]);
