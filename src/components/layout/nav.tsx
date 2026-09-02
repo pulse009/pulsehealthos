@@ -28,6 +28,8 @@ import {
   Users2,
   Shield,
   TrendingUp,
+  Boxes,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/components/ui/primitives';
 
@@ -95,6 +97,7 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
   const router = useRouter();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
+  const isDoctor = userRole === 'DOCTOR';
   const isCoordinator = userRole === 'COORDINATOR';
   const isReceptionist = userRole === 'RECEPTIONIST';
   const isOwnerOrAdmin = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN';
@@ -102,23 +105,39 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
   const clinicItems = isReceptionist
     ? [
         { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+        { href: '/portal/accounts/invoices', label: 'Billing', icon: Wallet },
         { href: '/portal/patients', label: 'Patients', icon: Users },
         { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
       ]
-    : [
-        { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
-        { href: '/portal/doctors', label: 'Doctors', icon: Stethoscope },
-        ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
-        ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
-        { href: '/portal/patients', label: 'Patients', icon: Users },
-        { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-        { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
-      ];
+    : isDoctor
+      ? [
+          { href: '/portal/doctors', label: 'My Profile', icon: Stethoscope },
+          { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+          { href: '/portal/accounts/doctor-payouts', label: 'My Payouts', icon: Wallet },
+          { href: '/portal/inventory/requests', label: 'Item Requests', icon: Boxes },
+          { href: '/portal/patients', label: 'Patients', icon: Users },
+          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+        ]
+      : [
+          { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
+          { href: '/portal/doctors', label: 'Doctors', icon: Stethoscope },
+          ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
+          ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
+          ...(!isCoordinator ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
+          ...(isOwnerOrAdmin ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
+          { href: '/portal/patients', label: 'Patients', icon: Users },
+          { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+        ];
 
-  const bottomItems = [
-    { href: '/portal/organization', label: 'Security', icon: Shield },
-    { href: '/portal/subscription', label: 'Upgrade', icon: TrendingUp },
-  ];
+  const bottomItems = isOwnerOrAdmin
+    ? [
+        { href: '/portal/organization', label: 'Security', icon: Shield },
+        { href: '/portal/subscription', label: 'Upgrade', icon: TrendingUp },
+      ]
+    : [
+        { href: '/portal/organization', label: 'Security', icon: Shield },
+      ];
 
   // Proactively prefetch all portal routes in background on mount
   useEffect(() => {
@@ -137,79 +156,78 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
   const currentActivePath = optimisticPath || pathname;
 
   return (
-    <nav className="w-full h-full flex flex-col justify-between items-center py-3 select-none" aria-label="Clinic Portal Navigation">
-      {/* Top Stack: Logo + Main Modules */}
-      <div className="w-full flex flex-col items-center">
-        {/* 1. Hospital Medical Circular Logo */}
+    <nav className="w-full h-full flex flex-col justify-between items-center py-2 select-none overflow-hidden" aria-label="Clinic Portal Navigation">
+      {/* 1. Top Logo */}
+      <div className="w-full flex flex-col items-center shrink-0 mb-1.5">
         <Link
           href="/portal"
           onMouseEnter={() => router.prefetch('/portal')}
-          className="size-10 rounded-full bg-[#0e1626] text-white flex items-center justify-center shadow-xs transition-transform hover:scale-105 mb-4 shrink-0 cursor-pointer"
+          className="size-8 rounded-full bg-[#0e1626] text-white flex items-center justify-center shadow-xs transition-transform hover:scale-105 shrink-0 cursor-pointer"
           title="PulseHealth"
         >
-          <svg className="size-5.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="size-4.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
           </svg>
         </Link>
-
-        {/* 2. Main Navigation Modules */}
-        <div className="w-full flex flex-col items-center gap-2.5">
-          {clinicItems.map((item) => {
-            const Icon = item.icon;
-            const active = isPathActive(currentActivePath, item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                prefetch={true}
-                onMouseEnter={() => router.prefetch(item.href)}
-                onPointerDown={() => router.prefetch(item.href)}
-                onClick={() => {
-                  if (pathname !== item.href) {
-                    setOptimisticPath(item.href);
-                  }
-                }}
-                className="flex flex-col items-center justify-center w-full group relative cursor-pointer"
-              >
-                {/* Icon Container (Rounded square when active) */}
-                <div
-                  className={cn(
-                    'relative size-11 rounded-2xl flex items-center justify-center transition-all',
-                    active
-                      ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white shadow-2xs border border-slate-300/70 dark:border-slate-700'
-                      : 'text-slate-600 dark:text-slate-400 group-hover:bg-slate-200/50 dark:group-hover:bg-slate-800/50 group-hover:text-slate-900 dark:group-hover:text-white',
-                  )}
-                >
-                  <Icon className="size-5.5 stroke-[1.8] shrink-0" />
-
-                  {/* Badge if available */}
-                  {item.badge && (
-                    <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[9px] min-w-[17px] h-[17px] px-1 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-xs">
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
-
-                {/* Label underneath */}
-                <span
-                  className={cn(
-                    'text-[10px] tracking-tight font-medium mt-1 leading-tight text-center truncate max-w-[64px]',
-                    active
-                      ? 'font-bold text-slate-900 dark:text-white'
-                      : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200',
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
       </div>
 
-      {/* Bottom Stack: Security & Upgrade */}
-      <div className="w-full flex flex-col items-center gap-3 pt-3 border-t border-slate-200/80 dark:border-slate-800">
+      {/* 2. Middle Scrollable Main Navigation Modules */}
+      <div className="flex-1 w-full overflow-y-auto flex flex-col items-center gap-1.5 min-h-0 py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {clinicItems.map((item) => {
+          const Icon = item.icon;
+          const active = isPathActive(currentActivePath, item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              prefetch={true}
+              onMouseEnter={() => router.prefetch(item.href)}
+              onPointerDown={() => router.prefetch(item.href)}
+              onClick={() => {
+                if (pathname !== item.href) {
+                  setOptimisticPath(item.href);
+                }
+              }}
+              className="flex flex-col items-center justify-center w-full group relative cursor-pointer shrink-0"
+            >
+              {/* Compact Icon Container */}
+              <div
+                className={cn(
+                  'relative size-8.5 rounded-xl flex items-center justify-center transition-all',
+                  active
+                    ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white shadow-2xs border border-slate-300/70 dark:border-slate-700'
+                    : 'text-slate-600 dark:text-slate-400 group-hover:bg-slate-200/50 dark:group-hover:bg-slate-800/50 group-hover:text-slate-900 dark:group-hover:text-white',
+                )}
+              >
+                <Icon className="size-4.5 stroke-[1.8] shrink-0" />
+
+                {/* Badge if available */}
+                {item.badge && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[8px] min-w-[15px] h-[15px] px-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-xs">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+
+              {/* Compact Label underneath */}
+              <span
+                className={cn(
+                  'text-[9px] tracking-tight font-medium mt-0.5 leading-none text-center truncate max-w-[66px]',
+                  active
+                    ? 'font-bold text-slate-900 dark:text-white'
+                    : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200',
+                )}
+              >
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* 3. Bottom Stack: Security & Upgrade */}
+      <div className="w-full flex flex-col items-center gap-1.5 pt-1.5 border-t border-slate-200/80 dark:border-slate-800 shrink-0">
         {bottomItems.map((item) => {
           const Icon = item.icon;
           const active = isPathActive(currentActivePath, item.href);
@@ -225,19 +243,19 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
                   setOptimisticPath(item.href);
                 }
               }}
-              className="flex flex-col items-center justify-center w-full group relative cursor-pointer"
+              className="flex flex-col items-center justify-center w-full group relative cursor-pointer shrink-0"
             >
               <div
                 className={cn(
-                  'relative size-10 rounded-2xl flex items-center justify-center transition-all',
+                  'relative size-8 rounded-xl flex items-center justify-center transition-all',
                   active
                     ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white shadow-2xs'
                     : 'text-slate-500 dark:text-slate-400 group-hover:bg-slate-200/50 group-hover:text-slate-900',
                 )}
               >
-                <Icon className="size-5 stroke-[1.8] shrink-0" />
+                <Icon className="size-4 stroke-[1.8] shrink-0" />
               </div>
-              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-tight">
+              <span className="text-[8.5px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-tight leading-none">
                 {item.label}
               </span>
             </Link>

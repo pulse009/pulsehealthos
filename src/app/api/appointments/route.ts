@@ -170,6 +170,21 @@ export const POST = withErrorHandling(async (request: Request) => {
     throw badRequest('Selected doctor is not found in this clinic.');
   }
 
+  // Authorize by user role
+  if (user.role === 'DOCTOR' && resolvedDoctor.userId !== user.id) {
+    throw badRequest('You can only create appointments for yourself.');
+  } else if (user.role === 'COORDINATOR' && resolvedDoctor.coordinatorId !== user.id) {
+    throw badRequest('You can only create appointments for doctors assigned to you.');
+  }
+
+  // Verify doctor provides the selected service
+  const doctorOffersService = await prisma.doctorService.findFirst({
+    where: { doctorId: resolvedDoctor.id, serviceId: resolvedService.id },
+  });
+  if (!doctorOffersService) {
+    throw badRequest(`Dr. ${resolvedDoctor.name} does not offer the selected service "${resolvedService.name}".`);
+  }
+
   // 5. Create appointment
   const result = await createAppointment(scope, {
     clinicId: targetClinicId,

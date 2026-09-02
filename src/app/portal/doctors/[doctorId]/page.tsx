@@ -23,8 +23,11 @@ export default async function PortalDoctorDetailPage({
   try {
     const rawDoctor = await getClinicDoctorDetail(scope, doctorId);
 
-    // If logged in as a coordinator, restrict access strictly to assigned doctor
+    // If logged in as a coordinator or doctor, restrict access strictly to assigned doctor
     if (user.role === 'COORDINATOR' && rawDoctor.coordinatorId !== user.id) {
+      notFound();
+    }
+    if (user.role === 'DOCTOR' && rawDoctor.userId !== user.id) {
       notFound();
     }
 
@@ -50,6 +53,8 @@ export default async function PortalDoctorDetailPage({
           username: true,
           email: true,
           role: true,
+          salary: true,
+          commissionPercent: true,
           isActive: true,
           coordinatedDoctors: { select: { id: true, name: true } },
         },
@@ -59,6 +64,7 @@ export default async function PortalDoctorDetailPage({
 
     const doctor = {
       ...rawDoctor,
+      paymentStructure: user.role === 'DOCTOR' ? null : rawDoctor.paymentStructure,
       appointments: rawDoctor.appointments.map((a) => ({
         id: a.id,
         appointmentNumber: a.appointmentNumber,
@@ -70,12 +76,18 @@ export default async function PortalDoctorDetailPage({
       })),
     };
 
+    const sanitizedStaff = availableStaff.map((s) => ({
+      ...s,
+      salary: user.role === 'DOCTOR' ? null : s.salary,
+    }));
+
     return (
       <DoctorDetailPortalView
         doctor={doctor}
         availableServices={availableServices}
-        availableStaff={availableStaff}
+        availableStaff={sanitizedStaff}
         backHref="/portal/doctors"
+        userRole={user.role}
       />
     );
   } catch (error) {

@@ -17,6 +17,16 @@ export default async function PortalDoctorsPage() {
     redirect('/portal/appointments');
   }
 
+  if (user.role === 'DOCTOR') {
+    const myDoctor = await prisma.doctor.findFirst({
+      where: { clinicId: clinicId!, userId: user.id },
+      select: { id: true },
+    });
+    if (myDoctor) {
+      redirect(`/portal/doctors/${myDoctor.id}`);
+    }
+  }
+
   const now = new Date();
 
   const [clinic, rawDoctors, services, staff] = await Promise.all([
@@ -28,6 +38,7 @@ export default async function PortalDoctorsPage() {
       where: {
         clinicId: clinicId!,
         ...(user.role === 'COORDINATOR' ? { coordinatorId: user.id } : {}),
+        ...(user.role === 'DOCTOR' ? { userId: user.id } : {}),
       },
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
       select: {
@@ -41,6 +52,9 @@ export default async function PortalDoctorsPage() {
         bufferMinutes: true,
         coordinator: {
           select: { id: true, name: true, email: true },
+        },
+        user: {
+          select: { id: true, username: true, email: true },
         },
         services: {
           select: {
@@ -85,6 +99,7 @@ export default async function PortalDoctorsPage() {
     appointmentMinutes: doc.appointmentMinutes,
     bufferMinutes: doc.bufferMinutes,
     coordinator: doc.coordinator,
+    user: doc.user,
     services: doc.services.map((s) => ({ id: s.service.id, name: s.service.name })),
     schedules: doc.schedules,
     upcomingAppointmentsCount: doc._count.appointments,

@@ -181,6 +181,8 @@ export function DoctorCreatePortalView({
   const [isAddCoordinatorModalOpen, setIsAddCoordinatorModalOpen] = useState(false);
   const [newCoordName, setNewCoordName] = useState('');
   const [newCoordEmail, setNewCoordEmail] = useState('');
+  const [newCoordSalary, setNewCoordSalary] = useState('');
+  const [newCoordCommissionPercent, setNewCoordCommissionPercent] = useState('');
   const [newCoordPassword, setNewCoordPassword] = useState('');
   const [isCreatingCoord, setIsCreatingCoord] = useState(false);
 
@@ -231,6 +233,8 @@ export function DoctorCreatePortalView({
         body: JSON.stringify({
           name: newCoordName.trim(),
           email: newCoordEmail.trim(),
+          salary: newCoordSalary ? parseFloat(newCoordSalary) : 0,
+          commissionPercent: newCoordCommissionPercent ? parseFloat(newCoordCommissionPercent) : 0,
           password: newCoordPassword.trim() || undefined,
         }),
       });
@@ -241,6 +245,8 @@ export function DoctorCreatePortalView({
         setIsAddCoordinatorModalOpen(false);
         setNewCoordName('');
         setNewCoordEmail('');
+        setNewCoordSalary('');
+        setNewCoordCommissionPercent('');
         setNewCoordPassword('');
       }
     } catch (err) {
@@ -1180,6 +1186,40 @@ export function DoctorCreatePortalView({
                   value={newCoordEmail}
                   onChange={(e) => setNewCoordEmail(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Doctor Service Commission (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    placeholder="e.g. 5 (Percentage given by doctor on services)"
+                    value={newCoordCommissionPercent}
+                    onChange={(e) => setNewCoordCommissionPercent(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-3 pr-8 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Clinic Monthly Base Salary (SAR)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  placeholder="e.g. 4000 (Optional)"
+                  value={newCoordSalary}
+                  onChange={(e) => setNewCoordSalary(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 

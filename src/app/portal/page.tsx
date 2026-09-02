@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export default async function PortalDashboard() {
   const { user, clinicId } = await requireClientUser();
 
-  if (user.role === 'RECEPTIONIST') {
+  if (user.role === 'RECEPTIONIST' || user.role === 'DOCTOR') {
     redirect('/portal/appointments');
   }
 
@@ -181,6 +181,7 @@ export default async function PortalDashboard() {
         pendingCount: pendingConfirmationsCount,
         cancellationsCount: cancellationsTodayCount,
       }}
+      userRole={user.role}
     />
   );
 }

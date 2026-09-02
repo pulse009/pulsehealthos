@@ -11,6 +11,21 @@ import {
   Plus,
   LogOut,
   Users,
+  Boxes,
+  Package,
+  Layers,
+  Activity,
+  Truck,
+  FileText,
+  AlertTriangle,
+  ClipboardList,
+  Wallet,
+  ReceiptText,
+  DollarSign,
+  PieChart,
+  CalendarCheck,
+  CalendarDays,
+  Stethoscope,
 } from 'lucide-react';
 import { cn } from '@/components/ui/primitives';
 import {
@@ -42,17 +57,22 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
   const searchParams = useSearchParams();
   const urlTab = searchParams.get('tab');
 
+  const isDoctor = userRole === 'DOCTOR';
   const isCoordinator = userRole === 'COORDINATOR';
 
   // Instant shared synchronous activeTab state
   const [currentTab, setActiveTab] = useDoctorActiveTab(urlTab);
 
-  // Instant render from in-memory cache if available
-  const [doctors, setDoctors] = useState<DoctorSummary[]>(() => DOCTORS_CACHE || []);
+  // If user is DOCTOR, do not initialize from an admin DOCTORS_CACHE with multiple doctors
+  const [doctors, setDoctors] = useState<DoctorSummary[]>(() => {
+    if (isDoctor && DOCTORS_CACHE && DOCTORS_CACHE.length > 1) return [];
+    return DOCTORS_CACHE || [];
+  });
   const [isLoading, setIsLoading] = useState(() => DOCTORS_CACHE === null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    DOCTORS_CACHE = null;
     setIsLoggingOut(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -67,6 +87,7 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
   // Check if we are viewing a specific doctor detail page: /portal/doctors/[doctorId]
   const doctorIdMatch = pathname.match(/^\/portal\/doctors\/([^\/]+)$/);
   const currentDoctorId = doctorIdMatch && doctorIdMatch[1] !== 'create' ? doctorIdMatch[1] : null;
+  const effectiveDoctorId = isDoctor ? (currentDoctorId || doctors[0]?.id) : currentDoctorId;
 
   useEffect(() => {
     // Subscribe to cache updates
@@ -95,15 +116,27 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
     };
   }, []);
 
-  const activeDoctor = currentDoctorId ? doctors.find((d) => d.id === currentDoctorId) : null;
+  const activeDoctor = effectiveDoctorId
+    ? doctors.find((d) => d.id === effectiveDoctorId) || (isDoctor ? doctors[0] : null)
+    : null;
+
+  useEffect(() => {
+    if (isDoctor && currentTab === 'payment-structure') {
+      setActiveTab('schedule');
+    }
+  }, [isDoctor, currentTab, setActiveTab]);
 
   // Handle instant 0ms tab click
   const handleTabClick = (tabKey: DoctorTabKey) => {
     setActiveTab(tabKey);
   };
 
+  const isAppointmentsPage = pathname.startsWith('/portal/appointments');
   const isRolesPage = pathname.startsWith('/portal/roles');
   const roleTab = searchParams.get('tab') || 'all';
+
+  const isInventoryPage = pathname.startsWith('/portal/inventory');
+  const isAccountsPage = pathname.startsWith('/portal/accounts');
 
   return (
     <aside
@@ -124,13 +157,50 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
       <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-5 min-h-0">
         {/* 2. Top Highlighted Button */}
         <div>
-          {isRolesPage ? (
+          {isAppointmentsPage ? (
+            <Link
+              href="/portal/appointments"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs"
+            >
+              <div className="flex items-center gap-2">
+                <CalendarDays className="size-4 text-slate-900 dark:text-white" />
+                <span>{isDoctor ? 'My Appointments' : 'Appointments Schedule'}</span>
+              </div>
+            </Link>
+          ) : isAccountsPage ? (
+            <Link
+              href={isDoctor ? '/portal/accounts/doctor-payouts' : '/portal/accounts'}
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs"
+            >
+              <div className="flex items-center gap-2">
+                <Wallet className="size-4 text-slate-900 dark:text-white" />
+                <span>{isDoctor ? 'My Payouts' : 'Accounts & Finance'}</span>
+              </div>
+            </Link>
+          ) : isInventoryPage ? (
+            <Link
+              href={isDoctor ? '/portal/inventory/requests' : '/portal/inventory'}
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs"
+            >
+              <div className="flex items-center gap-2">
+                <Boxes className="size-4 text-slate-900 dark:text-white" />
+                <span>{isDoctor ? 'My Item Requests' : 'Inventory Hub'}</span>
+              </div>
+            </Link>
+          ) : isRolesPage ? (
             <Link
               href="/portal/roles"
               className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs"
             >
               <span>Roles &amp; Staff</span>
             </Link>
+          ) : isDoctor ? (
+            <div className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white transition-all shadow-2xs">
+              <div className="flex items-center gap-2 truncate">
+                <Stethoscope className="size-4 text-slate-900 dark:text-white shrink-0" />
+                <span className="truncate">{activeDoctor?.name || 'My Clinical Profile'}</span>
+              </div>
+            </div>
           ) : currentDoctorId ? (
             <Link
               href="/portal/doctors"
@@ -160,8 +230,246 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
           )}
         </div>
 
-        {/* 3. Roles Tabs OR Doctor Configuration Section */}
-        {isRolesPage ? (
+        {/* 3. Accounts Tabs */}
+        {isAccountsPage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              <Wallet className="size-4 stroke-[2.2]" />
+              <span>{isDoctor ? 'My Payouts' : 'Accounts & Finance'}</span>
+            </div>
+            <div className="space-y-0.5">
+              {isDoctor ? (
+                <div className="space-y-1">
+                  {/* Parent: My Payouts */}
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold text-slate-950 dark:text-white bg-slate-100/80 dark:bg-slate-800/60">
+                    <span>My Payouts</span>
+                  </div>
+                  {/* Children Tabs under My Payouts */}
+                  <div className="pl-3 space-y-0.5 border-l-2 border-slate-100 dark:border-slate-800 ml-3">
+                    <Link
+                      href="/portal/accounts/doctor-payouts"
+                      className={cn(
+                        'flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+                        pathname === '/portal/accounts/doctor-payouts' && (!searchParams.get('status') || searchParams.get('status') === 'ALL')
+                          ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                      )}
+                    >
+                      <span>All Payouts</span>
+                    </Link>
+                    <Link
+                      href="/portal/accounts/doctor-payouts?status=PENDING"
+                      className={cn(
+                        'flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+                        pathname === '/portal/accounts/doctor-payouts' && searchParams.get('status') === 'PENDING'
+                          ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                      )}
+                    >
+                      <span>Pending</span>
+                    </Link>
+                    <Link
+                      href="/portal/accounts/doctor-payouts?status=PAID"
+                      className={cn(
+                        'flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium transition-all',
+                        pathname === '/portal/accounts/doctor-payouts' && searchParams.get('status') === 'PAID'
+                          ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                      )}
+                    >
+                      <span>Paid</span>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/portal/accounts"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname === '/portal/accounts'
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Financial Overview</span>
+                  </Link>
+                  <Link
+                    href="/portal/accounts/invoices"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/accounts/invoices')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Invoices &amp; Billing</span>
+                  </Link>
+                  <Link
+                    href="/portal/accounts/doctor-payouts"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/accounts/doctor-payouts')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Doctor Payouts</span>
+                  </Link>
+                  <Link
+                    href="/portal/accounts/bills"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/accounts/bills')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Supplier Bills</span>
+                  </Link>
+                  <Link
+                    href="/portal/accounts/expenses"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/accounts/expenses')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Operating Expenses</span>
+                  </Link>
+                  <Link
+                    href="/portal/accounts/closing"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/accounts/closing')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Day-End Closing</span>
+                  </Link>
+                  <Link
+                    href="/portal/accounts/reports"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/accounts/reports')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Reports &amp; P&amp;L</span>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        ) : isInventoryPage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              <Boxes className="size-4 stroke-[2.2]" />
+              <span>{userRole === 'DOCTOR' ? 'Procedure Supplies' : 'Inventory Management'}</span>
+            </div>
+            <div className="space-y-0.5">
+              {userRole !== 'DOCTOR' && (
+                <>
+                  <Link
+                    href="/portal/inventory"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname === '/portal/inventory'
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Overview Dashboard</span>
+                  </Link>
+                  <Link
+                    href="/portal/inventory/items"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/inventory/items')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Items &amp; Stock</span>
+                  </Link>
+                  <Link
+                    href="/portal/inventory/categories"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/inventory/categories')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Categories</span>
+                  </Link>
+                  <Link
+                    href="/portal/inventory/movements"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/inventory/movements')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Stock Movements</span>
+                  </Link>
+                </>
+              )}
+              <Link
+                href="/portal/inventory/requests"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/inventory/requests')
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>{userRole === 'DOCTOR' ? 'My Item Requests' : 'Item Requests'}</span>
+              </Link>
+              {userRole !== 'DOCTOR' && (
+                <>
+                  <Link
+                    href="/portal/inventory/suppliers"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/inventory/suppliers')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Suppliers &amp; Vendors</span>
+                  </Link>
+                  <Link
+                    href="/portal/inventory/purchase-orders"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/inventory/purchase-orders')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Purchase Orders</span>
+                  </Link>
+                  <Link
+                    href="/portal/inventory/low-stock"
+                    className={cn(
+                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      pathname.startsWith('/portal/inventory/low-stock')
+                        ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                    )}
+                  >
+                    <span>Low Stock Alerts</span>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        ) : isRolesPage ? (
           <div className="space-y-1">
             <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
               <Users className="size-4 stroke-[2.2]" />
@@ -203,14 +511,78 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
               </Link>
             </div>
           </div>
+        ) : isAppointmentsPage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
+              <CalendarDays className="size-4 stroke-[2.2]" />
+              <span>{isDoctor ? 'My Schedule Views' : 'Schedule Views'}</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/appointments"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  pathname === '/portal/appointments' && !searchParams.get('status')
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>All Appointments</span>
+              </Link>
+              <Link
+                href="/portal/appointments?status=CONFIRMED"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  searchParams.get('status') === 'CONFIRMED'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>Confirmed &amp; Active</span>
+              </Link>
+              <Link
+                href="/portal/appointments?status=PENDING"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  searchParams.get('status') === 'PENDING'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>Pending Requests</span>
+              </Link>
+              <Link
+                href="/portal/appointments?status=COMPLETED"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  searchParams.get('status') === 'COMPLETED'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>Completed Treatments</span>
+              </Link>
+              <Link
+                href="/portal/appointments?status=CANCELLED"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                  searchParams.get('status') === 'CANCELLED'
+                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                )}
+              >
+                <span>Cancelled Slots</span>
+              </Link>
+            </div>
+          </div>
         ) : (
           <div className="space-y-1">
             <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
               <CreditCard className="size-4 stroke-[2.2]" />
-              <span>Doctor Configuration</span>
+              <span>{isDoctor ? 'My Clinical Profile' : 'Doctor Configuration'}</span>
             </div>
 
-          {currentDoctorId ? (
+          {(effectiveDoctorId || isDoctor) ? (
             /* Continuous 7 Tabs with Instant 0ms In-Memory Click Handlers */
             <div className="space-y-0.5">
               {/* 1. Working Schedule */}
@@ -300,19 +672,21 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
                 <span>Assigned Coordinator</span>
               </button>
 
-              {/* 7. Payment Structure (Directly below Coordinator) */}
-              <button
-                type="button"
-                onClick={() => handleTabClick('payment-structure')}
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer',
-                  currentTab === 'payment-structure'
-                    ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
-                )}
-              >
-                <span>Payment Structure</span>
-              </button>
+              {/* 7. Payment Structure (Directly below Coordinator - Hidden for DOCTOR role) */}
+              {!isDoctor && (
+                <button
+                  type="button"
+                  onClick={() => handleTabClick('payment-structure')}
+                  className={cn(
+                    'flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer',
+                    currentTab === 'payment-structure'
+                      ? 'font-bold text-slate-950 dark:text-white bg-slate-200/80 dark:bg-slate-800 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                  )}
+                >
+                  <span>Payment Structure</span>
+                </button>
+              )}
             </div>
           ) : (
             /* All Doctors List with Instant Previews */
@@ -342,8 +716,8 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
         </div>
         )}
 
-        {/* 4. Section 2: Utilities & Settings (Shown only on general views) */}
-        {!currentDoctorId && (
+        {/* 4. Section 2: Utilities & Settings (Shown on general views for non-doctors) */}
+        {!currentDoctorId && !isDoctor && (
           <div className="space-y-1">
             <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
               <Wrench className="size-4 stroke-[2.2]" />
@@ -397,6 +771,19 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
                   )}
                 >
                   <span>Roles &amp; Staff</span>
+                </Link>
+              )}
+              {!isCoordinator && (
+                <Link
+                  href="/portal/inventory"
+                  className={cn(
+                    'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                    pathname.startsWith('/portal/inventory')
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-950 dark:text-white font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                  )}
+                >
+                  <span>Inventory &amp; Stock</span>
                 </Link>
               )}
             </div>

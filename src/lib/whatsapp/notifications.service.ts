@@ -145,3 +145,147 @@ export async function sendStaffWhatsAppCredentialsNotification({
     return false;
   }
 }
+
+export interface SendPostTreatmentBillingNotificationParams {
+  clinicId: string;
+  patientPhone: string;
+  patientName: string;
+  doctorName: string;
+  serviceName: string;
+  invoiceNumber: string;
+  totalAmount: number;
+}
+
+/**
+ * Dispatch automated WhatsApp message to patient when their appointment is completed by doctor,
+ * detailing the consultation/procedure fee and directing them to reception desk for Cash/Card settlement.
+ */
+export async function sendPostTreatmentBillingWhatsAppNotification({
+  clinicId,
+  patientPhone,
+  patientName,
+  doctorName,
+  serviceName,
+  invoiceNumber,
+  totalAmount,
+}: SendPostTreatmentBillingNotificationParams): Promise<boolean> {
+  try {
+    const clinic = await prisma.clinic.findUnique({
+      where: { id: clinicId },
+      select: { name: true },
+    });
+
+    const clinicTitle = clinic?.name || 'Pulse Health Clinic';
+    const formattedTotal = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
+      minimumFractionDigits: 2,
+    }).format(totalAmount);
+
+    let message = `Hello *${patientName}*,\n\n`;
+    message += `Thank you for your visit to *${clinicTitle}*! 🌟\n\n`;
+    message += `Your consultation & treatment with *${doctorName}* is now complete. Here is your invoice summary:\n\n`;
+    message += `📋 *Invoice Details:*\n`;
+    message += `• *Invoice Number:* \`${invoiceNumber}\`\n`;
+    message += `• *Service / Procedure:* ${serviceName}\n`;
+    message += `• *Total Amount Due:* *${formattedTotal}*\n\n`;
+    message += `💳 *Payment:* Please proceed to the front desk reception counter to settle your bill via *Cash* or *Card (POS)*.\n\n`;
+    message += `We hope you had a pleasant experience with us today! 😊`;
+
+    const cleanedPhone = normalizePhone(patientPhone);
+    if (!cleanedPhone) return false;
+
+    await sendText(clinicId, cleanedPhone, message);
+
+    logger.info(Events.WHATSAPP_SEND_SUCCESS, 'Sent post-treatment billing WhatsApp notification', {
+      clinicId,
+      phone: cleanedPhone,
+      invoiceNumber,
+    });
+
+    return true;
+  } catch (err) {
+    logger.warn(Events.WHATSAPP_SEND_FAILED, 'Failed to send post-treatment billing notification', {
+      clinicId,
+      phone: patientPhone,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
+}
+
+export interface SendPaymentReceiptNotificationParams {
+  clinicId: string;
+  patientPhone: string;
+  patientName: string;
+  invoiceNumber: string;
+  amountPaid: number;
+  paymentMethod: string;
+  remainingBalance: number;
+}
+
+/**
+ * Dispatch automated WhatsApp Digital Tax Receipt to patient when payment is recorded at front desk.
+ */
+export async function sendPaymentReceiptWhatsAppNotification({
+  clinicId,
+  patientPhone,
+  patientName,
+  invoiceNumber,
+  amountPaid,
+  paymentMethod,
+  remainingBalance,
+}: SendPaymentReceiptNotificationParams): Promise<boolean> {
+  try {
+    const clinic = await prisma.clinic.findUnique({
+      where: { id: clinicId },
+      select: { name: true },
+    });
+
+    const clinicTitle = clinic?.name || 'Pulse Health Clinic';
+    const appUrl = env.APP_URL || 'https://pulsehealthos.vercel.app';
+    const receiptUrl = `${appUrl}/portal/accounts/invoices`;
+
+    const formattedPaid = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
+      minimumFractionDigits: 2,
+    }).format(amountPaid);
+
+    const formattedBalance = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
+      minimumFractionDigits: 2,
+    }).format(remainingBalance);
+
+    let message = `🧾 *Official Payment Receipt — ${invoiceNumber}* ✅\n\n`;
+    message += `Dear *${patientName}*,\n`;
+    message += `We have successfully received your payment at *${clinicTitle}*:\n\n`;
+    message += `• *Amount Paid:* *${formattedPaid}*\n`;
+    message += `• *Payment Method:* ${paymentMethod}\n`;
+    message += `• *Remaining Balance:* ${formattedBalance}\n\n`;
+    message += `📄 You can view and download your full invoice receipt here:\n${receiptUrl}\n\n`;
+    message += `Thank you for trusting ${clinicTitle}! Wishing you great health and wellness. 🌿`;
+
+    const cleanedPhone = normalizePhone(patientPhone);
+    if (!cleanedPhone) return false;
+
+    await sendText(clinicId, cleanedPhone, message);
+
+    logger.info(Events.WHATSAPP_SEND_SUCCESS, 'Sent payment receipt WhatsApp notification', {
+      clinicId,
+      phone: cleanedPhone,
+      invoiceNumber,
+      amountPaid,
+    });
+
+    return true;
+  } catch (err) {
+    logger.warn(Events.WHATSAPP_SEND_FAILED, 'Failed to send payment receipt notification', {
+      clinicId,
+      phone: patientPhone,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
+}

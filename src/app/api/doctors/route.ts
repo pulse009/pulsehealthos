@@ -14,7 +14,8 @@ export async function GET(request: Request) {
     const { user, scope } = await requireScope();
     const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : undefined;
     const coordinatorId = user.role === 'COORDINATOR' ? user.id : undefined;
-    const doctors = await listDoctors(scope, clinicId, coordinatorId);
+    const doctorUserId = user.role === 'DOCTOR' ? user.id : undefined;
+    const doctors = await listDoctors(scope, clinicId, coordinatorId, doctorUserId);
     return NextResponse.json({ ok: true, doctors });
   } catch (error) {
     return errorResponse(error);

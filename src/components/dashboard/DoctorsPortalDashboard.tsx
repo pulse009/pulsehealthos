@@ -33,6 +33,7 @@ export interface DoctorCardItem {
   appointmentMinutes: number | null;
   bufferMinutes: number | null;
   coordinator?: { id: string; name: string; email: string } | null;
+  user?: { id: string; username: string | null; email: string } | null;
   services: Array<{ id: string; name: string }>;
   schedules: Array<{ weekday: number; startMinute: number; endMinute: number }>;
   upcomingAppointmentsCount: number;
@@ -344,12 +345,19 @@ export function DoctorsPortalDashboard({
                               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                                 {doc.specialty || 'General Practitioner'}
                               </p>
-                              {doc.coordinator && (
-                                <p className="text-[10px] text-emerald-600 font-medium truncate mt-0.5 flex items-center gap-1">
-                                  <UserCheck className="size-3" />
-                                  <span>Coord: {doc.coordinator.name}</span>
-                                </p>
-                              )}
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {doc.user?.username && (
+                                  <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
+                                    @{doc.user.username}
+                                  </span>
+                                )}
+                                {doc.coordinator && (
+                                  <span className="text-[10px] text-emerald-600 font-medium truncate flex items-center gap-0.5">
+                                    <UserCheck className="size-3" />
+                                    <span>{doc.coordinator.name}</span>
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -454,6 +462,9 @@ export function DoctorsPortalDashboard({
                     DOCTOR
                   </th>
                   <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                    LOGIN USERNAME
+                  </th>
+                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
                     SPECIALTY / DEPARTMENT
                   </th>
                   <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
@@ -476,7 +487,7 @@ export function DoctorsPortalDashboard({
               <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800 text-xs">
                 {filteredDoctors.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 font-medium text-xs">
+                    <td colSpan={8} className="py-12 text-center text-slate-400 font-medium text-xs">
                       No doctors found matching filters.
                     </td>
                   </tr>
@@ -515,6 +526,21 @@ export function DoctorsPortalDashboard({
                         </div>
                       </td>
 
+                      <td className="py-2.5 px-4 font-mono">
+                        {row.user?.username ? (
+                          <div className="space-y-0.5">
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800">
+                              @{row.user.username}
+                            </span>
+                            <span className="block text-[10px] text-slate-400 font-sans truncate max-w-[140px]">
+                              {row.user.email}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">No login linked</span>
+                        )}
+                      </td>
+
                       <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300">
                         {row.specialty || 'General Practitioner'}
                       </td>
@@ -550,10 +576,10 @@ export function DoctorsPortalDashboard({
                       <td className="py-2.5 px-4 text-right whitespace-nowrap">
                         <Link
                           href={`/portal/doctors/${row.id}`}
-                          className="px-2.5 py-1 rounded-[8px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs inline-flex items-center gap-1"
+                          className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 font-bold text-xs"
                         >
                           <span>Manage</span>
-                          <ChevronRight className="size-3" />
+                          <ChevronRight className="size-3.5" />
                         </Link>
                       </td>
                     </tr>

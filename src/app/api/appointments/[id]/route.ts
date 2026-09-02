@@ -100,6 +100,15 @@ export async function PATCH(request: Request, context: Context) {
         where: whereClause,
         data: { status: targetStatus as any },
       });
+
+      // Automation: If appointment is completed, generate invoice and send WhatsApp billing notice
+      if (targetStatus === 'COMPLETED') {
+        const { handleAppointmentCompleted } = await import('@/lib/accounts/accounts.automation');
+        handleAppointmentCompleted(updated.id).catch((err) => {
+          console.error('Failed to run post-completion billing automation:', err);
+        });
+      }
+
       return NextResponse.json({ ok: true, appointment: updated });
     }
 

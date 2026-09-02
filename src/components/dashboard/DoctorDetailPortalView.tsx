@@ -36,6 +36,8 @@ import {
   Copy,
   Lock,
   CheckCheck,
+  Pencil,
+  MoreHorizontal,
 } from 'lucide-react';
 
 export interface DoctorAppointmentTypeItem {
@@ -43,7 +45,7 @@ export interface DoctorAppointmentTypeItem {
   name: string;
   durationMinutes: number;
   price?: number | null;
-  currency?: string;
+  currency?: string | null;
   description?: string | null;
   serviceId: string; // 'ALL' or specific service ID
   isActive?: boolean;
@@ -65,6 +67,8 @@ export interface StaffItem {
   username?: string | null;
   email: string;
   role?: string;
+  salary?: number | null;
+  commissionPercent?: number | null;
   isActive?: boolean;
   createdAt?: string | Date;
   coordinatedDoctors?: Array<{ id: string; name: string }>;
@@ -157,6 +161,7 @@ export interface DoctorDetailProps {
   availableServices?: ServiceItem[];
   availableStaff?: StaffItem[];
   backHref?: string;
+  userRole?: string;
 }
 
 export function DoctorDetailPortalView({
@@ -164,6 +169,7 @@ export function DoctorDetailPortalView({
   availableServices: initialServices = [],
   availableStaff: initialStaff = [],
   backHref = '/portal/doctors',
+  userRole,
 }: DoctorDetailProps) {
   const [doctor, setDoctor] = useState(initialDoctor);
   const [staffList, setStaffList] = useState<StaffItem[]>(initialStaff);
@@ -185,11 +191,21 @@ export function DoctorDetailPortalView({
   // Instant shared synchronous activeTab state (0ms latency, ClickUp style)
   const [activeTab, setActiveTab] = useDoctorActiveTab(tabFromUrl);
 
-  // Master & Profile Form State
+  useEffect(() => {
+    if (userRole === 'DOCTOR' && activeTab === 'payment-structure') {
+      setActiveTab('schedule');
+    }
+  }, [userRole, activeTab, setActiveTab]);
+
   const [doctorName, setDoctorName] = useState(doctor.name);
   const [doctorSpecialty, setDoctorSpecialty] = useState(doctor.specialty || '');
   const [doctorDescription, setDoctorDescription] = useState(doctor.description || '');
   const [doctorImageUrl, setDoctorImageUrl] = useState(doctor.imageUrl || '');
+
+  const isDoctor = userRole === 'DOCTOR';
+  const displayDoctorName = doctorName.trim().startsWith('Dr.') || doctorName.trim().startsWith('Dr ')
+    ? doctorName.trim()
+    : `Dr. ${doctorName.trim()}`;
 
   // Operational Settings Form State
   const [isActive, setIsActive] = useState(doctor.isActive);
@@ -311,11 +327,25 @@ export function DoctorDetailPortalView({
   const [newBlockedStartHour, setNewBlockedStartHour] = useState('');
   const [newBlockedEndHour, setNewBlockedEndHour] = useState('');
 
-  // Add Coordinator Modal State (Full name + Set Password)
+  // Add Coordinator Modal State (Full name + Salary + Commission + Set Password)
   const [isAddCoordinatorModalOpen, setIsAddCoordinatorModalOpen] = useState(false);
   const [isSubmittingCoordinator, setIsSubmittingCoordinator] = useState(false);
   const [newCoordinatorName, setNewCoordinatorName] = useState('');
+  const [newCoordinatorSalary, setNewCoordinatorSalary] = useState('');
+  const [newCoordinatorCommissionPercent, setNewCoordinatorCommissionPercent] = useState('');
   const [newCoordinatorPassword, setNewCoordinatorPassword] = useState('');
+
+  // Edit Coordinator Modal State
+  const [isEditCoordinatorModalOpen, setIsEditCoordinatorModalOpen] = useState(false);
+  const [coordinatorToEdit, setCoordinatorToEdit] = useState<StaffItem | null>(null);
+  const [editCoordinatorName, setEditCoordinatorName] = useState('');
+  const [editCoordinatorSalary, setEditCoordinatorSalary] = useState('');
+  const [editCoordinatorCommissionPercent, setEditCoordinatorCommissionPercent] = useState('');
+  const [editCoordinatorPassword, setEditCoordinatorPassword] = useState('');
+  const [isSubmittingEditCoordinator, setIsSubmittingEditCoordinator] = useState(false);
+
+  // 3-Dot Action Dropdown State
+  const [activeActionStaffId, setActiveActionStaffId] = useState<string | null>(null);
 
   // Reset Coordinator Password Modal State
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
@@ -657,20 +687,26 @@ export function DoctorDetailPortalView({
     }
   };
 
-  // Create Coordinator Handler (name + password, auto-generates username)
+  // Create Coordinator Handler (name + salary + password, auto-generates username)
   const handleCreateCoordinator = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCoordinatorName.trim() || !newCoordinatorPassword.trim()) return;
 
     setIsSubmittingCoordinator(true);
     try {
+      const payload: any = {
+        name: newCoordinatorName.trim(),
+        password: newCoordinatorPassword.trim(),
+        commissionPercent: newCoordinatorCommissionPercent ? parseFloat(newCoordinatorCommissionPercent) : 0,
+      };
+      if (!isDoctor && newCoordinatorSalary) {
+        payload.salary = parseFloat(newCoordinatorSalary);
+      }
+
       const res = await fetch('/api/coordinators', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newCoordinatorName.trim(),
-          password: newCoordinatorPassword.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.ok && data.coordinator) {
@@ -680,12 +716,62 @@ export function DoctorDetailPortalView({
         }
         setIsAddCoordinatorModalOpen(false);
         setNewCoordinatorName('');
+        setNewCoordinatorSalary('');
+        setNewCoordinatorCommissionPercent('');
         setNewCoordinatorPassword('');
       }
     } catch (err) {
       console.error('Failed to create coordinator:', err);
     } finally {
       setIsSubmittingCoordinator(false);
+    }
+  };
+
+  // Edit Coordinator Handlers
+  const promptEditCoordinator = (staff: StaffItem) => {
+    setCoordinatorToEdit(staff);
+    setEditCoordinatorName(staff.name || '');
+    setEditCoordinatorSalary(staff.salary !== undefined && staff.salary !== null ? String(staff.salary) : '');
+    setEditCoordinatorCommissionPercent(staff.commissionPercent !== undefined && staff.commissionPercent !== null ? String(staff.commissionPercent) : '');
+    setEditCoordinatorPassword('');
+    setIsEditCoordinatorModalOpen(true);
+  };
+
+  const handleSaveEditCoordinator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!coordinatorToEdit || !editCoordinatorName.trim()) return;
+
+    setIsSubmittingEditCoordinator(true);
+    try {
+      const payload: any = {
+        coordinatorId: coordinatorToEdit.id,
+        name: editCoordinatorName.trim(),
+        commissionPercent: editCoordinatorCommissionPercent ? parseFloat(editCoordinatorCommissionPercent) : 0,
+      };
+      if (!isDoctor && editCoordinatorSalary) {
+        payload.salary = parseFloat(editCoordinatorSalary);
+      }
+      if (editCoordinatorPassword.trim().length >= 6) {
+        payload.password = editCoordinatorPassword.trim();
+      }
+
+      const res = await fetch('/api/coordinators', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.ok && data.coordinator) {
+        setStaffList((prev) =>
+          prev.map((s) => (s.id === data.coordinator.id ? { ...s, ...data.coordinator } : s))
+        );
+        setIsEditCoordinatorModalOpen(false);
+        setCoordinatorToEdit(null);
+      }
+    } catch (err) {
+      console.error('Failed to update coordinator:', err);
+    } finally {
+      setIsSubmittingEditCoordinator(false);
     }
   };
 
@@ -1714,18 +1800,18 @@ export function DoctorDetailPortalView({
           </div>
         )}
 
-        {/* TAB 6: COORDINATOR TABLE VIEW */}
+        {/* TAB 6: COORDINATOR TABLE VIEW (ATTACHED BORDER TABLE) */}
         {activeTab === 'coordinator' && (
-          <div className="space-y-4 p-6">
-            {/* Top Toolbar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            {/* Top Toolbar - Flush attached header */}
+            <div className="px-6 py-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <UserCheck className="size-4 text-emerald-600" />
                   <span>Clinic Coordinators &amp; Staff</span>
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Manage login credentials and designate staff to manage Dr. {doctorName}&apos;s schedule and patient appointments.
+                  Manage login credentials and designate staff to manage {displayDoctorName}&apos;s schedule and patient appointments.
                 </p>
               </div>
               <div className="flex items-center gap-2.5">
@@ -1750,22 +1836,24 @@ export function DoctorDetailPortalView({
               </div>
             </div>
 
-            {/* Coordinator Table */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
+            {/* Coordinator Table - Flush Attached Border */}
+            <div className="overflow-x-auto border-b border-slate-200 dark:border-slate-800">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                    <th className="py-3 px-4">Coordinator Name</th>
+                    <th className="py-3 px-6">Coordinator Name</th>
                     <th className="py-3 px-4">Login Username</th>
+                    {!isDoctor && <th className="py-3 px-4">Base Salary</th>}
+                    <th className="py-3 px-4">Service Commission</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Doctor Assignment</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   {filteredStaff.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400 italic">
+                      <td colSpan={isDoctor ? 6 : 7} className="py-12 text-center text-slate-400 italic">
                         {coordinatorSearch
                           ? 'No coordinator matches your search.'
                           : 'No coordinators created yet. Click "+ Add Coordinator" to create login credentials.'}
@@ -1785,7 +1873,7 @@ export function DoctorDetailPortalView({
                           }`}
                         >
                           {/* 1. Name & Avatar */}
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-6">
                             <div className="flex items-center gap-3">
                               <div className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-xs border border-slate-200 dark:border-slate-700">
                                 {staff.name.charAt(0).toUpperCase()}
@@ -1805,7 +1893,7 @@ export function DoctorDetailPortalView({
                           </td>
 
                           {/* 2. Login Username with Copy Button */}
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-4">
                             <div className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-[6px] font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200">
                               <span>{displayUsername}</span>
                               <button
@@ -1828,21 +1916,45 @@ export function DoctorDetailPortalView({
                             )}
                           </td>
 
-                          {/* 3. Status */}
-                          <td className="py-3 px-4">
+                          {/* 3. Base Salary (Clinic only - hidden for DOCTOR role) */}
+                          {!isDoctor && (
+                            <td className="py-3.5 px-4">
+                              <div className="inline-flex items-baseline gap-1 font-mono font-bold text-xs text-slate-900 dark:text-white">
+                                <span>{staff.salary ? `${Number(staff.salary).toLocaleString()} SAR` : '0 SAR'}</span>
+                                <span className="text-[10px] font-normal text-slate-400">/mo</span>
+                              </div>
+                              <div className="text-[10px] text-slate-400">Clinic salary</div>
+                            </td>
+                          )}
+
+                          {/* 4. Service Commission (%) */}
+                          <td className="py-3.5 px-4">
+                            {staff.commissionPercent ? (
+                              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-xs font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
+                                <Percent className="size-3" />
+                                <span>{staff.commissionPercent}%</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400 font-mono">0%</span>
+                            )}
+                            <div className="text-[10px] text-slate-400 mt-0.5">On doctor services</div>
+                          </td>
+
+                          {/* 5. Status */}
+                          <td className="py-3.5 px-4">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-[10px]">
                               <span className="size-1.5 rounded-full bg-emerald-500" />
                               Active
                             </span>
                           </td>
 
-                          {/* 4. Assignment Toggle */}
-                          <td className="py-3 px-4">
+                          {/* 6. Assignment Toggle */}
+                          <td className="py-3.5 px-4">
                             {isAssignedToThisDoctor ? (
                               <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-emerald-600 text-white font-semibold text-[11px] shadow-2xs">
                                   <Check className="size-3 stroke-[3]" />
-                                  <span>Assigned to Dr. {doctorName}</span>
+                                  <span>Assigned to {displayDoctorName}</span>
                                 </span>
                                 <button
                                   type="button"
@@ -1860,32 +1972,79 @@ export function DoctorDetailPortalView({
                                 onClick={() => handleAssignCoordinator(staff.id)}
                                 className="px-2.5 py-1 rounded-[6px] border border-slate-200 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
                               >
-                                {isAssigningStaffId === staff.id ? 'Assigning...' : `Assign to Dr. ${doctorName}`}
+                                {isAssigningStaffId === staff.id ? 'Assigning...' : `Assign to ${displayDoctorName}`}
                               </button>
                             )}
                           </td>
 
-                          {/* 5. Actions: Reset Password + Delete */}
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
+                          {/* 7. Actions: Professional 3-Dot Dropdown Menu */}
+                          <td className="py-3.5 px-6 text-right relative whitespace-nowrap">
+                            <div className="flex items-center justify-end">
                               <button
                                 type="button"
-                                onClick={() => promptResetPassword(staff)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-semibold text-xs transition-colors cursor-pointer"
-                                title="Reset coordinator password"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveActionStaffId(activeActionStaffId === staff.id ? null : staff.id);
+                                }}
+                                className="size-8 rounded-[8px] flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 transition-all cursor-pointer shadow-2xs"
+                                title="Actions"
                               >
-                                <Key className="size-3" />
-                                <span>Reset Password</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => promptDeleteCoordinator(staff)}
-                                className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
-                                title="Delete coordinator"
-                              >
-                                <Trash2 className="size-3.5" />
+                                <MoreHorizontal className="size-4" />
                               </button>
                             </div>
+
+                            {activeActionStaffId === staff.id && (
+                              <>
+                                {/* Click-away backdrop */}
+                                <div
+                                  className="fixed inset-0 z-30"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveActionStaffId(null);
+                                  }}
+                                />
+
+                                <div className="absolute right-6 top-11 z-40 w-44 bg-white dark:bg-slate-800 rounded-[8px] shadow-xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveActionStaffId(null);
+                                      promptEditCoordinator(staff);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2.5 cursor-pointer transition-colors"
+                                  >
+                                    <Pencil className="size-3.5 text-blue-600 dark:text-blue-400" />
+                                    <span>Edit Coordinator</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveActionStaffId(null);
+                                      promptResetPassword(staff);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2.5 cursor-pointer transition-colors"
+                                  >
+                                    <Key className="size-3.5 text-amber-600 dark:text-amber-400" />
+                                    <span>Reset Password</span>
+                                  </button>
+                                  <div className="my-1 border-t border-slate-100 dark:border-slate-700/80" />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveActionStaffId(null);
+                                      promptDeleteCoordinator(staff);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 cursor-pointer transition-colors"
+                                  >
+                                    <Trash2 className="size-3.5 text-rose-600 dark:text-rose-400" />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1897,8 +2056,8 @@ export function DoctorDetailPortalView({
           </div>
         )}
 
-        {/* TAB 7: PAYMENT STRUCTURE */}
-        {activeTab === 'payment-structure' && (
+        {/* TAB 7: PAYMENT STRUCTURE (Hidden for DOCTOR role) */}
+        {activeTab === 'payment-structure' && userRole !== 'DOCTOR' && (
           <div>
             {/* Header Bar */}
             <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -2377,6 +2536,48 @@ export function DoctorDetailPortalView({
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Doctor Service Commission (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    placeholder="e.g. 5 (Percentage given by doctor on services)"
+                    value={newCoordinatorCommissionPercent}
+                    onChange={(e) => setNewCoordinatorCommissionPercent(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-3 pr-8 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Optional commission percentage provided by the doctor on completed services/procedures.
+                </p>
+              </div>
+
+              {!isDoctor && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Clinic Monthly Base Salary (SAR)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50"
+                    placeholder="e.g. 4000 (Base salary paid by clinic)"
+                    value={newCoordinatorSalary}
+                    onChange={(e) => setNewCoordinatorSalary(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Fixed monthly base compensation paid directly by the clinic.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Set Password *
                 </label>
                 <input
@@ -2407,6 +2608,122 @@ export function DoctorDetailPortalView({
                   className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
                 >
                   {isSubmittingCoordinator ? 'Creating...' : 'Create Coordinator'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5B. MODAL: EDIT CLINIC COORDINATOR */}
+      {isEditCoordinatorModalOpen && coordinatorToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Pencil className="size-4 text-blue-600" />
+                <span>Edit Clinic Coordinator</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditCoordinatorModalOpen(false);
+                  setCoordinatorToEdit(null);
+                }}
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditCoordinator} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Coordinator Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sara Ahmed"
+                  value={editCoordinatorName}
+                  onChange={(e) => setEditCoordinatorName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Doctor Service Commission (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    placeholder="e.g. 5"
+                    value={editCoordinatorCommissionPercent}
+                    onChange={(e) => setEditCoordinatorCommissionPercent(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-3 pr-8 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Commission percentage given by the doctor on services provided.
+                </p>
+              </div>
+
+              {!isDoctor && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Clinic Monthly Base Salary (SAR)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50"
+                    placeholder="e.g. 4000"
+                    value={editCoordinatorSalary}
+                    onChange={(e) => setEditCoordinatorSalary(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Fixed base salary paid directly by the clinic.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Update Password (Optional)
+                </label>
+                <input
+                  type="password"
+                  placeholder="Leave blank to keep existing password"
+                  value={editCoordinatorPassword}
+                  onChange={(e) => setEditCoordinatorPassword(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Only enter a password if you want to reset it (min 6 characters).</p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditCoordinatorModalOpen(false);
+                    setCoordinatorToEdit(null);
+                  }}
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEditCoordinator}
+                  className="px-4 py-1.5 rounded-[8px] bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
+                >
+                  {isSubmittingEditCoordinator ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

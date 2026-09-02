@@ -4,11 +4,13 @@ import { limitByIp, parseJson, errorResponse } from '@/lib/api/handler';
 import { requireScope } from '@/lib/auth/guards';
 import {
   createCoordinatorSchema,
+  updateCoordinatorSchema,
   resetCoordinatorPasswordSchema,
 } from '@/lib/validation/schemas';
 import {
   listClinicCoordinators,
   createClinicCoordinator,
+  updateClinicCoordinator,
   resetCoordinatorPassword,
   deleteClinicCoordinator,
 } from '@/lib/directory/directory.service';
@@ -36,6 +38,20 @@ export async function POST(request: Request) {
     const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : (request.headers.get('x-clinic-id') || '');
 
     const coordinator = await createClinicCoordinator(scope, clinicId, body);
+    return NextResponse.json({ ok: true, coordinator });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    limitByIp(request, 'api-write', RateLimits.API_WRITE);
+    const { scope } = await requireScope();
+    const body = await parseJson(request, updateCoordinatorSchema);
+    const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : (request.headers.get('x-clinic-id') || '');
+
+    const coordinator = await updateClinicCoordinator(scope, clinicId, body);
     return NextResponse.json({ ok: true, coordinator });
   } catch (error) {
     return errorResponse(error);

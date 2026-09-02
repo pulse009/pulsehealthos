@@ -16,7 +16,10 @@ type Context = { params: Promise<{ doctorId: string }> };
 export async function GET(request: Request, context: Context) {
   try {
     limitByIp(request, 'api-read', RateLimits.API_READ);
-    const { scope } = await requireScope();
+    const { user, scope } = await requireScope();
+    if (user.role === 'DOCTOR') {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    }
     const { doctorId } = await context.params;
 
     const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : (request.headers.get('x-clinic-id') || '');
@@ -30,7 +33,10 @@ export async function GET(request: Request, context: Context) {
 export async function PATCH(request: Request, context: Context) {
   try {
     limitByIp(request, 'api-write', RateLimits.API_WRITE);
-    const { scope } = await requireScope();
+    const { user, scope } = await requireScope();
+    if (user.role === 'DOCTOR') {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    }
     const { doctorId } = await context.params;
     const body = await parseJson(request, doctorPaymentStructureSchema);
 

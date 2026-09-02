@@ -236,6 +236,17 @@ export const createCoordinatorSchema = z.object({
   name: trimmed(120).min(1),
   email: z.string().trim().toLowerCase().email().max(200).optional(),
   password: z.string().min(6).max(200),
+  salary: z.coerce.number().min(0).optional().default(0),
+  commissionPercent: z.coerce.number().min(0).max(100).optional().default(0),
+});
+
+export const updateCoordinatorSchema = z.object({
+  coordinatorId: z.string().uuid(),
+  name: trimmed(120).min(1).optional(),
+  salary: z.coerce.number().min(0).optional(),
+  commissionPercent: z.coerce.number().min(0).max(100).optional(),
+  password: z.string().min(6).max(200).optional().nullable(),
+  isActive: z.boolean().optional(),
 });
 
 export const resetCoordinatorPasswordSchema = z.object({
@@ -250,6 +261,8 @@ export const createStaffRoleSchema = z.object({
   password: z.string().min(6).max(200),
   role: z.enum(['COORDINATOR', 'RECEPTIONIST']).default('COORDINATOR'),
   doctorId: z.string().uuid().optional().nullable(),
+  salary: z.coerce.number().min(0).optional().default(0),
+  commissionPercent: z.coerce.number().min(0).max(100).optional().default(0),
 });
 
 export const resetStaffPasswordSchema = z.object({

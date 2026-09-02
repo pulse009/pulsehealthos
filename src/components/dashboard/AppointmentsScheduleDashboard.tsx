@@ -27,6 +27,7 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
+import { cn } from '@/components/ui/primitives';
 
 export interface AppointmentItem {
   id: string;
@@ -76,6 +77,7 @@ export interface AppointmentsScheduleDashboardProps {
   servicesList?: ServiceOption[];
   doctorsList?: DoctorOption[];
   metrics?: DashboardMetricsProps;
+  userRole?: string;
 }
 
 const DEFAULT_DEPARTMENTS = [
@@ -110,6 +112,7 @@ export function AppointmentsScheduleDashboard({
   servicesList = [],
   doctorsList = [],
   metrics = { totalCount: 0, bookedCount: 0, pendingCount: 0, cancellationsCount: 0 },
+  userRole,
 }: AppointmentsScheduleDashboardProps) {
   const [appointments, setAppointments] = useState<AppointmentItem[]>(initialAppointments);
 
@@ -211,14 +214,32 @@ export function AppointmentsScheduleDashboard({
     }
   };
 
-  // Compatible doctors for the currently selected service in modal
-  const modalCompatibleDoctors = useMemo(() => {
-    if (!selectedServiceId || servicesList.length === 0) return doctorsList;
-    const srv = servicesList.find((s) => s.id === selectedServiceId);
-    if (!srv || !srv.doctorIds || srv.doctorIds.length === 0) return doctorsList;
-    const filtered = doctorsList.filter((d) => srv.doctorIds?.includes(d.id));
-    return filtered.length > 0 ? filtered : doctorsList;
-  }, [selectedServiceId, servicesList, doctorsList]);
+  // Doctors available in modal (already role-scoped by server)
+  const modalDoctors = useMemo(() => {
+    return doctorsList.length > 0
+      ? doctorsList
+      : doctors.map((d) => ({ id: d, name: d, serviceIds: [] }));
+  }, [doctorsList, doctors]);
+
+  // Services dynamically filtered to only those belonging to the currently selected doctor
+  const modalCompatibleServices = useMemo(() => {
+    if (!selectedDoctorId) {
+      if (doctorsList.length > 0) {
+        const allDoctorServiceIds = new Set(doctorsList.flatMap((d) => d.serviceIds || []));
+        return servicesList.filter((s) => allDoctorServiceIds.has(s.id));
+      }
+      return servicesList;
+    }
+
+    const currentDoc = doctorsList.find((d) => d.id === selectedDoctorId);
+    if (currentDoc && currentDoc.serviceIds && currentDoc.serviceIds.length > 0) {
+      return servicesList.filter((s) => currentDoc.serviceIds?.includes(s.id));
+    }
+
+    // Fallback: check if service has doctorIds containing selectedDoctorId
+    const filtered = servicesList.filter((s) => s.doctorIds?.includes(selectedDoctorId));
+    return filtered.length > 0 ? filtered : servicesList;
+  }, [selectedDoctorId, doctorsList, servicesList]);
 
   // Compute effective slots: dynamic availability from API or standard clinic slots fallback
   const effectiveSlots = useMemo(() => {
@@ -259,15 +280,25 @@ export function AppointmentsScheduleDashboard({
     }
   }, [effectiveSlots, selectedSlotStartsAt]);
 
-  // Ensure a compatible doctor is selected whenever modalCompatibleDoctors updates
+  // Ensure selectedDoctorId is always valid within modalDoctors
   useEffect(() => {
-    if (modalCompatibleDoctors.length > 0) {
-      const exists = modalCompatibleDoctors.some((d) => d.id === selectedDoctorId);
-      if (!exists && modalCompatibleDoctors[0]) {
-        setSelectedDoctorId(modalCompatibleDoctors[0].id);
+    if (modalDoctors.length > 0) {
+      const exists = modalDoctors.some((d) => d.id === selectedDoctorId);
+      if (!exists && modalDoctors[0]) {
+        setSelectedDoctorId(modalDoctors[0].id);
       }
     }
-  }, [modalCompatibleDoctors, selectedDoctorId]);
+  }, [modalDoctors, selectedDoctorId]);
+
+  // Ensure selectedServiceId is always valid within modalCompatibleServices for the current doctor
+  useEffect(() => {
+    if (modalCompatibleServices.length > 0) {
+      const exists = modalCompatibleServices.some((s) => s.id === selectedServiceId);
+      if (!exists && modalCompatibleServices[0]) {
+        setSelectedServiceId(modalCompatibleServices[0].id);
+      }
+    }
+  }, [modalCompatibleServices, selectedServiceId]);
 
   // Open modal with fresh state
   const handleOpenNewAppointmentModal = () => {
@@ -286,15 +317,18 @@ export function AppointmentsScheduleDashboard({
     setSlotsError(null);
     setAvailableSlots([]);
 
-    const initialServiceId = servicesList[0]?.id || '';
+    // Select initial doctor based on scoped doctorsList
+    const initialDoctor = doctorsList[0];
+    const initialDoctorId = initialDoctor?.id || '';
+    setSelectedDoctorId(initialDoctorId);
+
+    // Pick first service assigned specifically to this doctor
+    const docServices = servicesList.filter((s) =>
+      initialDoctor?.serviceIds?.includes(s.id) || s.doctorIds?.includes(initialDoctorId)
+    );
+    const initialServiceId = (docServices[0] || servicesList[0])?.id || '';
     setSelectedServiceId(initialServiceId);
 
-    const srv = servicesList.find((s) => s.id === initialServiceId);
-    const initialDoctor = srv?.doctorIds && srv.doctorIds.length > 0
-      ? doctorsList.find((d) => srv.doctorIds?.includes(d.id))
-      : doctorsList[0];
-
-    setSelectedDoctorId(initialDoctor?.id || '');
     const todayStr = new Date().toISOString().split('T')[0] ?? '';
     setSelectedDate(todayStr);
     setSelectedSlotStartsAt(new Date(`${todayStr}T09:00:00`).toISOString());
@@ -350,7 +384,20 @@ export function AppointmentsScheduleDashboard({
     };
   }, [isModalOpen, selectedServiceId, selectedDoctorId, selectedDate, clinicId]);
 
-  // Handle service change in modal with cascading doctor auto-select
+  // Handle doctor change in modal - immediately scopes services to this doctor
+  const handleModalDoctorChange = (doctorId: string) => {
+    setSelectedDoctorId(doctorId);
+    const doc = doctorsList.find((d) => d.id === doctorId);
+    const docServices = servicesList.filter((s) =>
+      (doc?.serviceIds && doc.serviceIds.includes(s.id)) ||
+      (s.doctorIds && s.doctorIds.includes(doctorId))
+    );
+    if (docServices.length > 0 && docServices[0] && !docServices.some((s) => s.id === selectedServiceId)) {
+      setSelectedServiceId(docServices[0].id);
+    }
+  };
+
+  // Handle service change in modal
   const handleModalServiceChange = (serviceId: string) => {
     setSelectedServiceId(serviceId);
     const srv = servicesList.find((s) => s.id === serviceId);
@@ -536,8 +583,8 @@ export function AppointmentsScheduleDashboard({
       return;
     }
 
-    const effectiveServiceId = selectedServiceId || servicesList[0]?.id || '';
-    const effectiveDoctorId = selectedDoctorId || modalCompatibleDoctors[0]?.id || doctorsList[0]?.id || '';
+    const effectiveServiceId = selectedServiceId || modalCompatibleServices[0]?.id || servicesList[0]?.id || '';
+    const effectiveDoctorId = selectedDoctorId || modalDoctors[0]?.id || doctorsList[0]?.id || '';
 
     if (!effectiveServiceId) {
       setFormError('Please select a valid service.');
@@ -1516,18 +1563,14 @@ export function AppointmentsScheduleDashboard({
                         onChange={(e) => handleModalServiceChange(e.target.value)}
                         className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                       >
-                        {servicesList.length > 0 ? (
-                          servicesList.map((s) => (
+                        {modalCompatibleServices.length > 0 ? (
+                          modalCompatibleServices.map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.name}
                             </option>
                           ))
                         ) : (
-                          departments.map((d) => (
-                            <option key={d} value={d}>
-                              {d}
-                            </option>
-                          ))
+                          <option value="">No services available for this doctor</option>
                         )}
                       </select>
                     </div>
@@ -1541,11 +1584,15 @@ export function AppointmentsScheduleDashboard({
                       <Stethoscope className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
                       <select
                         value={selectedDoctorId}
-                        onChange={(e) => setSelectedDoctorId(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                        onChange={(e) => handleModalDoctorChange(e.target.value)}
+                        disabled={userRole === 'DOCTOR' && modalDoctors.length <= 1}
+                        className={cn(
+                          'w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer',
+                          userRole === 'DOCTOR' && modalDoctors.length <= 1 && 'opacity-90 cursor-not-allowed bg-slate-100 dark:bg-slate-800/70'
+                        )}
                       >
-                        {modalCompatibleDoctors.length > 0 ? (
-                          modalCompatibleDoctors.map((d) => (
+                        {modalDoctors.length > 0 ? (
+                          modalDoctors.map((d) => (
                             <option key={d.id} value={d.id}>
                               {d.name}
                             </option>

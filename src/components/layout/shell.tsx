@@ -57,7 +57,9 @@ export function AppShell({
       pathname.startsWith('/portal/services') ||
       pathname.startsWith('/portal/patients') ||
       pathname.startsWith('/portal/appointments') ||
-      pathname.startsWith('/portal/roles'));
+      pathname.startsWith('/portal/roles') ||
+      pathname.startsWith('/portal/inventory') ||
+      pathname.startsWith('/portal/accounts'));
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans">

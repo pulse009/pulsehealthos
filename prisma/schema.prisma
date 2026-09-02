@@ -106,7 +106,9 @@ model User {
   passwordHash String
   name         String
   role         Role    @default(CLIENT)
-  isActive     Boolean @default(true)
+  isActive          Boolean @default(true)
+  salary            Float?  @default(0)
+  commissionPercent Float?  @default(0)
 
   /// Null for SUPER_ADMIN (platform-wide). Required for CLIENT and PATIENT (tenant-bound).
   clinicId String?
@@ -127,6 +129,19 @@ model User {
   patient            Patient?      @relation("PatientUser")
   doctor             Doctor?       @relation("DoctorUser")
   coordinatedDoctors Doctor[]      @relation("DoctorCoordinator")
+
+  createdStockMovements   InventoryStockMovement[] @relation("StockMovementCreatedBy")
+  createdPurchaseOrders   PurchaseOrder[]          @relation("PurchaseOrderCreatedBy")
+  requestedItemRequests   ItemRequest[]            @relation("ItemRequestRequestedBy")
+  approvedItemRequests    ItemRequest[]            @relation("ItemRequestApprovedBy")
+  releasedItemRequests    ItemRequest[]            @relation("ItemRequestReleasedBy")
+
+  createdInvoices         Invoice[]                @relation("InvoiceCreatedBy")
+  receivedPayments        PaymentTransaction[]     @relation("PaymentReceivedBy")
+  createdDoctorPayouts    DoctorPayout[]           @relation("DoctorPayoutCreatedBy")
+  createdClinicExpenses   ClinicExpense[]          @relation("ClinicExpenseCreatedBy")
+  closedDayEndClosings    DayEndClosing[]          @relation("DayEndClosedBy")
+  verifiedDayEndClosings  DayEndClosing[]          @relation("DayEndVerifiedBy")
 
   @@index([clinicId])
   @@index([role])
@@ -177,6 +192,22 @@ model Clinic {
   reminderRules   ReminderRule[]
   auditLogs       AuditLog[]
   systemLogs      SystemLog[]
+
+  inventoryCategories     InventoryCategory[]
+  inventorySuppliers      Supplier[]
+  inventoryItems          InventoryItem[]
+  inventoryBatches        InventoryBatch[]
+  inventoryStockMovements InventoryStockMovement[]
+  purchaseOrders          PurchaseOrder[]
+  itemRequests            ItemRequest[]
+
+  invoices                Invoice[]
+  paymentTransactions     PaymentTransaction[]
+  doctorPayouts           DoctorPayout[]
+  supplierBills           SupplierBill[]
+  supplierPayments        SupplierPayment[]
+  clinicExpenses          ClinicExpense[]
+  dayEndClosings          DayEndClosing[]
 
   @@index([isActive])
 }
@@ -297,6 +328,8 @@ model Doctor {
   services         DoctorService[]
   appointments     Appointment[]
   paymentStructure DoctorPaymentStructure?
+  invoices         Invoice[]
+  payouts          DoctorPayout[]
 
   @@index([clinicId, isActive])
   @@index([coordinatorId])
@@ -416,6 +449,7 @@ model Service {
 
   doctors      DoctorService[]
   appointments Appointment[]
+  invoiceItems InvoiceItem[]
 
   @@unique([clinicId, name])
   @@index([clinicId, isActive])
@@ -559,6 +593,8 @@ model Patient {
   lead          Lead?
   conversations Conversation[]
   appointments  Appointment[]
+  invoices      Invoice[]
+  payments      PaymentTransaction[]
 
   @@unique([clinicId, phone])
   @@unique([clinicId, fileNumber])
@@ -734,6 +770,7 @@ model Appointment {
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   reminders Reminder[]
+  invoice   Invoice?
 
   @@unique([clinicId, appointmentNumber])
   @@index([clinicId, startsAt])
@@ -815,3 +852,496 @@ model SystemLog {
   @@index([clinicId, createdAt])
   @@index([event, createdAt])
 }
+
+// ---------------------------------------------------------------------------
+// Inventory & Supply Chain Enums
+// ---------------------------------------------------------------------------
+
+enum StockMovementType {
+  STOCK_RECEIVED
+  STOCK_ISSUED
+  STOCK_ADJUSTMENT
+  STOCK_RETURN
+  STOCK_TRANSFER
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum ItemRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RELEASED
+  CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// Inventory & Supply Chain Models
+// ---------------------------------------------------------------------------
+
+model InventoryCategory {
+  id          String   @id @default(uuid())
+  clinicId    String
+  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  items InventoryItem[]
+
+  @@unique([clinicId, name])
+  @@index([clinicId])
+}
+
+model Supplier {
+  id            String   @id @default(uuid())
+  clinicId      String
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  taxNumber     String?
+  notes         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  items          InventoryItem[]
+  purchaseOrders PurchaseOrder[]
+  bills          SupplierBill[]
+
+  @@index([clinicId])
+  @@index([isActive])
+}
+
+model InventoryItem {
+  id           String   @id @default(uuid())
+  clinicId     String
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  categoryId   String?
+  category     InventoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  name         String
+  sku          String?
+  unit         String   @default("PCS")
+  description  String?
+  currentStock Int      @default(0)
+  minimumStock Int      @default(0)
+  defaultCost  Float?   @default(0)
+  trackExpiry  Boolean  @default(false)
+  trackBatch   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  movements    InventoryStockMovement[]
+  batches      InventoryBatch[]
+  poItems      PurchaseOrderItem[]
+  requestItems ItemRequestItem[]
+  invoiceItems InvoiceItem[]
+
+  @@unique([clinicId, sku])
+  @@index([clinicId])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([isActive])
+}
+
+model InventoryBatch {
+  id           String    @id @default(uuid())
+  clinicId     String
+  clinic       Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  itemId       String
+  item         InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batchNumber  String
+  expiryDate   DateTime? @db.Timestamptz(3)
+  quantity     Int       @default(0)
+  unitCost     Float?    @default(0)
+  receivedDate DateTime  @default(now()) @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  movements InventoryStockMovement[]
+
+  @@index([clinicId])
+  @@index([itemId])
+  @@index([expiryDate])
+}
+
+model InventoryStockMovement {
+  id            String            @id @default(uuid())
+  clinicId      String
+  clinic        Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  itemId        String
+  item          InventoryItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batchId       String?
+  batch         InventoryBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  type          StockMovementType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  unitCost      Float?
+  referenceType String?
+  referenceId   String?
+  notes         String?
+  createdById   String?
+  createdBy     User?             @relation("StockMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+
+  @@index([clinicId, createdAt])
+  @@index([itemId])
+  @@index([type])
+  @@index([createdById])
+}
+
+model PurchaseOrder {
+  id           String              @id @default(uuid())
+  clinicId     String
+  clinic       Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  supplierId   String
+  supplier     Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  poNumber     String
+  orderDate    DateTime            @default(now()) @db.Timestamptz(3)
+  expectedDate DateTime?           @db.Timestamptz(3)
+  status       PurchaseOrderStatus @default(DRAFT)
+  totalAmount  Float               @default(0)
+  notes        String?
+  createdById  String?
+  createdBy    User?               @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime            @updatedAt @db.Timestamptz(3)
+
+  items PurchaseOrderItem[]
+  bills SupplierBill[]
+
+  @@unique([clinicId, poNumber])
+  @@index([clinicId])
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id               String        @id @default(uuid())
+  purchaseOrderId  String
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  itemId           String
+  item             InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity         Int
+  receivedQuantity Int           @default(0)
+  unitCost         Float         @default(0)
+  totalCost        Float         @default(0)
+
+  @@index([purchaseOrderId])
+  @@index([itemId])
+}
+
+model ItemRequest {
+  id              String            @id @default(uuid())
+  clinicId        String
+  clinic          Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  requestNumber   String
+  requestedById   String
+  requestedBy     User              @relation("ItemRequestRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  department      String?
+  status          ItemRequestStatus @default(PENDING)
+  requestDate     DateTime          @default(now()) @db.Timestamptz(3)
+  approvedAt      DateTime?         @db.Timestamptz(3)
+  approvedById    String?
+  approvedBy      User?             @relation("ItemRequestApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  releasedAt      DateTime?         @db.Timestamptz(3)
+  releasedById    String?
+  releasedBy      User?             @relation("ItemRequestReleasedBy", fields: [releasedById], references: [id], onDelete: SetNull)
+  notes           String?
+  rejectionReason String?
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+
+  items ItemRequestItem[]
+
+  @@unique([clinicId, requestNumber])
+  @@index([clinicId])
+  @@index([requestedById])
+  @@index([status])
+}
+
+model ItemRequestItem {
+  id                String        @id @default(uuid())
+  itemRequestId     String
+  itemRequest       ItemRequest   @relation(fields: [itemRequestId], references: [id], onDelete: Cascade)
+  itemId            String
+  item              InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  requestedQuantity Int
+  releasedQuantity  Int           @default(0)
+
+  @@index([itemRequestId])
+  @@index([itemId])
+}
+
+// ---------------------------------------------------------------------------
+// Accounts & Finance Enums
+// ---------------------------------------------------------------------------
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  INSURANCE
+  ONLINE
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum BillStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  RENT
+  UTILITIES
+  SALARIES
+  MARKETING
+  MAINTENANCE
+  MEDICAL_SUPPLIES
+  OFFICE_SUPPLIES
+  OTHER
+}
+
+enum ClosingStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+}
+
+// ---------------------------------------------------------------------------
+// Accounts & Finance Models
+// ---------------------------------------------------------------------------
+
+model Invoice {
+  id             String        @id @default(uuid())
+  clinicId       String
+  clinic         Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  invoiceNumber  String
+  appointmentId  String?       @unique
+  appointment    Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  patientId      String
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId       String?
+  doctor         Doctor?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  issueDate      DateTime      @default(now()) @db.Timestamptz(3)
+  dueDate        DateTime?     @db.Timestamptz(3)
+  status         InvoiceStatus @default(ISSUED)
+  subtotal       Float         @default(0)
+  discountAmount Float         @default(0)
+  taxAmount      Float         @default(0)
+  totalAmount    Float         @default(0)
+  paidAmount     Float         @default(0)
+  currency       String        @default("SAR")
+  notes          String?
+  createdById    String?
+  createdBy      User?         @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+
+  items        InvoiceItem[]
+  transactions PaymentTransaction[]
+
+  @@unique([clinicId, invoiceNumber])
+  @@index([clinicId, issueDate])
+  @@index([clinicId, status])
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model InvoiceItem {
+  id              String         @id @default(uuid())
+  invoiceId       String
+  invoice         Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceId       String?
+  service         Service?       @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  description     String
+  quantity        Int            @default(1)
+  unitPrice       Float          @default(0)
+  totalPrice      Float          @default(0)
+
+  @@index([invoiceId])
+  @@index([serviceId])
+  @@index([inventoryItemId])
+}
+
+model PaymentTransaction {
+  id           String        @id @default(uuid())
+  clinicId     String
+  clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  invoiceId    String
+  invoice      Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  patientId    String
+  patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  amount       Float
+  method       PaymentMethod @default(CASH)
+  reference    String?
+  notes        String?
+  paymentDate  DateTime      @default(now()) @db.Timestamptz(3)
+  receivedById String?
+  receivedBy   User?         @relation("PaymentReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+
+  @@index([clinicId, paymentDate])
+  @@index([invoiceId])
+  @@index([patientId])
+  @@index([method])
+}
+
+model DoctorPayout {
+  id               String       @id @default(uuid())
+  clinicId         String
+  clinic           Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctorId         String
+  doctor           Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  payoutNumber     String
+  periodStart      DateTime     @db.Timestamptz(3)
+  periodEnd        DateTime     @db.Timestamptz(3)
+  totalRevenue     Float        @default(0)
+  baseSalary       Float        @default(0)
+  commissionAmount Float        @default(0)
+  deductions       Float        @default(0)
+  netPayoutAmount  Float        @default(0)
+  status           PayoutStatus @default(PENDING)
+  paidAt           DateTime?    @db.Timestamptz(3)
+  paymentMethod    String?
+  notes            String?
+  createdById      String?
+  createdBy        User?        @relation("DoctorPayoutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@unique([clinicId, payoutNumber])
+  @@index([clinicId, periodStart, periodEnd])
+  @@index([doctorId])
+  @@index([status])
+}
+
+model SupplierBill {
+  id              String         @id @default(uuid())
+  clinicId        String
+  clinic          Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  billNumber      String
+  supplierId      String
+  supplier        Supplier       @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  billDate        DateTime       @default(now()) @db.Timestamptz(3)
+  dueDate         DateTime?      @db.Timestamptz(3)
+  totalAmount     Float          @default(0)
+  paidAmount      Float          @default(0)
+  status          BillStatus     @default(UNPAID)
+  notes           String?
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(3)
+
+  payments SupplierPayment[]
+
+  @@unique([clinicId, billNumber])
+  @@index([clinicId, billDate])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@index([status])
+}
+
+model SupplierPayment {
+  id          String       @id @default(uuid())
+  clinicId    String
+  clinic      Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  billId      String
+  bill        SupplierBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  amount      Float
+  method      String       @default("BANK_TRANSFER")
+  reference   String?
+  paymentDate DateTime     @default(now()) @db.Timestamptz(3)
+  notes       String?
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([clinicId, paymentDate])
+  @@index([billId])
+}
+
+model ClinicExpense {
+  id            String          @id @default(uuid())
+  clinicId      String
+  clinic        Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  expenseNumber String
+  category      ExpenseCategory @default(OTHER)
+  title         String
+  amount        Float
+  paymentMethod PaymentMethod   @default(BANK_TRANSFER)
+  paidTo        String?
+  expenseDate   DateTime        @default(now()) @db.Timestamptz(3)
+  receiptUrl    String?
+  notes         String?
+  createdById   String?
+  createdBy     User?           @relation("ClinicExpenseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
+
+  @@unique([clinicId, expenseNumber])
+  @@index([clinicId, expenseDate])
+  @@index([clinicId, category])
+}
+
+model DayEndClosing {
+  id               String        @id @default(uuid())
+  clinicId         String
+  clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  closingNumber    String
+  closingDate      String
+  closedByUserId   String
+  closedByUser     User          @relation("DayEndClosedBy", fields: [closedByUserId], references: [id], onDelete: Restrict)
+  openingCash      Float         @default(0)
+  expectedCash     Float         @default(0)
+  countedCash      Float         @default(0)
+  cashDifference   Float         @default(0)
+  totalCardAmount  Float         @default(0)
+  totalBankAmount  Float         @default(0)
+  totalRevenue     Float         @default(0)
+  status           ClosingStatus @default(SUBMITTED)
+  notes            String?
+  verifiedByUserId String?
+  verifiedByUser   User?         @relation("DayEndVerifiedBy", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  verifiedAt       DateTime?     @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
+
+  @@unique([clinicId, closingDate])
+  @@unique([clinicId, closingNumber])
+  @@index([clinicId, closingDate])
+  @@index([closedByUserId])
+}
+

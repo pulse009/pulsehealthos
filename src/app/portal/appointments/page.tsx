@@ -20,8 +20,28 @@ export default async function PortalAppointmentsPage() {
   const todayEnd = endOfLocalDay(todayKey, timezone);
 
   const isCoordinator = user.role === 'COORDINATOR';
-  const coordinatorDoctorFilter = isCoordinator ? { coordinatorId: user.id } : {};
-  const coordinatorAppointmentFilter = isCoordinator ? { doctor: { coordinatorId: user.id } } : {};
+  const isDoctor = user.role === 'DOCTOR';
+
+  let doctorScopedId: string | undefined = undefined;
+  if (isDoctor) {
+    const myDoc = await prisma.doctor.findFirst({
+      where: { clinicId: clinicId!, userId: user.id },
+      select: { id: true },
+    });
+    if (myDoc) doctorScopedId = myDoc.id;
+  }
+
+  const roleDoctorFilter = isDoctor
+    ? { id: doctorScopedId }
+    : isCoordinator
+      ? { coordinatorId: user.id }
+      : {};
+
+  const roleAppointmentFilter = isDoctor
+    ? { doctorId: doctorScopedId }
+    : isCoordinator
+      ? { doctor: { coordinatorId: user.id } }
+      : {};
 
   // Fetch all dashboard data concurrently in a single parallel batch
   const [
@@ -38,7 +58,7 @@ export default async function PortalAppointmentsPage() {
       select: { name: true, timezone: true },
     }),
     prisma.appointment.findMany({
-      where: { clinicId: clinicId!, ...coordinatorAppointmentFilter },
+      where: { clinicId: clinicId!, ...roleAppointmentFilter },
       orderBy: { startsAt: 'desc' },
       take: 100,
       select: {
@@ -67,7 +87,7 @@ export default async function PortalAppointmentsPage() {
       orderBy: { name: 'asc' },
     }),
     prisma.doctor.findMany({
-      where: { clinicId: clinicId!, isActive: true, ...coordinatorDoctorFilter },
+      where: { clinicId: clinicId!, isActive: true, ...roleDoctorFilter },
       select: {
         id: true,
         name: true,
@@ -84,14 +104,14 @@ export default async function PortalAppointmentsPage() {
       where: {
         clinicId: clinicId!,
         startsAt: { gte: todayStart, lt: todayEnd },
-        ...coordinatorAppointmentFilter,
+        ...roleAppointmentFilter,
       },
     }),
     prisma.appointment.count({
       where: {
         clinicId: clinicId!,
         status: 'PENDING',
-        ...coordinatorAppointmentFilter,
+        ...roleAppointmentFilter,
       },
     }),
     prisma.appointment.count({
@@ -99,7 +119,7 @@ export default async function PortalAppointmentsPage() {
         clinicId: clinicId!,
         status: 'CANCELLED',
         startsAt: { gte: todayStart, lt: todayEnd },
-        ...coordinatorAppointmentFilter,
+        ...roleAppointmentFilter,
       },
     }),
   ]);
@@ -178,6 +198,7 @@ export default async function PortalAppointmentsPage() {
         pendingCount: pendingConfirmationsCount,
         cancellationsCount: cancellationsTodayCount,
       }}
+      userRole={user.role}
     />
   );
 }

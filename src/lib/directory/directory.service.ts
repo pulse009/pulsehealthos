@@ -10,6 +10,7 @@ import type {
   clinicDoctorOperationalSchema,
   doctorPaymentStructureSchema,
   createCoordinatorSchema,
+  updateCoordinatorSchema,
   createStaffRoleSchema,
   resetStaffPasswordSchema,
   doctorTimeOffSchema,
@@ -32,10 +33,14 @@ export async function listDoctors(
   scope: TenantScope,
   clinicId?: string | null,
   coordinatorId?: string | null,
+  userId?: string | null,
 ) {
   const whereClause: any = clinicWhere(scope, clinicId);
   if (coordinatorId) {
     whereClause.coordinatorId = coordinatorId;
+  }
+  if (userId) {
+    whereClause.userId = userId;
   }
   return prisma.doctor.findMany({
     where: whereClause,
@@ -660,6 +665,8 @@ export async function listClinicCoordinators(scope: TenantScope, clinicId: strin
       username: true,
       email: true,
       role: true,
+      salary: true,
+      commissionPercent: true,
       isActive: true,
       createdAt: true,
       coordinatedDoctors: {
@@ -733,6 +740,8 @@ export async function createClinicCoordinator(
       name: input.name.trim(),
       passwordHash,
       role: 'COORDINATOR',
+      salary: input.salary ?? 0,
+      commissionPercent: input.commissionPercent ?? 0,
       clinicId: id,
     },
     select: {
@@ -741,6 +750,8 @@ export async function createClinicCoordinator(
       username: true,
       email: true,
       role: true,
+      salary: true,
+      commissionPercent: true,
       clinicId: true,
       createdAt: true,
     },
@@ -751,10 +762,67 @@ export async function createClinicCoordinator(
     entityType: 'User',
     entityId: user.id,
     clinicId: id,
-    metadata: { name: user.name, username: user.username, email: user.email },
+    metadata: { name: user.name, username: user.username, email: user.email, salary: user.salary, commissionPercent: user.commissionPercent },
   });
 
   return user;
+}
+
+export async function updateClinicCoordinator(
+  scope: TenantScope,
+  clinicId: string,
+  input: z.infer<typeof updateCoordinatorSchema>,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  if (scope.kind !== 'PLATFORM' && scope.clinicId !== id) {
+    throw forbidden('Cannot manage staff for another clinic.');
+  }
+
+  const coordinator = await prisma.user.findFirst({
+    where: { id: input.coordinatorId, clinicId: id, role: 'COORDINATOR' },
+  });
+  if (!coordinator) {
+    throw notFound('Coordinator not found.');
+  }
+
+  const data: any = {};
+  if (input.name !== undefined && input.name.trim()) data.name = input.name.trim();
+  if (input.salary !== undefined) data.salary = Number(input.salary) || 0;
+  if (input.commissionPercent !== undefined) data.commissionPercent = Number(input.commissionPercent) || 0;
+  if (input.isActive !== undefined) data.isActive = input.isActive;
+  if (input.password && input.password.trim().length >= 6) {
+    data.passwordHash = await hashPassword(input.password);
+    data.sessionVersion = { increment: 1 };
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: input.coordinatorId },
+    data,
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      role: true,
+      salary: true,
+      commissionPercent: true,
+      isActive: true,
+      createdAt: true,
+      coordinatedDoctors: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+
+  await recordAudit(scope, {
+    action: 'coordinator.update',
+    entityType: 'User',
+    entityId: updated.id,
+    clinicId: id,
+    metadata: { name: updated.name, salary: updated.salary, commissionPercent: updated.commissionPercent },
+  });
+
+  return updated;
 }
 
 export async function resetCoordinatorPassword(
@@ -836,6 +904,8 @@ export async function listClinicStaff(scope: TenantScope, clinicId: string) {
       username: true,
       email: true,
       role: true,
+      salary: true,
+      commissionPercent: true,
       isActive: true,
       createdAt: true,
       coordinatedDoctors: {
@@ -913,6 +983,8 @@ export async function createClinicStaff(
       name: input.name.trim(),
       passwordHash,
       role,
+      salary: input.salary ?? 0,
+      commissionPercent: input.commissionPercent ?? 0,
       clinicId: id,
     },
     select: {
@@ -921,6 +993,8 @@ export async function createClinicStaff(
       username: true,
       email: true,
       role: true,
+      salary: true,
+      commissionPercent: true,
       clinicId: true,
       createdAt: true,
     },
