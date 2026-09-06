@@ -187,25 +187,50 @@ export async function saveDoctor(
 }
 
 export async function deleteDoctor(scope: TenantScope, clinicId: string, doctorId: string) {
-  assertPlatformScope(scope, 'manage doctors');
+  const id = resolveClinicId(scope, clinicId);
+  if (scope.kind !== 'PLATFORM' && scope.clinicId !== id) {
+    throw forbidden('Cannot delete doctor for another clinic.');
+  }
+
+  const doctor = await prisma.doctor.findFirst({
+    where: { id: doctorId, clinicId: id },
+    select: { id: true, name: true, userId: true },
+  });
+  if (!doctor) throw notFound('Doctor not found.');
+  assertOwned(scope, { clinicId: id }, 'Doctor');
 
   // Appointments reference doctors with onDelete: Restrict, so a doctor with
   // history is deactivated instead of removed — deleting would orphan records
   // the clinic still needs for reporting.
-  const appointments = await prisma.appointment.count({ where: { doctorId, clinicId } });
+  const appointments = await prisma.appointment.count({ where: { doctorId, clinicId: id } });
   if (appointments > 0) {
     throw conflict(
       'This doctor has appointments and cannot be deleted. Deactivate them instead.',
     );
   }
 
-  await prisma.doctor.deleteMany({ where: { id: doctorId, clinicId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.doctor.delete({ where: { id: doctorId } });
+    if (doctor.userId) {
+      const user = await tx.user.findUnique({
+        where: { id: doctor.userId },
+        select: { id: true, role: true },
+      });
+      if (user && user.role === 'DOCTOR') {
+        await tx.user.delete({ where: { id: doctor.userId } });
+      }
+    }
+  });
+
   await recordAudit(scope, {
     action: 'doctor.delete',
     entityType: 'Doctor',
     entityId: doctorId,
-    clinicId,
+    clinicId: id,
+    metadata: { name: doctor.name },
   });
+
+  return { ok: true };
 }
 
 export async function getClinicDoctorDetail(scope: TenantScope, doctorId: string) {

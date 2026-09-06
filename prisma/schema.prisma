@@ -158,6 +158,8 @@ model Clinic {
   name        String
   description String?
   isActive    Boolean @default(true)
+  pulseHealthOS Boolean @default(true)
+  pulseNow      Boolean @default(false)
 
   phone          String?
   whatsappNumber String?

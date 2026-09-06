@@ -28,6 +28,7 @@ export default async function PortalLayout({ children }: { children: React.React
       userName={user.name}
       userEmail={user.email}
       userRole={user.role}
+      isPulseNow={Boolean(user.pulseNow)}
       homeHref="/portal"
     >
       {children}

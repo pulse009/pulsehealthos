@@ -51,6 +51,8 @@ export async function listClinics(scope: TenantScope, search?: string) {
       country: true,
       timezone: true,
       isActive: true,
+      pulseHealthOS: true,
+      pulseNow: true,
       createdAt: true,
       whatsapp: { select: { isActive: true, displayPhoneNumber: true } },
       aiConfiguration: { select: { isEnabled: true, assistantName: true } },
@@ -149,6 +151,8 @@ export async function getClinicProfileForPortal(scope: TenantScope, clinicId?: s
       email: true,
       website: true,
       isActive: true,
+      pulseHealthOS: true,
+      pulseNow: true,
       _count: { select: { doctors: true, services: true } },
     },
   });
@@ -164,7 +168,7 @@ export interface ClinicOwnerInput {
 
 export async function createClinic(
   scope: TenantScope,
-  input: z.infer<typeof clinicBasicsSchema>,
+  input: z.input<typeof clinicBasicsSchema>,
   owner?: ClinicOwnerInput,
 ) {
   assertPlatformScope(scope, 'create clinics');
@@ -192,6 +196,8 @@ export async function createClinic(
         country: input.country ?? null,
         timezone: input.timezone,
         isActive: input.isActive,
+        pulseHealthOS: input.pulseHealthOS ?? true,
+        pulseNow: input.pulseNow ?? false,
       },
     });
 
@@ -247,7 +253,7 @@ export async function createClinic(
 export async function updateClinicBasics(
   scope: TenantScope,
   clinicId: string,
-  input: z.infer<typeof clinicBasicsSchema>,
+  input: z.input<typeof clinicBasicsSchema>,
 ) {
   assertPlatformScope(scope, 'edit clinic configuration');
 
@@ -272,6 +278,8 @@ export async function updateClinicBasics(
       country: input.country ?? null,
       timezone: input.timezone,
       isActive: input.isActive,
+      pulseHealthOS: input.pulseHealthOS ?? true,
+      pulseNow: input.pulseNow ?? false,
     },
   });
 

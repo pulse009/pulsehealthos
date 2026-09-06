@@ -25,6 +25,7 @@ export function AppShell({
   userName,
   userEmail,
   userRole,
+  isPulseNow = false,
   homeHref,
   children,
 }: {
@@ -34,6 +35,7 @@ export function AppShell({
   userName: string;
   userEmail: string;
   userRole?: string;
+  isPulseNow?: boolean;
   homeHref: string;
   children: ReactNode;
 }) {
@@ -58,8 +60,8 @@ export function AppShell({
       pathname.startsWith('/portal/patients') ||
       pathname.startsWith('/portal/appointments') ||
       pathname.startsWith('/portal/roles') ||
-      pathname.startsWith('/portal/inventory') ||
-      pathname.startsWith('/portal/accounts'));
+      (!isPulseNow && pathname.startsWith('/portal/inventory')) ||
+      (!isPulseNow && pathname.startsWith('/portal/accounts')));
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans">
@@ -101,7 +103,7 @@ export function AppShell({
         {/* Navigation Links */}
         <div className="flex-1 overflow-hidden">
           {workspaceKind === 'Clinic' ? (
-            <ClinicPortalSidebarNav userRole={userRole} />
+            <ClinicPortalSidebarNav userRole={userRole} isPulseNow={isPulseNow} />
           ) : (
             <SidebarNav items={navItems} />
           )}
@@ -134,7 +136,7 @@ export function AppShell({
       </aside>
 
       {/* 2. SECONDARY SIDEBAR (RENDERED FOR DASHBOARD & DOCTORS MODULE) */}
-      {showSecondarySidebar && <DoctorSecondarySidebar userRole={userRole} />}
+      {showSecondarySidebar && <DoctorSecondarySidebar userRole={userRole} isPulseNow={isPulseNow} />}
 
       {/* 3. MAIN CONTENT AREA WITH TOP HEADER */}
       <div className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
@@ -145,6 +147,7 @@ export function AppShell({
             <MobileNavToggle
               items={navItems}
               isClinicPortal={workspaceKind === 'Clinic'}
+              isPulseNow={isPulseNow}
             />
             <div className="flex items-center gap-3 min-w-0">
               {/* Dark Rounded Square Badge */}

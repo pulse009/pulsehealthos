@@ -92,6 +92,8 @@ export const clinicBasicsSchema = z.object({
   country: optionalText(120),
   timezone: timezoneSchema,
   isActive: z.boolean().default(true),
+  pulseHealthOS: z.boolean().optional().default(true),
+  pulseNow: z.boolean().optional().default(false),
 });
 
 export const clinicSettingsSchema = z

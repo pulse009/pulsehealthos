@@ -185,11 +185,40 @@ export function DoctorDetailPortalView({
     return Array.from(map.values());
   });
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
 
   // Instant shared synchronous activeTab state (0ms latency, ClickUp style)
   const [activeTab, setActiveTab] = useDoctorActiveTab(tabFromUrl);
+
+  // Delete Doctor Modal State
+  const [isDeleteDoctorModalOpen, setIsDeleteDoctorModalOpen] = useState(false);
+  const [isDeletingDoctor, setIsDeletingDoctor] = useState(false);
+  const [deleteDoctorError, setDeleteDoctorError] = useState<string | null>(null);
+
+  const handleConfirmDeleteDoctor = async () => {
+    setIsDeletingDoctor(true);
+    setDeleteDoctorError(null);
+    try {
+      const res = await fetch(`/api/doctors/${doctor.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setIsDeleteDoctorModalOpen(false);
+        router.push(backHref);
+        router.refresh();
+      } else {
+        setDeleteDoctorError(data.error || 'Failed to delete doctor.');
+      }
+    } catch (err: any) {
+      console.error('Failed to delete doctor:', err);
+      setDeleteDoctorError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsDeletingDoctor(false);
+    }
+  };
 
   useEffect(() => {
     if (userRole === 'DOCTOR' && activeTab === 'payment-structure') {
@@ -1027,6 +1056,21 @@ export function DoctorDetailPortalView({
             <span>Add Blocked Period</span>
           </button>
 
+          {/* Delete Doctor Button */}
+          {userRole !== 'DOCTOR' && (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteDoctorError(null);
+                setIsDeleteDoctorModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer"
+            >
+              <Trash2 className="size-3.5 stroke-[2.5]" />
+              <span>Delete Doctor</span>
+            </button>
+          )}
+
           {/* Save Changes Button */}
           <button
             type="button"
@@ -1795,6 +1839,32 @@ export function DoctorDetailPortalView({
                     className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed"
                   />
                 </div>
+
+                {userRole !== 'DOCTOR' && (
+                  <div className="col-span-2 pt-5 border-t border-rose-200 dark:border-rose-900/50 mt-4">
+                    <div className="bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-[10px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
+                          Danger Zone: Delete Doctor
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Permanently remove Dr. {doctorName} and all associated working schedules, breaks, and payment structures.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteDoctorError(null);
+                          setIsDeleteDoctorModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span>Delete Doctor</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -3032,6 +3102,65 @@ export function DoctorDetailPortalView({
                     <span>Delete Appointment Type</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. MODAL: CONFIRM DELETE DOCTOR */}
+      {isDeleteDoctorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
+                <Trash2 className="size-4 shrink-0" />
+                <span>Delete Doctor</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDeletingDoctor) {
+                    setIsDeleteDoctorModalOpen(false);
+                    setDeleteDoctorError(null);
+                  }
+                }}
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-3">
+              Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">Dr. {doctorName}</span>? This will remove all associated working hours, breaks, and payment structures.
+            </p>
+
+            {deleteDoctorError && (
+              <div className="p-3 mb-4 rounded-[8px] bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium leading-relaxed">
+                {deleteDoctorError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                disabled={isDeletingDoctor}
+                onClick={() => {
+                  setIsDeleteDoctorModalOpen(false);
+                  setDeleteDoctorError(null);
+                }}
+                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingDoctor}
+                onClick={handleConfirmDeleteDoctor}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-60"
+              >
+                <Trash2 className="size-3.5" />
+                <span>{isDeletingDoctor ? 'Deleting...' : 'Delete Doctor'}</span>
               </button>
             </div>
           </div>

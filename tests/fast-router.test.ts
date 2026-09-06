@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { routeMessage, detectLanguage } from '@/lib/router/fast-router';
+import { routeMessage, detectLanguage, clearPendingBookingSlots } from '@/lib/router/fast-router';
 import { encodeSlotToken } from '@/lib/booking/availability.service';
 import { clearLanguageCache } from '@/lib/router/language-state';
 
@@ -9,12 +9,15 @@ import { prisma } from '@/lib/db/prisma';
 describe('Fast Router & Language Persistence Flow', () => {
   beforeEach(() => {
     clearLanguageCache();
+    clearPendingBookingSlots();
     vi.restoreAllMocks();
     vi.spyOn(prisma.systemLog, 'create').mockResolvedValue({} as any);
     vi.spyOn(prisma.clinic, 'findUnique').mockResolvedValue({
       id: 'clinic-test-1',
       name: 'Reveal Clinics',
       timezone: 'Asia/Riyadh',
+      pulseHealthOS: true,
+      pulseNow: false,
     } as any);
     vi.spyOn(prisma.doctor, 'findUnique').mockResolvedValue({
       id: 'doc-1',
@@ -37,7 +40,7 @@ describe('Fast Router & Language Persistence Flow', () => {
       name: 'Test Patient',
       email: 'patient@example.com',
       phone: '966500000000',
-      tags: ['visited:done'],
+      tags: ['lang:en', 'visited:done'],
       appointments: [],
     } as any);
     vi.spyOn(prisma.patient, 'update').mockResolvedValue({} as any);
@@ -296,4 +299,123 @@ describe('Fast Router & Language Persistence Flow', () => {
     expect(res.locale).toBe('en');
     expect(res.intent).toBe('COMPLEX_AI_QUERY');
   });
+
+  it('13. Fresh patient onboarding presents Language Selection first', async () => {
+    vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({
+      id: 'fresh-patient-1',
+      phone: '966555123456',
+      fileNumber: null,
+      tags: [],
+      appointments: [],
+    } as any);
+
+    const res = await routeMessage({
+      ...baseInput,
+      patientId: 'fresh-patient-1',
+      conversationId: 'fresh-conv-1',
+      message: 'Hi',
+    });
+
+    expect(res.handled).toBe(true);
+    expect(res.intent).toBe('LANGUAGE_SELECT_PROMPT');
+    expect(res.reply).toContain('select your preferred language');
+    expect(res.buttons).toEqual([
+      { id: 'select_language:en', title: '🇬🇧 English' },
+      { id: 'select_language:ar', title: '🇸🇦 العربية' },
+    ]);
+  });
+
+  it('14. Selecting language for Existing Patient immediately shows Book, Doctors, and Services', async () => {
+    vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({
+      id: 'existing-pat-1',
+      name: 'Dr. Faisal',
+      phone: '966555777888',
+      fileNumber: 10,
+      tags: ['visited:done'],
+      appointments: [{ id: 'appt-1' }],
+    } as any);
+
+    const res = await routeMessage({
+      ...baseInput,
+      patientId: 'existing-pat-1',
+      conversationId: 'existing-conv-1',
+      message: '[Button Click: English | ID: select_language:en]',
+    });
+
+    expect(res.handled).toBe(true);
+    expect(res.locale).toBe('en');
+    expect(res.intent).toBe('GREETING');
+    expect(res.buttons?.map((b) => b.id)).toEqual([
+      'book_appointment',
+      'get_doctors',
+      'get_services',
+    ]);
+  });
+
+  it('15. Selecting language for New Patient presents "Have you visited before?" with Yes/No', async () => {
+    vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({
+      id: 'new-pat-1',
+      phone: '966555999000',
+      fileNumber: null,
+      tags: [],
+      appointments: [],
+    } as any);
+
+    const res = await routeMessage({
+      ...baseInput,
+      patientId: 'new-pat-1',
+      conversationId: 'new-conv-1',
+      message: '[Button Click: العربية | ID: select_language:ar]',
+    });
+
+    expect(res.handled).toBe(true);
+    expect(res.locale).toBe('ar');
+    expect(res.intent).toBe('VISITED_BEFORE_PROMPT');
+    expect(res.reply).toContain('هل قمت بزيارة');
+    expect(res.buttons?.map((b) => b.id)).toEqual(['visited_before:yes', 'visited_before:no']);
+  });
+
+  it('16. Clinic with > 3 doctors formats numbered list with pagination button and text selection', async () => {
+    vi.spyOn(prisma.doctor, 'findMany').mockResolvedValue([
+      { id: 'doc-1', name: 'Dr. Saud', specialty: 'Dermatology' },
+      { id: 'doc-2', name: 'Dr. Layla', specialty: 'Cosmetology' },
+      { id: 'doc-3', name: 'Dr. Tariq', specialty: 'Dentistry' },
+      { id: 'doc-4', name: 'Dr. Reem', specialty: 'Pediatrics' },
+      { id: 'doc-5', name: 'Dr. Omar', specialty: 'Orthopedics' },
+    ] as any);
+
+    const res = await routeMessage({
+      ...baseInput,
+      message: 'Who are your doctors?',
+    });
+
+    expect(res.handled).toBe(true);
+    expect(res.intent).toBe('DOCTORS');
+    expect(res.reply).toContain('1. *Dr. Saud*');
+    expect(res.reply).toContain('2. *Dr. Layla*');
+    expect(res.buttons?.length).toBeLessThanOrEqual(3);
+    expect(res.buttons?.some((b) => b.id.startsWith('more_doctors:'))).toBe(true);
+  });
+
+  it('17. Clicking "More Doctors" paginates and shows the next set of specialists', async () => {
+    vi.spyOn(prisma.doctor, 'findMany').mockResolvedValue([
+      { id: 'doc-1', name: 'Dr. Saud', specialty: 'Dermatology' },
+      { id: 'doc-2', name: 'Dr. Layla', specialty: 'Cosmetology' },
+      { id: 'doc-3', name: 'Dr. Tariq', specialty: 'Dentistry' },
+      { id: 'doc-4', name: 'Dr. Reem', specialty: 'Pediatrics' },
+      { id: 'doc-5', name: 'Dr. Omar', specialty: 'Orthopedics' },
+    ] as any);
+
+    const res = await routeMessage({
+      ...baseInput,
+      message: '[Button Click: More Doctors | ID: more_doctors:all:2]',
+    });
+
+    expect(res.handled).toBe(true);
+    expect(res.intent).toBe('DOCTORS');
+    expect(res.reply).toContain('3. *Dr. Tariq*');
+    expect(res.reply).toContain('4. *Dr. Reem*');
+    expect(res.buttons?.length).toBeLessThanOrEqual(3);
+  });
 });
+

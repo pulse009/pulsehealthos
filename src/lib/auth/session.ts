@@ -29,6 +29,8 @@ export interface SessionUser {
   role: Role;
   clinicId: string | null;
   clinicName?: string | null;
+  pulseHealthOS?: boolean;
+  pulseNow?: boolean;
 }
 
 const secretKey = (): Uint8Array => new TextEncoder().encode(env.AUTH_SECRET);
@@ -122,7 +124,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
       clinicId: true,
       isActive: true,
       sessionVersion: true,
-      clinic: { select: { name: true, isActive: true } },
+      clinic: { select: { name: true, isActive: true, pulseHealthOS: true, pulseNow: true } },
     },
   });
 
@@ -139,6 +141,8 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     role: user.role,
     clinicId: user.clinicId,
     clinicName: user.clinic?.name || null,
+    pulseHealthOS: user.clinic?.pulseHealthOS ?? true,
+    pulseNow: user.clinic?.pulseNow ?? false,
   };
 });
 

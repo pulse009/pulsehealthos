@@ -120,9 +120,20 @@ export default async function ClinicsPage({
                     >
                       {clinic.name}
                     </Link>
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mt-0.5">
-                      {[clinic.city, clinic.country].filter(Boolean).join(', ') || clinic.slug}
-                    </span>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        {[clinic.city, clinic.country].filter(Boolean).join(', ') || clinic.slug}
+                      </span>
+                      {clinic.pulseNow ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800">
+                          Pulse Now
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+                          Pulse Health OS
+                        </span>
+                      )}
+                    </div>
                   </Td>
                   <Td>
                     <Badge tone={clinic.isActive ? 'success' : 'neutral'} className="font-bold text-[10px] px-2.5 py-0.5">

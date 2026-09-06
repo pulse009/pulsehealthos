@@ -68,6 +68,14 @@ export const i18n = {
     appointment_number_label: 'Appointment Number',
     file_number_label: 'Patient ID',
 
+    // Language selection
+    lang_select_prompt: (clinicName: string) =>
+      `Welcome to ${clinicName}! 👋\n\nPlease select your preferred language to continue:\nيرجى اختيار لغتك المفضلة للمتابعة:`,
+    btn_lang_en: '🇬🇧 English',
+    btn_lang_ar: '🇸🇦 العربية',
+    doctors_list_subtitle: 'Please select a doctor below or reply with the doctor number (e.g. 1, 2):',
+    services_list_subtitle: 'Please select a service below or reply with the service number (e.g. 1, 2):',
+
     // Messages
     visited_before_title: (clinicName: string) =>
       `Welcome to ${clinicName}! 👋\n\nHave you visited our clinic before?`,
@@ -222,6 +230,14 @@ export const i18n = {
 
     appointment_number_label: 'رقم الموعد',
     file_number_label: 'رقم المريض',
+
+    // Language selection
+    lang_select_prompt: (clinicName: string) =>
+      `مرحباً بك في ${clinicName}! 👋\n\nيرجى اختيار لغتك المفضلة للمتابعة:\nPlease select your preferred language to continue:`,
+    btn_lang_en: '🇬🇧 English',
+    btn_lang_ar: '🇸🇦 العربية',
+    doctors_list_subtitle: 'يرجى اختيار الطبيب من الأزرار أدناه أو الرد برقم الطبيب (مثال: 1 أو 2):',
+    services_list_subtitle: 'يرجى اختيار الخدمة من الأزرار أدناه أو الرد برقم الخدمة (مثال: 1 أو 2):',
 
     // Messages
     visited_before_title: (clinicName: string) =>

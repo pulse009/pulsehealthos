@@ -28,6 +28,7 @@ import {
   resolveLanguage,
   detectTextLanguage,
   isButtonOrPayloadMessage,
+  persistLocale,
 } from '@/lib/router/language-state';
 
 export type { SupportedLocale };
@@ -35,6 +36,11 @@ export const detectLanguage = detectTextLanguage;
 
 // In-memory cache for pending slot token during patient details collection
 const pendingBookingSlots = new Map<string, string>();
+
+export function clearPendingBookingSlots(): void {
+  pendingBookingSlots.clear();
+}
+export const clearPendingSlots = clearPendingBookingSlots;
 
 export interface FastRouterInput {
   clinicId: string;
@@ -86,6 +92,19 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   // -------------------------------------------------------------------------
   // INTERACTIVE BUTTON PAYLOAD DISPATCH (Deterministic, Sub-50ms)
   // -------------------------------------------------------------------------
+
+  // Action: Language Selection (English or Arabic)
+  if (
+    actionPayload === 'select_language:en' ||
+    actionPayload === 'select_language:ar' ||
+    actionPayload?.startsWith('select_language:') ||
+    actionPayload?.startsWith('set_language:')
+  ) {
+    const selectedLocale: SupportedLocale =
+      actionPayload.endsWith('ar') || actionPayload.includes(':ar') ? 'ar' : 'en';
+    await persistLocale(input.clinicId, input.conversationId, input.patientId, selectedLocale);
+    return handleAfterLanguageSelected(input, selectedLocale, startedAt);
+  }
 
   // Action: Onboarding - Have you visited before?
   if (actionPayload === 'visited_before:yes' || actionPayload === 'visited_before:no') {
@@ -252,9 +271,10 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     // ignore
   }
 
-  const explicitPatientMatch = rawText.match(
-    /(?:pid|patient|file|ملف|رقم\s*الملف|رقم\s*المريض|fr|pa|#)\s*[-:]?\s*([a-z0-9\-_]+)/i,
-  );
+  const explicitPatientMatch =
+    rawText.match(/\b(?:pid|patient|file|fr|pa)\b\s*[-:]?\s*([a-z0-9\-_]+)/i) ||
+    rawText.match(/(?:ملف|رقم\s*الملف|رقم\s*المريض)\s*[-:]?\s*([a-z0-9\-_]+)/i) ||
+    rawText.match(/#\s*([a-z0-9\-_]+)/i);
   const plainPatientMatch =
     isAwaitingPatientId && /^\s*(?:pid-?|pa-?|fr-?|#)?\s*([a-z0-9\-_]+)\s*$/i.test(rawText)
       ? rawText.match(/^\s*(?:pid-?|pa-?|fr-?|#)?\s*([a-z0-9\-_]+)\s*$/i)
@@ -485,8 +505,9 @@ async function handleShowDoctorsForService(
     return handleShowDatesForDoctor(input, serviceId, 'any', locale, now, startedAt);
   }
 
-  // Page 5 doctors at a time
-  const PAGE_SIZE = 5;
+  // Page doctors: if total doctors <= 3, show all 3. If > 3, show 2 doctors + More button
+  const isMultiPage = doctors.length > 3;
+  const PAGE_SIZE = isMultiPage ? 2 : 3;
   const pageDoctors = doctors.slice(offset, offset + PAGE_SIZE);
   const hasMore = doctors.length > offset + PAGE_SIZE;
 
@@ -1208,7 +1229,7 @@ async function handleFileNumberLookup(
   }
 }
 
-async function handleGreeting(
+async function handleAfterLanguageSelected(
   input: FastRouterInput,
   locale: SupportedLocale,
   startedAt: number,
@@ -1233,16 +1254,109 @@ async function handleGreeting(
       }),
     ]);
     if (clinic?.name) clinicName = clinic.name;
+    const currentTags = patient?.tags ?? [];
     isExistingPatient = Boolean(
       (patient?.fileNumber !== null && patient?.fileNumber !== undefined) ||
-        (patient?.tags ?? []).includes('visited:done') ||
+        currentTags.includes('visited:done') ||
+        currentTags.includes('existing_patient') ||
         (patient?.appointments && patient.appointments.length > 0),
     );
   } catch {
     // fallback
   }
 
-  // 1. If number does NOT exist in DB and hasn't answered "Have you visited before?", prompt them:
+  // If Existing Patient -> Greet & show the 3 main action buttons
+  if (isExistingPatient) {
+    const reply = dict.welcome_returning_patient(clinicName);
+    const buttons: WhatsAppButton[] = [
+      { id: 'book_appointment', title: dict.btn_book_appointment },
+      { id: 'get_doctors', title: dict.btn_doctors },
+      { id: 'get_services', title: dict.btn_services },
+    ];
+    logger.info(Events.ROUTER_COMPLETED, 'Fast router handled returning patient greeting after language select', {
+      clinicId: input.clinicId,
+      intent: 'GREETING',
+      ms: Date.now() - startedAt,
+    });
+    return { handled: true, reply, buttons, locale, intent: 'GREETING' };
+  }
+
+  // If New Patient -> Ask "Have you visited our clinic before?"
+  logger.info(Events.ROUTER_COMPLETED, 'Fast router prompting new patient visited before after language select', {
+    clinicId: input.clinicId,
+    intent: 'VISITED_BEFORE_PROMPT',
+    ms: Date.now() - startedAt,
+  });
+  return {
+    handled: true,
+    reply: dict.visited_before_title(clinicName),
+    buttons: [
+      { id: 'visited_before:yes', title: dict.btn_visited_yes },
+      { id: 'visited_before:no', title: dict.btn_visited_no },
+    ],
+    locale,
+    intent: 'VISITED_BEFORE_PROMPT',
+  };
+}
+
+async function handleGreeting(
+  input: FastRouterInput,
+  locale: SupportedLocale,
+  startedAt: number,
+): Promise<FastRouterResult> {
+  const dict = i18n[locale];
+  let clinicName = locale === 'ar' ? 'العيادة' : 'the clinic';
+  let isExistingPatient = false;
+  let hasExplicitLanguageTag = false;
+
+  try {
+    const [clinic, patient] = await Promise.all([
+      prisma.clinic.findUnique({
+        where: { id: input.clinicId },
+        select: { name: true },
+      }),
+      prisma.patient.findUnique({
+        where: { id: input.patientId },
+        select: {
+          fileNumber: true,
+          tags: true,
+          appointments: { select: { id: true }, take: 1 },
+        },
+      }),
+    ]);
+    if (clinic?.name) clinicName = clinic.name;
+    const currentTags = patient?.tags ?? [];
+    hasExplicitLanguageTag = currentTags.some((t) => t.startsWith('lang:'));
+    isExistingPatient = Boolean(
+      (patient?.fileNumber !== null && patient?.fileNumber !== undefined) ||
+        currentTags.includes('visited:done') ||
+        currentTags.includes('existing_patient') ||
+        (patient?.appointments && patient.appointments.length > 0),
+    );
+  } catch {
+    // fallback
+  }
+
+  // 1. If language not yet chosen for this patient, show language selector:
+  if (!hasExplicitLanguageTag) {
+    logger.info(Events.ROUTER_COMPLETED, 'Fast router prompting language selection', {
+      clinicId: input.clinicId,
+      intent: 'LANGUAGE_SELECT_PROMPT',
+      ms: Date.now() - startedAt,
+    });
+    return {
+      handled: true,
+      reply: dict.lang_select_prompt(clinicName),
+      buttons: [
+        { id: 'select_language:en', title: dict.btn_lang_en },
+        { id: 'select_language:ar', title: dict.btn_lang_ar },
+      ],
+      locale,
+      intent: 'LANGUAGE_SELECT_PROMPT',
+    };
+  }
+
+  // 2. If number does NOT exist in DB and hasn't answered "Have you visited before?", prompt them:
   if (!isExistingPatient) {
     logger.info(Events.ROUTER_COMPLETED, 'Fast router prompting new patient onboarding', {
       clinicId: input.clinicId,
@@ -1449,7 +1563,9 @@ async function handleDoctors(
     };
   }
 
-  const PAGE_SIZE = 5;
+  // Page doctors: if total doctors <= 3, show all 3. If > 3, show 2 doctors + More button
+  const isMultiPage = doctors.length > 3;
+  const PAGE_SIZE = isMultiPage ? 2 : 3;
   const pageDoctors = doctors.slice(offset, offset + PAGE_SIZE);
   const hasMore = doctors.length > offset + PAGE_SIZE;
 

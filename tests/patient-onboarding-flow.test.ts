@@ -357,7 +357,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
   });
 
   describe('3. Fast Router Onboarding & Visited Flow', () => {
-    it('prompts first-time caller with "Have you visited before?" with Yes and No buttons', async () => {
+    it('prompts first-time caller with language selection first, then "Have you visited before?"', async () => {
       vi.spyOn(prisma.clinic, 'findUnique').mockResolvedValue({ id: 'clinic-1', name: 'Reveal Clinics' } as any);
       vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({
         id: 'pat-new',
@@ -365,7 +365,8 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
         appointments: [],
       } as any);
 
-      const res = await routeMessage({
+      // Step 1: First message shows language selection
+      const resLang = await routeMessage({
         clinicId: 'clinic-1',
         conversationId: 'conv-1',
         patientId: 'pat-new',
@@ -374,10 +375,27 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
         idempotencySeed: 'msg-1',
       });
 
-      expect(res.handled).toBe(true);
-      expect(res.intent).toBe('VISITED_BEFORE_PROMPT');
-      expect(res.reply).toContain('Have you visited our clinic before?');
-      expect(res.buttons).toEqual([
+      expect(resLang.handled).toBe(true);
+      expect(resLang.intent).toBe('LANGUAGE_SELECT_PROMPT');
+      expect(resLang.buttons).toEqual([
+        { id: 'select_language:en', title: '🇬🇧 English' },
+        { id: 'select_language:ar', title: '🇸🇦 العربية' },
+      ]);
+
+      // Step 2: Language selected -> prompts with visited before
+      const resVisited = await routeMessage({
+        clinicId: 'clinic-1',
+        conversationId: 'conv-1',
+        patientId: 'pat-new',
+        leadId: 'lead-1',
+        message: '[Button Click: English | ID: select_language:en]',
+        idempotencySeed: 'msg-1b',
+      });
+
+      expect(resVisited.handled).toBe(true);
+      expect(resVisited.intent).toBe('VISITED_BEFORE_PROMPT');
+      expect(resVisited.reply).toContain('Have you visited our clinic before?');
+      expect(resVisited.buttons).toEqual([
         { id: 'visited_before:yes', title: 'Yes' },
         { id: 'visited_before:no', title: 'No, First Visit' },
       ]);
@@ -385,7 +403,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
 
     it('handles visited_before:no for new patient and shows booking options', async () => {
       vi.spyOn(prisma.clinic, 'findUnique').mockResolvedValue({ id: 'clinic-1', name: 'Reveal Clinics' } as any);
-      vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({ id: 'pat-new', tags: [] } as any);
+      vi.spyOn(prisma.patient, 'findUnique').mockResolvedValue({ id: 'pat-new', tags: ['lang:en'] } as any);
       const updateSpy = vi.spyOn(prisma.patient, 'update').mockResolvedValue({} as any);
 
       const res = await routeMessage({
@@ -424,7 +442,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
 
       expect(res.handled).toBe(true);
       expect(res.intent).toBe('ASK_FILE_NUMBER');
-      expect(res.reply).toContain('Medical File Number');
+      expect(res.reply).toContain('Patient ID');
       expect(updateSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { tags: expect.arrayContaining(['awaiting:file_number', 'visited:yes']) },
@@ -464,7 +482,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
       expect(res.handled).toBe(true);
       expect(res.intent).toBe('FILE_NUMBER_MATCHED');
       expect(res.reply).toContain('Sara Ahmed');
-      expect(res.reply).toContain('FR-001');
+      expect(res.reply).toContain('PID-0001');
       expect(convUpdateSpy).toHaveBeenCalledWith({
         where: { id: 'conv-1' },
         data: { patientId: 'pat-existing-1' },
@@ -492,7 +510,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
 
       expect(res.handled).toBe(true);
       expect(res.intent).toBe('FILE_NUMBER_NOT_FOUND');
-      expect(res.reply).toContain('FR-9999');
+      expect(res.reply).toContain('9999');
       expect(res.buttons).toEqual([
         { id: 'book_new', title: '📅 Book as New Patient' },
         { id: 'human_escalation', title: '👨‍💼 Speak to Staff' },
@@ -510,7 +528,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
         1,
       );
 
-      expect(msg).toContain('• *File Number:* FR-001');
+      expect(msg).toContain('Your Patient ID is PID-0001');
       expect(msg).toContain('• *Appointment Number:* AP-001');
       expect(msg).toContain('• *Service:* Deep Cleansing Facial');
       expect(msg).toContain('• *Doctor:* Dr. Ahmad');
@@ -526,7 +544,7 @@ describe('Patient Onboarding, File Numbering & Portal Account Creation Flow', ()
         1,
       );
 
-      expect(msg).toContain('• *رقم الملف:* FR-001');
+      expect(msg).toContain('رقم ملفك الطبي هو PID-0001');
       expect(msg).toContain('• *رقم الموعد:* AP-001');
       expect(msg).toContain('• *الخدمة:* تنظيف البشرة');
       expect(msg).toContain('• *الطبيب:* د. أحمد');

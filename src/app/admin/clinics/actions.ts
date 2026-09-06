@@ -101,6 +101,8 @@ export async function createClinicAction(
       country: optional(form, 'country'),
       timezone: str(form, 'timezone'),
       isActive: bool(form, 'isActive'),
+      pulseHealthOS: bool(form, 'pulseHealthOS'),
+      pulseNow: bool(form, 'pulseNow'),
     });
 
     // --- Portal account (optional) ---
@@ -163,6 +165,8 @@ export async function updateBasicsAction(
       country: optional(form, 'country'),
       timezone: str(form, 'timezone'),
       isActive: bool(form, 'isActive'),
+      pulseHealthOS: bool(form, 'pulseHealthOS'),
+      pulseNow: bool(form, 'pulseNow'),
     });
     await updateClinicBasics(scope, clinicId, input);
     revalidatePath(`/admin/clinics/${clinicId}`);

@@ -92,7 +92,13 @@ function isPathActive(pathname: string, href: string): boolean {
  * - Vertically stacked icon buttons (Dashboard, Doctors, Services, Patients, Appointments, Inbox)
  * - Bottom items: Security & Upgrade (replacing profile & sign out)
  */
-export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {}) {
+export function ClinicPortalSidebarNav({
+  userRole,
+  isPulseNow = false,
+}: {
+  userRole?: string;
+  isPulseNow?: boolean;
+} = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
@@ -105,7 +111,7 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
   const clinicItems = isReceptionist
     ? [
         { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-        { href: '/portal/accounts/invoices', label: 'Billing', icon: Wallet },
+        ...(!isPulseNow ? [{ href: '/portal/accounts/invoices', label: 'Billing', icon: Wallet }] : []),
         { href: '/portal/patients', label: 'Patients', icon: Users },
         { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
       ]
@@ -113,8 +119,8 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
       ? [
           { href: '/portal/doctors', label: 'My Profile', icon: Stethoscope },
           { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-          { href: '/portal/accounts/doctor-payouts', label: 'My Payouts', icon: Wallet },
-          { href: '/portal/inventory/requests', label: 'Item Requests', icon: Boxes },
+          ...(!isPulseNow ? [{ href: '/portal/accounts/doctor-payouts', label: 'My Payouts', icon: Wallet }] : []),
+          ...(!isPulseNow ? [{ href: '/portal/inventory/requests', label: 'Item Requests', icon: Boxes }] : []),
           { href: '/portal/patients', label: 'Patients', icon: Users },
           { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
         ]
@@ -123,8 +129,8 @@ export function ClinicPortalSidebarNav({ userRole }: { userRole?: string } = {})
           { href: '/portal/doctors', label: 'Doctors', icon: Stethoscope },
           ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
           ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
-          ...(!isCoordinator ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
-          ...(isOwnerOrAdmin ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
+          ...(!isCoordinator && !isPulseNow ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
+          ...(isOwnerOrAdmin && !isPulseNow ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
           { href: '/portal/patients', label: 'Patients', icon: Users },
           { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
           { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
@@ -325,9 +331,11 @@ export function SidebarNav({ items }: { items: NavItem[] }) {
 export function MobileNavToggle({
   items,
   isClinicPortal,
+  isPulseNow = false,
 }: {
   items: NavItem[];
   isClinicPortal?: boolean;
+  isPulseNow?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -363,7 +371,7 @@ export function MobileNavToggle({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto py-2" onClick={() => setOpen(false)}>
-              {isClinicPortal ? <ClinicPortalSidebarNav /> : <SidebarNav items={items} />}
+              {isClinicPortal ? <ClinicPortalSidebarNav isPulseNow={isPulseNow} /> : <SidebarNav items={items} />}
             </div>
           </div>
         </div>

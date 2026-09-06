@@ -51,7 +51,13 @@ export function setCachedDoctors(docs: DoctorSummary[]) {
   listeners.forEach((fn) => fn(docs));
 }
 
-export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {}) {
+export function DoctorSecondarySidebar({
+  userRole,
+  isPulseNow = false,
+}: {
+  userRole?: string;
+  isPulseNow?: boolean;
+} = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -773,7 +779,7 @@ export function DoctorSecondarySidebar({ userRole }: { userRole?: string } = {})
                   <span>Roles &amp; Staff</span>
                 </Link>
               )}
-              {!isCoordinator && (
+              {!isCoordinator && !isPulseNow && (
                 <Link
                   href="/portal/inventory"
                   className={cn(

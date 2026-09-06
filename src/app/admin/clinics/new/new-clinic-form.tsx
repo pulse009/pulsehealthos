@@ -129,6 +129,63 @@ export function NewClinicForm() {
             <Checkbox name="isActive" label="Activate immediately" defaultChecked />
           </div>
 
+          {/* ── Platform Edition & Modules Access ─────────────────────────── */}
+          <div className="sm:col-span-2 pt-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                Platform Edition &amp; Modules Access
+              </span>
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Select which portal modules and edition are enabled for this clinic tenant.
+            </p>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="pulseHealthOS"
+                  value="true"
+                  defaultChecked
+                  className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 size-4"
+                />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">Pulse Health OS</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px] bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                      Full Suite
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    Complete platform access including Appointments, Doctors, Services, Patients, Roles, Inventory, and Accounts &amp; Finance.
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="pulseNow"
+                  value="true"
+                  className="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 size-4"
+                />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">Pulse Now</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[6px] bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                      Express Edition
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    Lightweight clinic edition. Automatically hides <strong>Inventory</strong> and <strong>Accounts &amp; Finance</strong> modules from this clinic's portal.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {/* ── Portal Account ────────────────────────────────────────────── */}
           <div className="sm:col-span-2 pt-4">
             <div className="flex items-center gap-3 mb-3">

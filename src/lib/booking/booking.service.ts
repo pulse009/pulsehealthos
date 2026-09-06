@@ -295,17 +295,32 @@ export async function createAppointment(
       });
       const nextAppointmentNumber = (lastAppointment?.appointmentNumber ?? 0) + 1;
 
-      // 3. Provision Patient Portal User Account (Always provision credentials for patient portal login)
+      // 3. Provision Patient Portal User Account (Only provision credentials if clinic has pulseHealthOS enabled)
       let patientCredentials: { email: string; username?: string; temporaryPassword?: string; isNewAccount: boolean } | null = null;
-      const contactInfo = input.email ?? patient.email ?? patient.phone;
-      patientCredentials = await ensurePatientUserAccount(
-        clinicId,
-        patient.id,
-        contactInfo,
-        patient.name,
-        currentFileNumber,
-        tx,
-      );
+      
+      const clinicRow = tx.clinic?.findUnique
+        ? await tx.clinic.findUnique({
+            where: { id: clinicId },
+            select: { pulseHealthOS: true, pulseNow: true },
+          })
+        : await prisma.clinic.findUnique({
+            where: { id: clinicId },
+            select: { pulseHealthOS: true, pulseNow: true },
+          }).catch(() => null);
+      const isPulseHealthOSEnabled = clinicRow?.pulseHealthOS ?? true;
+      const isPulseNowOnly = Boolean(clinicRow?.pulseNow && !clinicRow?.pulseHealthOS);
+
+      if (isPulseHealthOSEnabled && !isPulseNowOnly) {
+        const contactInfo = input.email ?? patient.email ?? patient.phone;
+        patientCredentials = await ensurePatientUserAccount(
+          clinicId,
+          patient.id,
+          contactInfo,
+          patient.name,
+          currentFileNumber,
+          tx,
+        );
+      }
 
       const appointment = await tx.appointment.create({
         data: {

@@ -11,21 +11,24 @@ const ARABIC_UNICODE_REGEX =
   /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
 const ARABIC_SWITCH_REGEX =
-  /(بالعربي|عربي|اللغة\s*العربية|حول\s*للعربي|تحدث\s*بالعربي|اريد\s*عربي|أريد\s*عربي)/i;
+  /(بالعربي|عربي|العربية|اللغة\s*العربية|حول\s*للعربي|تحدث\s*بالعربي|اريد\s*عربي|أريد\s*عربي|arabic)/i;
 
 const ENGLISH_SWITCH_REGEX =
-  /(in\s*english|switch\s*to\s*english|english\s*please|speak\s*english|change\s*to\s*english)/i;
+  /(in\s*english|switch\s*to\s*english|english\s*please|speak\s*english|change\s*to\s*english|انجليزي|انكليزي|اللغة\s*الانجليزية)/i;
 
 /** Check if text is a machine payload or button click wrapper */
 export function isButtonOrPayloadMessage(text: string): boolean {
   const trimmed = text.trim();
   if (
     trimmed.startsWith('[Button Click:') ||
+    trimmed.startsWith('select_language:') ||
+    trimmed.startsWith('set_language:') ||
     trimmed.startsWith('select_service:') ||
     trimmed.startsWith('select_doctor:') ||
     trimmed.startsWith('select_date:') ||
     trimmed.startsWith('select_slot:') ||
     trimmed.startsWith('more_slots:') ||
+    trimmed.startsWith('more_doctors:') ||
     trimmed.startsWith('confirm_booking:') ||
     trimmed === 'confirm_booking' ||
     trimmed === 'cancel_booking' ||
@@ -88,6 +91,24 @@ export interface ResolveLocaleInput {
 export async function resolveLanguage(input: ResolveLocaleInput): Promise<SupportedLocale> {
   const { clinicId, conversationId, patientId, message, defaultLocale = 'en' } = input;
   const rawText = message.trim();
+
+  // 0. Explicit language selection button or payload
+  if (
+    rawText.includes('select_language:ar') ||
+    rawText.includes('set_language:ar') ||
+    /^(🇸🇦\s*)?(arabic|عربي|العربية)$/i.test(rawText)
+  ) {
+    await persistLocale(clinicId, conversationId, patientId, 'ar');
+    return 'ar';
+  }
+  if (
+    rawText.includes('select_language:en') ||
+    rawText.includes('set_language:en') ||
+    /^(🇬🇧\s*)?(english|انجليزي|انكليزي)$/i.test(rawText)
+  ) {
+    await persistLocale(clinicId, conversationId, patientId, 'en');
+    return 'en';
+  }
 
   // 1. Check explicit language switch commands in free text
   if (ARABIC_SWITCH_REGEX.test(rawText)) {

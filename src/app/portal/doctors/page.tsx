@@ -117,6 +117,7 @@ export default async function PortalDoctorsPage() {
       specialties={specialties}
       availableServices={services}
       availableStaff={staff}
+      userRole={user.role}
     />
   );
 }

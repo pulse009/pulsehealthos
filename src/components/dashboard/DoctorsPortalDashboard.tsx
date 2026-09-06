@@ -21,6 +21,9 @@ import {
   Users,
   Plus,
   UserCheck,
+  Trash2,
+  X,
+  AlertTriangle,
 } from 'lucide-react';
 
 export interface DoctorCardItem {
@@ -46,6 +49,7 @@ export interface DoctorsPortalDashboardProps {
   specialties?: string[];
   availableServices?: Array<{ id: string; name: string }>;
   availableStaff?: Array<{ id: string; name: string; email: string }>;
+  userRole?: string;
 }
 
 export function DoctorsPortalDashboard({
@@ -53,12 +57,59 @@ export function DoctorsPortalDashboard({
   timezone = 'Asia/Riyadh',
   initialDoctors = [],
   specialties = [],
+  userRole,
 }: DoctorsPortalDashboardProps) {
   const [doctors, setDoctors] = useState<DoctorCardItem[]>(initialDoctors);
+
+  const canDelete = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN';
+
+  // Delete Doctor Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [doctorToDelete, setDoctorToDelete] = useState<DoctorCardItem | null>(null);
+  const [isDeletingDoctor, setIsDeletingDoctor] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialDoctors && initialDoctors.length > 0) setDoctors(initialDoctors);
   }, [initialDoctors]);
+
+  const promptDeleteDoctor = (doc: DoctorCardItem, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setDoctorToDelete(doc);
+    setDeleteError(null);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDeleteDoctor = async () => {
+    if (!doctorToDelete) return;
+    setIsDeletingDoctor(true);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch(`/api/doctors/${doctorToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        setDoctors((prev) => prev.filter((d) => d.id !== doctorToDelete.id));
+        setIsDeleteModalOpen(false);
+        setDoctorToDelete(null);
+        setDeleteSuccessMsg(`Doctor deleted successfully.`);
+        setTimeout(() => setDeleteSuccessMsg(null), 3000);
+      } else {
+        setDeleteError(data.error || 'Failed to delete doctor.');
+      }
+    } catch (err: any) {
+      setDeleteError(err.message || 'An unexpected network error occurred.');
+    } finally {
+      setIsDeletingDoctor(false);
+    }
+  };
 
   // Toolbar & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -437,14 +488,24 @@ export function DoctorsPortalDashboard({
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                         <Link
                           href={`/portal/doctors/${doc.id}`}
-                          className="w-full inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs py-1.5 rounded-[8px] shadow-2xs transition-all"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs py-1.5 rounded-[8px] shadow-2xs transition-all"
                         >
                           <span>Manage Profile &amp; Schedule</span>
                           <ChevronRight className="size-3.5" />
                         </Link>
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={(e) => promptDeleteDoctor(doc, e)}
+                            className="p-1.5 rounded-[8px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shrink-0"
+                            title="Delete Doctor"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -574,13 +635,25 @@ export function DoctorsPortalDashboard({
                       </td>
 
                       <td className="py-2.5 px-4 text-right whitespace-nowrap">
-                        <Link
-                          href={`/portal/doctors/${row.id}`}
-                          className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 font-bold text-xs"
-                        >
-                          <span>Manage</span>
-                          <ChevronRight className="size-3.5" />
-                        </Link>
+                        <div className="inline-flex items-center gap-2 justify-end">
+                          <Link
+                            href={`/portal/doctors/${row.id}`}
+                            className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 font-bold text-xs"
+                          >
+                            <span>Manage</span>
+                            <ChevronRight className="size-3.5" />
+                          </Link>
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={(e) => promptDeleteDoctor(row, e)}
+                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
+                              title="Delete doctor"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -590,6 +663,71 @@ export function DoctorsPortalDashboard({
           </div>
         )}
       </div>
+
+      {/* DELETE DOCTOR CONFIRMATION MODAL */}
+      {isDeleteModalOpen && doctorToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
+                <AlertTriangle className="size-5 shrink-0" />
+                <span>Delete Doctor</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDeletingDoctor) {
+                    setIsDeleteModalOpen(false);
+                    setDoctorToDelete(null);
+                    setDeleteError(null);
+                  }
+                }}
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-3">
+              Are you sure you want to delete{' '}
+              <span className="font-bold text-slate-900 dark:text-white">
+                {doctorToDelete.name}
+              </span>
+              ? This will remove all associated working hours, breaks, and payment structures.
+            </p>
+
+            {deleteError && (
+              <div className="p-3 mb-4 rounded-[8px] bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium leading-relaxed">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                disabled={isDeletingDoctor}
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setDoctorToDelete(null);
+                  setDeleteError(null);
+                }}
+                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingDoctor}
+                onClick={handleConfirmDeleteDoctor}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-60"
+              >
+                <Trash2 className="size-3.5" />
+                <span>{isDeletingDoctor ? 'Deleting...' : 'Delete Doctor'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
