@@ -63,6 +63,19 @@ async function postToGraph(
   }
 }
 
+function extractMetaErrorMessage(status: number, responseBody: string): string {
+  try {
+    const parsed = JSON.parse(responseBody);
+    if (parsed?.error) {
+      const { code, message, error_data, error_subcode } = parsed.error;
+      const details = error_data?.details ? ` - ${error_data.details}` : '';
+      const subcode = error_subcode ? ` (subcode ${error_subcode})` : '';
+      return `[Code ${code || status}${subcode}] ${message || 'Unknown Meta error'}${details}`;
+    }
+  } catch {}
+  return `[HTTP ${status}] ${responseBody.slice(0, 200)}`;
+}
+
 /**
  * Send a plain text message.
  *
@@ -115,19 +128,21 @@ export async function sendText(
   console.log('💬 [WHATSAPP] Graph API response body:', text.slice(0, 500));
 
   if (!response.ok) {
-    console.log('🔴 [WHATSAPP] Graph API returned non-2xx:', response.status, text.slice(0, 300));
-    logger.error(Events.WHATSAPP_SEND_FAILED, 'WhatsApp rejected the message', {
+    const metaError = extractMetaErrorMessage(response.status, text);
+    console.log('🔴 [WHATSAPP] Graph API returned non-2xx:', response.status, metaError);
+    logger.error(Events.WHATSAPP_SEND_FAILED, `WhatsApp rejected the message: ${metaError}`, {
       clinicId,
       status: response.status,
+      metaError,
       body: text.slice(0, 500),
     });
     await prisma.whatsAppIntegration
       .update({
         where: { clinicId },
-        data: { lastError: `HTTP ${response.status}`, lastErrorAt: new Date() },
+        data: { lastError: metaError.slice(0, 190), lastErrorAt: new Date() },
       })
       .catch(() => undefined);
-    throw integrationError('WhatsApp rejected the message.');
+    throw integrationError(`WhatsApp rejected the message: ${metaError}`);
   }
 
   let externalId: string | null = null;
@@ -233,7 +248,8 @@ export async function sendInteractiveButtons(
     console.log('🔘 [WHATSAPP] Interactive response status:', response.status, 'body:', text.slice(0, 300));
 
     if (!response.ok) {
-      console.warn('⚠️ [WHATSAPP] Interactive message failed, falling back to text format');
+      const metaError = extractMetaErrorMessage(response.status, text);
+      console.warn(`⚠️ [WHATSAPP] Interactive message failed (${metaError}), falling back to text format`);
       const fallbackText = `${body}\n\n` + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
       return sendText(clinicId, to, fallbackText);
     }
