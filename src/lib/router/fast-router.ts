@@ -102,7 +102,7 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   ) {
     const selectedLocale: SupportedLocale =
       actionPayload.endsWith('ar') || actionPayload.includes(':ar') ? 'ar' : 'en';
-    await persistLocale(input.clinicId, input.conversationId, input.patientId, selectedLocale);
+    await persistLocale(input.clinicId, input.conversationId, input.patientId, selectedLocale, true);
     return handleAfterLanguageSelected(input, selectedLocale, startedAt);
   }
 
@@ -1326,7 +1326,11 @@ async function handleGreeting(
     ]);
     if (clinic?.name) clinicName = clinic.name;
     const currentTags = patient?.tags ?? [];
-    hasExplicitLanguageTag = currentTags.some((t) => t.startsWith('lang:'));
+    hasExplicitLanguageTag =
+      currentTags.includes('lang:chosen') ||
+      currentTags.includes('lang:selected') ||
+      currentTags.includes('visited:done') ||
+      currentTags.includes('visited:yes');
     isExistingPatient = Boolean(
       (patient?.fileNumber !== null && patient?.fileNumber !== undefined) ||
         currentTags.includes('visited:done') ||
@@ -1520,11 +1524,19 @@ async function handleServices(
 
   const reply = `${dict.services_title}\n\n${list}\n\n${dict.step1_subtitle}`;
 
-  const buttons: WhatsAppButton[] = [
-    { id: 'book_appointment', title: dict.btn_book_appointment },
-    { id: 'get_doctors', title: dict.btn_doctors },
-    { id: 'get_hours', title: dict.btn_hours },
-  ];
+  const buttons: WhatsAppButton[] =
+    services.length <= 3
+      ? services.map((s) => ({
+          id: `select_service:${s.id}`,
+          title: formatServiceButtonTitle(s.name, locale),
+        }))
+      : [
+          ...services.slice(0, 2).map((s) => ({
+            id: `select_service:${s.id}`,
+            title: formatServiceButtonTitle(s.name, locale),
+          })),
+          { id: 'book_appointment', title: dict.btn_book_appointment },
+        ];
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router handled services', {
     clinicId: input.clinicId,

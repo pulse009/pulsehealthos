@@ -98,7 +98,7 @@ export async function resolveLanguage(input: ResolveLocaleInput): Promise<Suppor
     rawText.includes('set_language:ar') ||
     /^(🇸🇦\s*)?(arabic|عربي|العربية)$/i.test(rawText)
   ) {
-    await persistLocale(clinicId, conversationId, patientId, 'ar');
+    await persistLocale(clinicId, conversationId, patientId, 'ar', true);
     return 'ar';
   }
   if (
@@ -106,48 +106,39 @@ export async function resolveLanguage(input: ResolveLocaleInput): Promise<Suppor
     rawText.includes('set_language:en') ||
     /^(🇬🇧\s*)?(english|انجليزي|انكليزي)$/i.test(rawText)
   ) {
-    await persistLocale(clinicId, conversationId, patientId, 'en');
+    await persistLocale(clinicId, conversationId, patientId, 'en', true);
     return 'en';
   }
 
   // 1. Check explicit language switch commands in free text
   if (ARABIC_SWITCH_REGEX.test(rawText)) {
-    await persistLocale(clinicId, conversationId, patientId, 'ar');
+    await persistLocale(clinicId, conversationId, patientId, 'ar', true);
     return 'ar';
   }
   if (ENGLISH_SWITCH_REGEX.test(rawText)) {
-    await persistLocale(clinicId, conversationId, patientId, 'en');
+    await persistLocale(clinicId, conversationId, patientId, 'en', true);
     return 'en';
   }
 
-  // 2. If it is a button click or machine payload: DO NOT infer from button titles/IDs!
-  // Instead, retrieve the persisted language.
-  if (isButtonOrPayloadMessage(rawText)) {
-    const existing = await getPersistedLocale(clinicId, conversationId, patientId);
-    if (existing) {
-      return existing;
-    }
-  }
-
-  // 3. Free-text language detection:
+  // 2. Free-text language detection (Arabic vs Latin characters):
   if (!isButtonOrPayloadMessage(rawText)) {
     if (ARABIC_UNICODE_REGEX.test(rawText)) {
-      await persistLocale(clinicId, conversationId, patientId, 'ar');
+      setCache(conversationId, patientId, 'ar');
       return 'ar';
     }
     if (/[a-zA-Z]/.test(rawText)) {
-      await persistLocale(clinicId, conversationId, patientId, 'en');
+      setCache(conversationId, patientId, 'en');
       return 'en';
     }
   }
 
-  // 4. Fallback to existing persisted locale
+  // 3. For button clicks / machine payloads: retrieve persisted conversation/patient locale
   const persisted = await getPersistedLocale(clinicId, conversationId, patientId);
   if (persisted) {
     return persisted;
   }
 
-  // 5. Default
+  // 4. Default
   return defaultLocale;
 }
 
@@ -196,6 +187,7 @@ export async function persistLocale(
   conversationId: string | undefined,
   patientId: string | undefined,
   locale: SupportedLocale,
+  isExplicitChoice: boolean = false,
 ): Promise<void> {
   setCache(conversationId, patientId, locale);
 
@@ -208,9 +200,12 @@ export async function persistLocale(
       if (patient) {
         const cleanTags = patient.tags.filter((t) => !t.startsWith('lang:'));
         cleanTags.push(`lang:${locale}`);
+        if (isExplicitChoice) {
+          cleanTags.push('lang:chosen');
+        }
         await prisma.patient.update({
           where: { id: patientId },
-          data: { tags: cleanTags },
+          data: { tags: Array.from(new Set(cleanTags)) },
         });
       }
     } catch {
