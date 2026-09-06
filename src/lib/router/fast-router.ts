@@ -86,8 +86,8 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   console.log(`\n⚡ [FAST ROUTER] Evaluating message: "${rawText.slice(0, 80)}" | Locale: ${locale}`);
 
   // 2. Check for interactive button click payloads
-  const buttonMatch = rawText.match(/^\[Button Click:\s*(.+?)\s*\|\s*(?:ID|Payload):\s*(.+?)\]$/i);
-  const actionPayload = buttonMatch ? buttonMatch[2]?.trim() : rawText;
+  const buttonMatch = rawText.match(/\[Button Click:\s*([\s\S]*?)\s*\|\s*(?:ID|Payload):\s*([\s\S]*?)\]/i);
+  const actionPayload: string = (buttonMatch ? buttonMatch[2]?.trim() : rawText) || '';
 
   // -------------------------------------------------------------------------
   // INTERACTIVE BUTTON PAYLOAD DISPATCH (Deterministic, Sub-50ms)
@@ -98,24 +98,40 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     actionPayload === 'select_language:en' ||
     actionPayload === 'select_language:ar' ||
     actionPayload?.startsWith('select_language:') ||
-    actionPayload?.startsWith('set_language:')
+    actionPayload?.startsWith('set_language:') ||
+    /^(🇸🇦\s*)?(عربي|العربية|اللغة العربية|arabic)$/i.test(rawText.trim()) ||
+    /^(🇬🇧\s*)?(english|انجليزي|انكليزي)$/i.test(rawText.trim())
   ) {
-    const selectedLocale: SupportedLocale =
-      actionPayload.endsWith('ar') || actionPayload.includes(':ar') ? 'ar' : 'en';
+    const isAr =
+      actionPayload.endsWith('ar') ||
+      actionPayload.includes(':ar') ||
+      /(عربي|العربية|arabic)/i.test(rawText);
+    const selectedLocale: SupportedLocale = isAr ? 'ar' : 'en';
     await persistLocale(input.clinicId, input.conversationId, input.patientId, selectedLocale, true);
     return handleAfterLanguageSelected(input, selectedLocale, startedAt);
   }
 
   // Action: Onboarding - Have you visited before?
-  if (actionPayload === 'visited_before:yes' || actionPayload === 'visited_before:no') {
-    return handleVisitedBeforeResponse(input, actionPayload === 'visited_before:yes', locale, startedAt);
+  if (
+    actionPayload === 'visited_before:yes' ||
+    actionPayload === 'visited_before:no' ||
+    /^(نعم|yes|اي|ايوه|أجل)$/i.test(rawText.trim()) ||
+    /^(لا|no|لا، أول زيارة|لا، اول زيارة|اول زيارة|أول زيارة|first visit)$/i.test(rawText.trim())
+  ) {
+    const isYes =
+      actionPayload === 'visited_before:yes' || /^(نعم|yes|اي|ايوه|أجل)$/i.test(rawText.trim());
+    return handleVisitedBeforeResponse(input, isYes, locale, startedAt);
   }
 
   // Action: Step 6 - Confirm Booking
-  if (actionPayload?.startsWith('confirm_booking:') || actionPayload === 'confirm_booking') {
+  if (
+    actionPayload?.startsWith('confirm_booking:') ||
+    actionPayload === 'confirm_booking' ||
+    /^(✅\s*)?(تأكيد|تاكيد|تأكيد الحجز|تاكيد الحجز|confirm|confirm booking)$/i.test(rawText.trim())
+  ) {
     const slotToken = actionPayload.startsWith('confirm_booking:')
       ? actionPayload.replace('confirm_booking:', '').trim()
-      : null;
+      : pendingBookingSlots.get(input.conversationId) || pendingBookingSlots.get(input.patientId) || null;
 
     if (slotToken) {
       return handleDirectBooking(input, slotToken, locale, now, startedAt);
@@ -286,7 +302,11 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   }
 
   // Action: Cancel Booking (Before Confirmation)
-  if (actionPayload === 'cancel_booking' || actionPayload === 'cancel') {
+  if (
+    actionPayload === 'cancel_booking' ||
+    actionPayload === 'cancel' ||
+    /^(❌\s*)?(إلغاء|الغاء|إلغاء الحجز|الغاء الحجز|cancel|cancel booking)$/i.test(rawText.trim())
+  ) {
     logger.info(Events.ROUTER_COMPLETED, 'Fast router handled cancel_booking', {
       clinicId: input.clinicId,
       intent: 'CANCEL_BOOKING',
@@ -305,18 +325,30 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   }
 
   // Action: Request Appointment Cancellation (Prompt for confirmation)
-  if (actionPayload === 'cancel_appointment' || isCancellationIntent(rawText)) {
+  if (
+    actionPayload === 'cancel_appointment' ||
+    /^(❌\s*)?(إلغاء الموعد|الغاء الموعد|cancel appointment)$/i.test(rawText.trim()) ||
+    isCancellationIntent(rawText)
+  ) {
     return handleCancelPrompt(input, locale, now, startedAt);
   }
 
   // Action: Confirm Cancellation
-  if (actionPayload?.startsWith('confirm_cancel:')) {
-    const appointmentId = actionPayload.replace('confirm_cancel:', '').trim();
+  if (
+    actionPayload?.startsWith('confirm_cancel:') ||
+    /^(نعم، إلغاء الموعد|نعم، الغاء الموعد|yes, cancel)$/i.test(rawText.trim())
+  ) {
+    const appointmentId = actionPayload.startsWith('confirm_cancel:')
+      ? actionPayload.replace('confirm_cancel:', '').trim()
+      : '';
     return handleDirectCancellation(input, appointmentId, locale, now, startedAt);
   }
 
   // Action: Keep Appointment
-  if (actionPayload === 'keep_appointment') {
+  if (
+    actionPayload === 'keep_appointment' ||
+    /^(لا، إبقاء الموعد|لا، ابقاء الموعد|no, keep appointment)$/i.test(rawText.trim())
+  ) {
     logger.info(Events.ROUTER_COMPLETED, 'Fast router handled keep_appointment', {
       clinicId: input.clinicId,
       intent: 'KEEP_APPOINTMENT',
@@ -331,7 +363,13 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   }
 
   // Action: Reschedule Appointment
-  if (actionPayload === 'reschedule_appointment' || isRescheduleIntent(rawText)) {
+  if (
+    actionPayload === 'reschedule_appointment' ||
+    /^(🔄\s*)?(تعديل الموعد|تغيير الموعد|تأجيل الموعد|تاجيل الموعد|reschedule|reschedule appointment)$/i.test(
+      rawText.trim(),
+    ) ||
+    isRescheduleIntent(rawText)
+  ) {
     return handleReschedulePrompt(input, locale, now, startedAt);
   }
 
@@ -604,11 +642,7 @@ async function handleCheckDoctorAppointmentTypes(
       const list = apptTypes
         .map((s, idx) => {
           const localizedName = translateServiceName(s.name, locale);
-          const priceStr =
-            s.priceMinor !== null && s.priceMinor !== undefined
-              ? ` • ${(s.priceMinor / 100).toFixed(0)} ${s.currency || 'SAR'}`
-              : '';
-          return `${idx + 1}. *${localizedName}* (${s.durationMinutes} ${dict.minutes_label}${priceStr})`;
+          return `${idx + 1}. *${localizedName}* (${s.durationMinutes} ${dict.minutes_label})`;
         })
         .join('\n');
 

@@ -175,7 +175,8 @@ For anything that sounds like a medical emergency, tell them immediately to call
   // --- Voice --------------------------------------------------------------
   sections.push(`## How to write
 - Tone: ${ai.tone}.${ai.personality ? ` Personality: ${ai.personality}.` : ''}
-- Reply in the patient's language where it is one of: ${languages.join(', ')}. Otherwise use ${ai.primaryLanguage}.
+- DYNAMIC LANGUAGE MATCHING (CRITICAL): If the patient writes or speaks in Arabic, you MUST reply in fluent, natural Arabic. If the patient writes in English, reply in English. If the patient switches language mid-conversation, switch your language immediately to match the patient's latest language.
+- NO PRICING: Do NOT show, quote, or mention service prices unless the patient explicitly asks for pricing. Focus only on service names, doctor names, and durations.
 - WhatsApp style: short. Usually two or three sentences. No markdown, no headings, no bullet symbols unless listing appointment times.
 - Ask one question at a time.
 - Never repeat information the patient has already given you.

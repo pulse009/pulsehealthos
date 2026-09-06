@@ -121,13 +121,18 @@ export async function resolveLanguage(input: ResolveLocaleInput): Promise<Suppor
   }
 
   // 2. Free-text language detection (Arabic vs Latin characters):
+  //    Persist to DB on every free-text turn so the next button-click turn
+  //    correctly reads the locale from DB. This is what makes buttons work
+  //    in Arabic and enables mid-conversation language switching.
   if (!isButtonOrPayloadMessage(rawText)) {
     if (ARABIC_UNICODE_REGEX.test(rawText)) {
-      setCache(conversationId, patientId, 'ar');
+      // User wrote Arabic — switch/confirm Arabic immediately and persist
+      await persistLocale(clinicId, conversationId, patientId, 'ar', false);
       return 'ar';
     }
     if (/[a-zA-Z]/.test(rawText)) {
-      setCache(conversationId, patientId, 'en');
+      // User wrote English — switch/confirm English immediately and persist
+      await persistLocale(clinicId, conversationId, patientId, 'en', false);
       return 'en';
     }
   }

@@ -85,18 +85,18 @@ function extractText(message: z.infer<typeof messageSchema>): string | null {
   if (message.type === 'button') {
     const text = message.button?.text;
     const payload = message.button?.payload;
-    if (payload && payload !== text) {
+    if (payload) {
       return `[Button Click: ${text || 'Action'} | Payload: ${payload}]`;
     }
-    return text ?? payload ?? null;
+    return text ?? null;
   }
   if (message.type === 'interactive') {
     const item = message.interactive?.button_reply ?? message.interactive?.list_reply;
     if (item) {
-      if (item.id && item.id !== item.title) {
+      if (item.id) {
         return `[Button Click: ${item.title || 'Action'} | ID: ${item.id}]`;
       }
-      return item.title ?? item.id ?? null;
+      return item.title ?? null;
     }
   }
   return null;
@@ -292,9 +292,9 @@ async function handleInboundMessage(
     return;
   }
 
-  // 0. WHATSAPP TYPING INDICATOR: Trigger immediately so patient sees "typing..." indicator
-  // while backend/AI prepares the response. Failures are non-blocking and swallowed inside sendTypingIndicator.
-  await sendTypingIndicator(clinicId, message.id);
+  // 0. WHATSAPP TYPING INDICATOR: Trigger in background (fire-and-forget) so patient
+  //    sees "typing..." immediately while router/AI processes in parallel without delay.
+  void sendTypingIndicator(clinicId, message.id);
 
   // 1. FAST ROUTER: Evaluate deterministic intents and button actions directly (sub-50ms)
   const fastRoute = await routeMessage({

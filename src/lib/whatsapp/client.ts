@@ -287,6 +287,65 @@ export async function markAsRead(clinicId: string, messageId: string): Promise<v
 }
 
 /**
+ * Send a read receipt AND typing indicator for an inbound message in one
+ * credentials load. Uses a tight 4 s timeout so it never stalls the background
+ * task — the main message processing runs in parallel and is never blocked.
+ */
+export async function sendReadAndTyping(
+  clinicId: string,
+  messageId: string,
+): Promise<void> {
+  const start = Date.now();
+  const credentials = await loadCredentials(clinicId);
+  if (!credentials) {
+    console.warn('⚠️ [WHATSAPP] sendReadAndTyping: no credentials for clinic', clinicId);
+    return;
+  }
+
+  // Use a tight 4s timeout specifically for these non-blocking indicator calls
+  async function postQuick(payload: Record<string, unknown>): Promise<void> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4_000);
+    try {
+      await fetch(`${env.WHATSAPP_API_BASE_URL}/${credentials!.phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${credentials!.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } catch {
+      // Swallow — non-essential
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  try {
+    // Step 1: Mark as read (double blue ticks on patient's screen)
+    await postQuick({
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: messageId,
+    });
+
+    // Step 2: Show typing bubble (patient sees "typing...")
+    await postQuick({
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: messageId,
+      typing_indicator: { type: 'text' },
+    });
+
+    console.log(`✅ [WHATSAPP] read + typing sent in ${Date.now() - start}ms`);
+  } catch {
+    // Non-essential — swallow silently
+  }
+}
+
+/**
  * Send a typing indicator via WhatsApp Cloud API.
  *
  * Payload:
