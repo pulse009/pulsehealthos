@@ -120,30 +120,27 @@ export async function resolveLanguage(input: ResolveLocaleInput): Promise<Suppor
     return 'en';
   }
 
-  // 2. Free-text language detection (Arabic vs Latin characters):
-  //    Persist to DB on every free-text turn so the next button-click turn
-  //    correctly reads the locale from DB. This is what makes buttons work
-  //    in Arabic and enables mid-conversation language switching.
-  if (!isButtonOrPayloadMessage(rawText)) {
-    if (ARABIC_UNICODE_REGEX.test(rawText)) {
-      // User wrote Arabic — switch/confirm Arabic immediately and persist
-      await persistLocale(clinicId, conversationId, patientId, 'ar', false);
-      return 'ar';
-    }
-    if (/[a-zA-Z]/.test(rawText)) {
-      // User wrote English — switch/confirm English immediately and persist
-      await persistLocale(clinicId, conversationId, patientId, 'en', false);
-      return 'en';
-    }
+  // 2. Check if the message (or button click title) contains Arabic characters:
+  //    If it contains any Arabic unicode (e.g. "لا، إبقاء الموعد", "تأكيد", "نعم"),
+  //    the user is interacting in Arabic -> ALWAYS resolve to 'ar' and persist.
+  if (ARABIC_UNICODE_REGEX.test(rawText)) {
+    await persistLocale(clinicId, conversationId, patientId, 'ar', false);
+    return 'ar';
   }
 
-  // 3. For button clicks / machine payloads: retrieve persisted conversation/patient locale
+  // 3. If it's pure English free-text (not a machine payload ID), resolve to 'en' and persist.
+  if (!isButtonOrPayloadMessage(rawText) && /[a-zA-Z]/.test(rawText)) {
+    await persistLocale(clinicId, conversationId, patientId, 'en', false);
+    return 'en';
+  }
+
+  // 4. For button clicks / machine payloads with ASCII IDs: retrieve persisted locale
   const persisted = await getPersistedLocale(clinicId, conversationId, patientId);
   if (persisted) {
     return persisted;
   }
 
-  // 4. Default
+  // 5. Default
   return defaultLocale;
 }
 
