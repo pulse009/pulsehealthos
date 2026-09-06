@@ -188,70 +188,142 @@ export async function sendInteractiveButtons(
   const recipient = normalizePhone(to);
   if (!recipient) throw integrationError('Recipient phone number is invalid.');
 
-  // Meta Cloud API allows max 3 reply buttons, title max 20 chars, id max 256 chars,
-  // and strictly requires all button titles and IDs to be unique.
-  const seenTitles = new Set<string>();
-  const seenIds = new Set<string>();
-  const formattedButtons: Array<{ type: 'reply'; reply: { id: string; title: string } }> = [];
+  // Meta Cloud API:
+  // - If <= 3 options: use interactive button reply (max 3 buttons, title max 20 chars)
+  // - If > 3 options: use interactive list message (supports up to 10 rows, title max 24 chars)
+  const isArabic = /[\u0600-\u06FF]/.test(body);
 
-  for (let idx = 0; idx < buttons.length && formattedButtons.length < 3; idx++) {
-    const b = buttons[idx];
-    if (!b) continue;
-    let id = (b.id || `btn_${idx}`).trim().slice(0, 256);
-    let title = (b.title || `Option ${idx + 1}`).trim().slice(0, 20);
+  if (buttons.length <= 3) {
+    const seenTitles = new Set<string>();
+    const seenIds = new Set<string>();
+    const formattedButtons: Array<{ type: 'reply'; reply: { id: string; title: string } }> = [];
 
-    if (seenIds.has(id)) {
-      id = `${id}_${idx}`.slice(0, 256);
-    }
+    for (let idx = 0; idx < buttons.length && formattedButtons.length < 3; idx++) {
+      const b = buttons[idx];
+      if (!b) continue;
+      let id = (b.id || `btn_${idx}`).trim().slice(0, 256);
+      let title = (b.title || `Option ${idx + 1}`).trim().slice(0, 20);
 
-    if (seenTitles.has(title)) {
-      const suffix = ` (${idx + 1})`;
-      if (title.length + suffix.length <= 20) {
-        title = `${title}${suffix}`;
-      } else {
-        title = `${title.slice(0, 20 - suffix.length)}${suffix}`;
+      if (seenIds.has(id)) {
+        id = `${id}_${idx}`.slice(0, 256);
       }
-      if (seenTitles.has(title)) continue;
+
+      if (seenTitles.has(title)) {
+        const suffix = ` (${idx + 1})`;
+        if (title.length + suffix.length <= 20) {
+          title = `${title}${suffix}`;
+        } else {
+          title = `${title.slice(0, 20 - suffix.length)}${suffix}`;
+        }
+        if (seenTitles.has(title)) continue;
+      }
+
+      seenTitles.add(title);
+      seenIds.add(id);
+      formattedButtons.push({
+        type: 'reply',
+        reply: { id, title },
+      });
     }
 
-    seenTitles.add(title);
-    seenIds.add(id);
-    formattedButtons.push({
-      type: 'reply',
-      reply: { id, title },
-    });
+    if (formattedButtons.length === 0) {
+      return sendText(clinicId, to, body);
+    }
+
+    const requestBody = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: recipient,
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: { text: body.slice(0, 1024) },
+        action: {
+          buttons: formattedButtons,
+        },
+      },
+    };
+
+    console.log('🔘 [WHATSAPP] Sending 3-button interactive payload to Graph API:', JSON.stringify(requestBody));
+
+    try {
+      const response = await postToGraph(credentials, requestBody);
+      const text = await response.text();
+      console.log('🔘 [WHATSAPP] Button response status:', response.status, 'body:', text.slice(0, 300));
+
+      if (!response.ok) {
+        const metaError = extractMetaErrorMessage(response.status, text);
+        console.warn(`⚠️ [WHATSAPP] Button message failed (${metaError}), falling back to text format`);
+        const fallbackText = `${body}\n\n` + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
+        return sendText(clinicId, to, fallbackText);
+      }
+
+      let externalId: string | null = null;
+      try {
+        const parsed = JSON.parse(text) as { messages?: Array<{ id?: string }> };
+        externalId = parsed.messages?.[0]?.id ?? null;
+      } catch {
+        externalId = null;
+      }
+
+      logger.info(Events.WHATSAPP_SEND_SUCCESS, 'WhatsApp interactive buttons sent', { clinicId, externalId });
+      return { externalId };
+    } catch (error) {
+      console.warn('⚠️ [WHATSAPP] Network error on button message, retrying with sendText fallback:', error);
+      const fallbackText = `${body}\n\n` + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
+      return sendText(clinicId, to, fallbackText);
+    }
   }
 
-  if (formattedButtons.length === 0) {
-    return sendText(clinicId, to, body);
-  }
+  // When > 3 options (e.g. 5 services): send WhatsApp Interactive List message (up to 10 rows)
+  const seenRowIds = new Set<string>();
+  const rows = buttons.slice(0, 10).map((b, idx) => {
+    let id = (b.id || `row_${idx}`).trim().slice(0, 200);
+    if (seenRowIds.has(id)) {
+      id = `${id}_${idx}`.slice(0, 200);
+    }
+    seenRowIds.add(id);
+    return {
+      id,
+      title: (b.title || `Option ${idx + 1}`).trim().slice(0, 24),
+    };
+  });
 
-  const requestBody = {
+  const menuButtonTitle = isArabic ? 'اختر الخدمة' : 'Select Option';
+  const sectionTitle = isArabic ? 'الخدمات المتاحة' : 'Available Options';
+
+  const listPayload = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
     to: recipient,
     type: 'interactive',
     interactive: {
-      type: 'button',
+      type: 'list',
       body: { text: body.slice(0, 1024) },
       action: {
-        buttons: formattedButtons,
+        button: menuButtonTitle.slice(0, 20),
+        sections: [
+          {
+            title: sectionTitle.slice(0, 24),
+            rows,
+          },
+        ],
       },
     },
   };
 
-  console.log('🔘 [WHATSAPP] Sending interactive payload to Graph API:', JSON.stringify(requestBody));
+  console.log('📋 [WHATSAPP] Sending interactive list payload (>3 options) to Graph API:', JSON.stringify(listPayload));
 
   try {
-    const response = await postToGraph(credentials, requestBody);
+    const response = await postToGraph(credentials, listPayload);
     const text = await response.text();
-    console.log('🔘 [WHATSAPP] Interactive response status:', response.status, 'body:', text.slice(0, 300));
+    console.log('📋 [WHATSAPP] List response status:', response.status, 'body:', text.slice(0, 300));
 
     if (!response.ok) {
       const metaError = extractMetaErrorMessage(response.status, text);
-      console.warn(`⚠️ [WHATSAPP] Interactive message failed (${metaError}), falling back to text format`);
-      const fallbackText = `${body}\n\n` + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
-      return sendText(clinicId, to, fallbackText);
+      console.warn(`⚠️ [WHATSAPP] Interactive list failed (${metaError}), falling back to 3 buttons or text`);
+      // Try fallback to top 3 buttons
+      return sendInteractiveButtons(clinicId, to, body, buttons.slice(0, 3));
     }
 
     let externalId: string | null = null;
@@ -262,14 +334,15 @@ export async function sendInteractiveButtons(
       externalId = null;
     }
 
-    logger.info(Events.WHATSAPP_SEND_SUCCESS, 'WhatsApp interactive message sent', { clinicId, externalId });
+    logger.info(Events.WHATSAPP_SEND_SUCCESS, 'WhatsApp interactive list sent', { clinicId, externalId, count: rows.length });
     return { externalId };
   } catch (error) {
-    console.warn('⚠️ [WHATSAPP] Network error on interactive message, retrying with sendText fallback:', error);
+    console.warn('⚠️ [WHATSAPP] Network error on list message, retrying with sendText fallback:', error);
     const fallbackText = `${body}\n\n` + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
     return sendText(clinicId, to, fallbackText);
   }
 }
+
 
 /** Best-effort read receipt; failures are logged and swallowed. */
 export async function markAsRead(clinicId: string, messageId: string): Promise<void> {

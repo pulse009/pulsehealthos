@@ -88,25 +88,32 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   // 2. Check for interactive button click payloads
   const buttonMatch = rawText.match(/\[Button Click:\s*([\s\S]*?)\s*\|\s*(?:ID|Payload):\s*([\s\S]*?)\]/i);
   const actionPayload: string = (buttonMatch ? buttonMatch[2]?.trim() : rawText) || '';
+  const pendingToken =
+    pendingBookingSlots.get(input.conversationId) || pendingBookingSlots.get(input.patientId);
 
   // -------------------------------------------------------------------------
   // INTERACTIVE BUTTON PAYLOAD DISPATCH (Deterministic, Sub-50ms)
   // -------------------------------------------------------------------------
 
   // Action: Language Selection (English or Arabic)
-  if (
-    actionPayload === 'select_language:en' ||
+  const isExplicitArabicSwitch =
     actionPayload === 'select_language:ar' ||
-    actionPayload?.startsWith('select_language:') ||
-    actionPayload?.startsWith('set_language:') ||
-    /^(🇸🇦\s*)?(عربي|العربية|اللغة العربية|arabic)$/i.test(rawText.trim()) ||
-    /^(🇬🇧\s*)?(english|انجليزي|انكليزي)$/i.test(rawText.trim())
-  ) {
-    const isAr =
-      actionPayload.endsWith('ar') ||
-      actionPayload.includes(':ar') ||
-      /(عربي|العربية|arabic)/i.test(rawText);
-    const selectedLocale: SupportedLocale = isAr ? 'ar' : 'en';
+    actionPayload?.startsWith('select_language:ar') ||
+    actionPayload?.startsWith('set_language:ar') ||
+    /(بالعربي|عربي|العربية|اللغة\s*العربية|حول\s*للعربي|تحدث\s*بالعربي|اريد\s*عربي|أريد\s*عربي|arabic|talk\s*in\s*arabic|speak\s*in\s*arabic|want\s*(to\s*)?(talk|speak)?\s*(in\s*)?arabic)/i.test(
+      rawText.trim(),
+    );
+
+  const isExplicitEnglishSwitch =
+    actionPayload === 'select_language:en' ||
+    actionPayload?.startsWith('select_language:en') ||
+    actionPayload?.startsWith('set_language:en') ||
+    /(in\s*english|switch\s*to\s*english|english\s*please|speak\s*english|change\s*to\s*english|want\s*(to\s*)?(talk|speak)?\s*(in\s*)?english|انجليزي|انكليزي|اللغة\s*الانجليزية)/i.test(
+      rawText.trim(),
+    );
+
+  if (isExplicitArabicSwitch || isExplicitEnglishSwitch) {
+    const selectedLocale: SupportedLocale = isExplicitArabicSwitch ? 'ar' : 'en';
     await persistLocale(input.clinicId, input.conversationId, input.patientId, selectedLocale, true);
     return handleAfterLanguageSelected(input, selectedLocale, startedAt);
   }
@@ -193,6 +200,25 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     return handleShowDoctorsForService(input, serviceId, locale, now, startedAt, 0);
   }
 
+  // Check if user replied with a single service number (e.g. 1, 2, 3, 4, 5)
+  const singleNumberMatch = rawText.match(/^\s*#?([1-9]|10)\s*$/);
+  if (singleNumberMatch && singleNumberMatch[1] && !pendingToken) {
+    const chosenIndex = parseInt(singleNumberMatch[1], 10) - 1;
+    try {
+      const activeServices = await prisma.service.findMany({
+        where: { clinicId: input.clinicId, isActive: true },
+        orderBy: { name: 'asc' },
+        take: 10,
+        select: { id: true },
+      });
+      if (activeServices[chosenIndex]) {
+        return handleShowDoctorsForService(input, activeServices[chosenIndex]!.id, locale, now, startedAt, 0);
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   // Action: Show Doctors List
   if (actionPayload === 'get_doctors' || actionPayload?.startsWith('get_doctors:')) {
     const offset = actionPayload.startsWith('get_doctors:')
@@ -214,9 +240,6 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
   // -------------------------------------------------------------------------
   // PATIENT DETAILS (Full Name & Gender) EXTRACTION & RESUME BOOKING
   // -------------------------------------------------------------------------
-  const pendingToken =
-    pendingBookingSlots.get(input.conversationId) || pendingBookingSlots.get(input.patientId);
-
   if (pendingToken && rawText.trim().length >= 2) {
     let extractedGender: string | null = null;
     let textToParse = rawText;
@@ -460,8 +483,8 @@ async function handleShowServicesForBooking(
     ];
   }
 
-  // WhatsApp allows up to 3 quick reply buttons. For more, list text + top service buttons.
-  const serviceButtons: WhatsAppButton[] = services.slice(0, 3).map((s) => ({
+  // Include all services (up to 10) so all 5 services appear in the WhatsApp interactive menu
+  const serviceButtons: WhatsAppButton[] = services.slice(0, 10).map((s) => ({
     id: `select_service:${s.id}`,
     title: formatServiceButtonTitle(s.name, locale),
   }));
@@ -1558,19 +1581,10 @@ async function handleServices(
 
   const reply = `${dict.services_title}\n\n${list}\n\n${dict.step1_subtitle}`;
 
-  const buttons: WhatsAppButton[] =
-    services.length <= 3
-      ? services.map((s) => ({
-          id: `select_service:${s.id}`,
-          title: formatServiceButtonTitle(s.name, locale),
-        }))
-      : [
-          ...services.slice(0, 2).map((s) => ({
-            id: `select_service:${s.id}`,
-            title: formatServiceButtonTitle(s.name, locale),
-          })),
-          { id: 'book_appointment', title: dict.btn_book_appointment },
-        ];
+  const buttons: WhatsAppButton[] = services.slice(0, 10).map((s) => ({
+    id: `select_service:${s.id}`,
+    title: formatServiceButtonTitle(s.name, locale),
+  }));
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router handled services', {
     clinicId: input.clinicId,

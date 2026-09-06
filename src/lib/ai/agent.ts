@@ -234,18 +234,41 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
           ms: Date.now() - startedAt,
         });
 
-        // If no tool buttons yet, check if the reply is asking the user to confirm a booking
+        // If no tool buttons yet, extract buttons from options/numbered list or confirmation prompt
         if (!turnButtons) {
-          const lower = reply.toLowerCase();
-          if (
-            (lower.includes('confirm') || lower.includes('shall i book') || lower.includes('ready to book') || lower.includes('تأكيد') || lower.includes('تاكيد')) &&
-            (lower.includes('appointment') || lower.includes('slot') || lower.includes('booking') || lower.includes('موعد') || lower.includes('حجز'))
-          ) {
-            turnButtons = [
-              { id: 'confirm_booking', title: locale === 'ar' ? '✅ تأكيد الموعد' : '✅ Confirm Booking' },
-              { id: 'change_time', title: locale === 'ar' ? '🔄 اختيار وقت آخر' : '🔄 Change Time' },
-              { id: 'cancel_booking', title: locale === 'ar' ? '❌ إلغاء' : '❌ Cancel' },
-            ];
+          // 1. Check for numbered list options (e.g. "1. Option A\n2. Option B\n3. Option C")
+          const numberedLines = reply
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => /^\d+[\.\)]\s+.+/.test(line));
+
+          if (numberedLines.length >= 2 && numberedLines.length <= 10) {
+            turnButtons = numberedLines.map((line, idx) => {
+              const cleanTitle = line
+                .replace(/^\d+[\.\)]\s*/, '')
+                .replace(/\*+/g, '')
+                .replace(/\([^\)]*\)/g, '')
+                .trim();
+              return {
+                id: `option_${idx + 1}`,
+                title: cleanTitle.slice(0, 24) || `Option ${idx + 1}`,
+              };
+            });
+          }
+
+          // 2. Check if the reply is asking the user to confirm a booking
+          if (!turnButtons) {
+            const lower = reply.toLowerCase();
+            if (
+              (lower.includes('confirm') || lower.includes('shall i book') || lower.includes('ready to book') || lower.includes('تأكيد') || lower.includes('تاكيد')) &&
+              (lower.includes('appointment') || lower.includes('slot') || lower.includes('booking') || lower.includes('موعد') || lower.includes('حجز'))
+            ) {
+              turnButtons = [
+                { id: 'confirm_booking', title: locale === 'ar' ? '✅ تأكيد الموعد' : '✅ Confirm Booking' },
+                { id: 'change_time', title: locale === 'ar' ? '🔄 اختيار وقت آخر' : '🔄 Change Time' },
+                { id: 'cancel_booking', title: locale === 'ar' ? '❌ إلغاء' : '❌ Cancel' },
+              ];
+            }
           }
         }
 
