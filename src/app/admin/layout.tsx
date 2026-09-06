@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AppShell
       navItems={ADMIN_NAV}
-      workspaceName="Clinic AI"
+      workspaceName="PULSEware"
       workspaceKind="Admin"
       userName={user.name}
       userEmail={user.email}

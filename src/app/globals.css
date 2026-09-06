@@ -80,14 +80,25 @@
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #ffffff;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--border-strong);
-    border-radius: 6px;
-    border: 3px solid transparent;
-    background-clip: content-box;
+    background: #e2e8f0;
+    border-radius: 9999px;
+    border: 2px solid #ffffff;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+
+  /* Firefox support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 #ffffff;
   }
 }
 

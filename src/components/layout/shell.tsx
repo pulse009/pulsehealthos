@@ -80,17 +80,14 @@ export function AppShell({
         {workspaceKind === 'Admin' ? (
           <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-2.5 shrink-0">
             <Link href={homeHref} className="flex items-center gap-2 group min-w-0">
-              <div className="size-7.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center p-1 shrink-0">
-                <div className="grid grid-cols-2 gap-0.5 w-full h-full">
-                  <span className="bg-blue-600 rounded-full size-1.5"></span>
-                  <span className="bg-slate-800 dark:bg-slate-200 rounded-full size-1.5"></span>
-                  <span className="bg-slate-800 dark:bg-slate-200 rounded-full size-1.5"></span>
-                  <span className="bg-slate-800 dark:bg-slate-200 rounded-full size-1.5"></span>
+              <div className="size-7.5 rounded-lg bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 p-0.5 shadow-xs flex items-center justify-center shrink-0">
+                <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
+                  <span className="text-[10px] font-black text-emerald-400">PW</span>
                 </div>
               </div>
               <div className="min-w-0">
-                <span className="block truncate text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                  Clinic<span className="text-blue-600">AI</span>
+                <span className="block truncate text-sm font-black tracking-tight text-slate-900 dark:text-white">
+                  PULSE<span className="text-emerald-500">ware</span>
                 </span>
                 <Badge tone="brand" className="text-[9px] px-1.5 py-0 font-bold">
                   Admin
