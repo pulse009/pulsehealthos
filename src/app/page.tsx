@@ -3,10 +3,7 @@ import Link from 'next/link';
 import { getSessionUser } from '@/lib/auth/session';
 import {
   Activity,
-  AlertCircle,
   ArrowRight,
-  Bell,
-  Bot,
   Calendar,
   CheckCircle2,
   ChevronDown,
@@ -30,8 +27,6 @@ import {
   Stethoscope,
   TrendingUp,
   UserCheck,
-  UserPlus,
-  Users,
   Zap,
 } from 'lucide-react';
 
@@ -48,825 +43,603 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen w-full bg-white text-slate-900 font-sans antialiased selection:bg-purple-600 selection:text-white relative overflow-x-hidden">
-      {/* Structural Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
-      {/* ─── FIXED TOP NAVBAR ─── */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[56px] flex items-center justify-between">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="size-6 rounded-md bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-500 p-0.5 shadow-xs group-hover:scale-105 transition-transform duration-200">
-              <div className="w-full h-full bg-white rounded-[4px] flex items-center justify-center">
-                <HeartPulse className="size-3.5 text-purple-600 stroke-[2]" />
+
+
+      {/* ─── HERO CARD (Full Width Layout with Pulseware) ─── */}
+      <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">
+        <div className="relative w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_8px_30px_rgba(13,92,86,0.06)] min-h-[520px] sm:min-h-[580px] flex flex-col justify-between bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8]">
+          
+          {/* Vertical Fluted / Slat Texture Overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-80"
+            style={{
+              backgroundImage: `repeating-linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.25) 0px,
+                rgba(255, 255, 255, 0) 36px,
+                rgba(13, 92, 86, 0.025) 72px,
+                rgba(255, 255, 255, 0.6) 72px,
+                rgba(255, 255, 255, 0.6) 73px,
+                rgba(13, 92, 86, 0.05) 73px,
+                rgba(13, 92, 86, 0.05) 74px
+              )`,
+            }}
+          />
+
+          {/* Soft Center Lighting */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-white/40 blur-[90px] rounded-full pointer-events-none" />
+
+          {/* ─── Top Floating Pill Navbar ─── */}
+          <div className="relative z-20 px-3 sm:px-6 lg:px-8 pt-3 sm:pt-4">
+            <div className="w-full max-w-7xl mx-auto rounded-full bg-white shadow-[0_2px_12px_rgba(13,92,86,0.05)] px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between">
+              
+              {/* Brand Logo */}
+              <Link href="/" className="flex items-center gap-2 group shrink-0">
+                <div className="relative size-6 sm:size-7 flex items-center justify-center text-[#0d8276]">
+                  <svg viewBox="0 0 24 24" className="size-6 sm:size-7 fill-current" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="3.5" />
+                    <circle cx="12" cy="3" r="1.5" />
+                    <circle cx="12" cy="21" r="1.5" />
+                    <circle cx="3" cy="12" r="1.5" />
+                    <circle cx="21" cy="12" r="1.5" />
+                    <circle cx="5.636" cy="5.636" r="1.5" />
+                    <circle cx="18.364" cy="18.364" r="1.5" />
+                    <circle cx="5.636" cy="18.364" r="1.5" />
+                    <circle cx="18.364" cy="5.636" r="1.5" />
+                  </svg>
+                </div>
+                <span className="text-base sm:text-lg font-semibold tracking-tight text-slate-900">
+                  Pulseware
+                </span>
+              </Link>
+
+              {/* Center Navigation Links */}
+              <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-[13.5px] font-medium text-slate-600">
+                <Link href="/" className="flex items-center gap-1.5 text-[#0d8276] hover:text-[#0a5c53] font-semibold transition-colors">
+                  <span className="size-1.5 rounded-full bg-[#0d8276]" />
+                  <span>Home</span>
+                </Link>
+                <Link href="/about" className="hover:text-slate-900 transition-colors">
+                  About
+                </Link>
+                <Link href="/features" className="hover:text-slate-900 transition-colors">
+                  Features
+                </Link>
+                <Link href="/pricing" className="hover:text-slate-900 transition-colors">
+                  Pricing
+                </Link>
+                <Link href="/contact" className="hover:text-slate-900 transition-colors">
+                  Contact Us
+                </Link>
+              </nav>
+
+              {/* Right CTA Button */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                {user ? (
+                  <Link
+                    href={portalHref}
+                    className="inline-flex items-center px-4 py-1.5 sm:py-2 rounded-full bg-white text-slate-900 text-xs sm:text-sm font-semibold shadow-sm hover:shadow border border-slate-200/80 transition-all hover:scale-105 active:scale-95"
+                  >
+                    Go to Portal
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white text-slate-900 text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md border border-slate-200/80 transition-all hover:scale-105 active:scale-95"
+                  >
+                    Request Demo
+                  </Link>
+                )}
               </div>
             </div>
-            <span className="text-sm font-semibold tracking-tight text-slate-900">
-              PULSE<span className="text-purple-600">ware</span>
-            </span>
-          </Link>
-
-          {/* Center Nav */}
-          <nav className="hidden md:flex items-center gap-6 text-[13px] font-normal text-slate-600">
-            <Link href="/platform" className="hover:text-purple-600 transition-colors">Platform</Link>
-            <Link href="/solutions" className="flex items-center gap-1 hover:text-purple-600 transition-colors">
-              <span>Solutions</span>
-              <ChevronDown className="size-3 mt-0.5" />
-            </Link>
-            <Link href="/customers" className="hover:text-purple-600 transition-colors">Customers</Link>
-            <Link href="/faq" className="hover:text-purple-600 transition-colors">FAQ</Link>
-          </nav>
-
-          {/* Right Buttons */}
-          <div className="flex items-center gap-2">
-            {user ? (
-              <Link
-                href={portalHref}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-xs transition-all hover:scale-105 active:scale-95"
-              >
-                <span>Go to Portal</span>
-                <ArrowRight className="size-3" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="px-2.5 py-1 text-xs font-normal text-slate-700 hover:text-purple-600 transition-colors rounded-[8px] bg-slate-100/80 hover:bg-slate-200/80"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-xs transition-all hover:scale-105 active:scale-95"
-                >
-                  <span>Request Demo</span>
-                  <ArrowRight className="size-3" />
-                </Link>
-              </>
-            )}
           </div>
-        </div>
-      </header>
 
-      {/* ─── HERO SECTION ─── */}
-      <section className="relative pt-[72px] pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white/70 backdrop-blur-xs">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-
-          {/* LEFT: Hero Text */}
-          <div className="lg:col-span-5 space-y-5 text-left pr-0 lg:pr-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-cyan-50 border border-cyan-200/80 text-cyan-800 text-xs font-medium tracking-wider uppercase">
-              Solutions for Private Clinics
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-normal tracking-tight text-slate-950 leading-[1.14]">
-              Designed for modern{' '}
-              <span className="block text-slate-950">private clinics</span>
+          {/* ─── Hero Content (Centered with generous vertical breathing room) ─── */}
+          <div className="relative z-10 px-5 sm:px-10 py-14 sm:py-20 lg:py-24 text-center max-w-4xl mx-auto flex flex-col items-center justify-center">
+            <h1 className="text-3xl sm:text-5xl lg:text-[58px] font-semibold tracking-tight leading-[1.12]">
+              <span className="block text-[#0d5c56]">Modernizing Healthcare,</span>
+              <span className="block text-slate-900 mt-1 sm:mt-2">One Hospital at a Time</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-md">
-              Manage appointments, patients, and daily operations in one simple, reliable system built for healthcare.
+            <p className="mt-5 sm:mt-6 text-xs sm:text-[14.5px] lg:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
+              Pulseware is designed to modernize hospital operations through a centralized digital platform. We bring together patient care,
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Link
-                href={portalHref}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow-md shadow-purple-500/20 transition-all hover:scale-105 active:scale-95"
-              >
-                Request Demo
-              </Link>
+            <div className="mt-8 sm:mt-9 flex justify-center">
               <a
-                href="#editions"
-                className="inline-flex items-center justify-center px-5 py-2.5 rounded-[8px] bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-normal transition-all"
+                href="#features"
+                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#0d6157] hover:bg-[#0a4e46] text-white text-xs sm:text-sm font-medium shadow-[0_4px_16px_rgba(13,97,87,0.28)] transition-all hover:scale-105 active:scale-95 group"
               >
-                See How It Works
+                <span>See Our Features</span>
+                <ArrowRight className="size-3.5 sm:size-4 group-hover:translate-x-0.5 transition-transform" />
               </a>
             </div>
           </div>
 
-          {/* RIGHT: Dashboard Mockup */}
-          <div className="lg:col-span-7 flex flex-col items-end">
-            <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-xl p-4 sm:p-5 space-y-4 font-sans text-slate-900 relative">
+          {/* Bottom spacer for balanced vertical framing */}
+          <div className="h-2 sm:h-4" />
+        </div>
+      </div>
 
-              {/* Dashboard Header */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="size-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs shadow-xs">
-                    <Sparkles className="size-3.5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900">Dashboard Overview</h4>
-                    <p className="text-[10px] text-slate-400 font-normal">Real-time hospital metrics and activity</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] font-normal text-slate-500">
-                  <span className="hidden sm:inline">Wednesday, January 28, 2026</span>
-                  <div className="relative cursor-pointer p-1">
-                    <Bell className="size-3.5 text-slate-500" />
-                    <span className="size-1.5 rounded-full bg-rose-500 absolute top-1 right-1 ring-2 ring-white" />
-                  </div>
-                  <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-200">
-                    <div className="size-6 rounded-full bg-purple-100 text-purple-700 font-semibold text-[10px] flex items-center justify-center">MA</div>
-                    <div className="hidden sm:block text-left">
-                      <span className="block text-[10px] font-medium text-slate-800 leading-tight">Medical Admin</span>
-                      <span className="block text-[9px] text-slate-400 leading-tight">Administrator</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* ─── SECTION 2: MISSION, VISION & MILESTONES (Exact Meditech Layout) ─── */}
+      <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 sm:space-y-16 relative z-10">
+        
+        {/* Top 2-Column Grid: Our Mission & Our Vision */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          
+          {/* ─── Card 1: Our Mission ─── */}
+          <div className="bg-[#eef9f6] border border-[#d2eee5] rounded-[32px] sm:rounded-[36px] p-6 sm:p-9 flex flex-col justify-between shadow-[0_4px_24px_rgba(13,92,86,0.04)] relative overflow-hidden">
+            <div>
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mb-6">
+                Our Mission
+              </h2>
 
-              {/* 4 Metrics */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Users className="size-3.5 text-purple-600" />
-                    <span className="text-[9px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">+12%</span>
+              {/* Floating UI Elements Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 items-start">
+                
+                {/* Total Beds Mini Card */}
+                <div className="sm:col-span-5 bg-white rounded-2xl p-4 shadow-sm border border-slate-100/90 flex flex-col justify-between h-full min-h-[120px]">
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <Activity className="size-4 text-teal-600" />
+                    <span>Total Beds</span>
                   </div>
-                  <span className="block text-[10px] text-slate-500 font-normal">Today's Patients</span>
-                  <span className="block text-lg font-semibold text-slate-900 leading-tight">247</span>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <UserPlus className="size-3.5 text-indigo-600" />
-                    <span className="text-[9px] font-normal text-slate-400">5 today</span>
+                  <div className="my-1">
+                    <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">155</span>
                   </div>
-                  <span className="block text-[10px] text-slate-500 font-normal">New Admissions</span>
-                  <span className="block text-lg font-semibold text-slate-900 leading-tight">18</span>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <AlertCircle className="size-3.5 text-rose-500" />
-                    <span className="text-[9px] font-normal text-slate-400">stable</span>
+                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
+                    <TrendingUp className="size-3" />
+                    <span>+12% vs last week</span>
                   </div>
-                  <span className="block text-[10px] text-slate-500 font-normal">Critical Cases</span>
-                  <span className="block text-lg font-semibold text-slate-900 leading-tight">5</span>
                 </div>
-                <div className="bg-gradient-to-br from-purple-600 to-indigo-700 text-white rounded-xl p-3 shadow-sm space-y-1">
-                  <div className="flex items-center justify-between">
-                    <CreditCard className="size-3.5 text-purple-200" />
-                    <span className="text-[9px] font-medium text-white/90 bg-white/20 px-1.5 py-0.5 rounded-md">+15%</span>
-                  </div>
-                  <span className="block text-[10px] text-purple-200 font-normal">Today's Revenue</span>
-                  <span className="block text-lg font-semibold text-white leading-tight">$18.5K</span>
-                </div>
-              </div>
 
-              {/* Charts Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
-                <div className="sm:col-span-8 bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="text-xs font-semibold text-slate-900">Patient Flow</h5>
-                      <p className="text-[9px] text-slate-400 font-normal">Admissions vs Discharges this week</p>
+                {/* Doctor Slot Snippet & Ward Progress */}
+                <div className="sm:col-span-7 space-y-3">
+                  {/* Doctor Slot Card */}
+                  <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100/90 space-y-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                      <Clock className="size-3 text-slate-400" />
+                      <span>10:00 AM &amp; 02 PM</span>
                     </div>
-                    <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-[9px] font-normal">
-                      <span className="px-2 py-0.5 rounded-md bg-purple-600 text-white font-medium">This Week</span>
-                      <span className="px-2 py-0.5 text-slate-600">Revenue</span>
-                    </div>
-                  </div>
-                  <div className="h-28 w-full flex items-end justify-between gap-1 pt-2 pb-1 px-1">
-                    {[
-                      { day: 'Mon', adm: 28, dis: 18 },
-                      { day: 'Tue', adm: 32, dis: 24 },
-                      { day: 'Wed', adm: 35, dis: 20 },
-                      { day: 'Thu', adm: 30, dis: 26 },
-                      { day: 'Fri', adm: 36, dis: 28 },
-                      { day: 'Sat', adm: 22, dis: 15 },
-                      { day: 'Sun', adm: 18, dis: 12 },
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                        <div className="w-full flex items-end justify-center gap-1 h-20">
-                          <div style={{ height: `${(item.adm / 36) * 100}%` }} className="w-2.5 sm:w-3 bg-purple-600 rounded-t-sm" />
-                          <div style={{ height: `${(item.dis / 36) * 100}%` }} className="w-2.5 sm:w-3 bg-indigo-300 rounded-t-sm" />
-                        </div>
-                        <span className="text-[8px] font-normal text-slate-400">{item.day}</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-8 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs shrink-0 shadow-sm">
+                        SJ
                       </div>
-                    ))}
+                      <div className="leading-tight">
+                        <div className="text-xs font-semibold text-slate-900">Dr. Sarah Johnson</div>
+                        <div className="text-[10px] text-slate-500">Cardiology</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-50 text-slate-600 font-medium">
+                      <span className="flex items-center gap-1 text-teal-700">
+                        <CheckCircle2 className="size-3 text-teal-600" /> Available : 08
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-400">
+                        <Calendar className="size-3" /> Booked
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-[9px] font-normal text-slate-500 pt-1 border-t border-slate-200/60">
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-purple-600" /><span>Admissions</span></span>
-                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-300" /><span>Discharges</span></span>
+
+                  {/* Ward Progress Snippet */}
+                  <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100/90 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
+                      <span>General Ward A</span>
+                      <span className="text-slate-400 text-[11px]">90%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-rose-500 h-full rounded-full w-[90%]" />
+                    </div>
+                    <div className="flex items-center justify-between text-[10.5px] text-slate-500 font-medium">
+                      <span>34 / 55 beds</span>
+                      <span className="text-slate-400">21 available</span>
+                    </div>
                   </div>
                 </div>
-                <div className="sm:col-span-4 bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between space-y-2">
-                  <div>
-                    <h5 className="text-xs font-semibold text-slate-900">Bed Occupancy</h5>
-                    <p className="text-[9px] text-slate-400 font-normal">Current capacity status</p>
-                  </div>
-                  <div className="relative size-20 mx-auto flex items-center justify-center">
-                    <svg className="size-full -rotate-90" viewBox="0 0 36 36">
-                      <path className="text-slate-200" strokeWidth="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                      <path className="text-purple-600" strokeDasharray="78, 100" strokeWidth="4" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <div className="absolute text-center"><span className="text-xs font-semibold text-slate-900">78%</span></div>
-                  </div>
-                  <div className="space-y-1 text-[9px] font-normal">
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-purple-600" /><span>Occupied</span></span>
-                      <span className="font-medium text-slate-900">142</span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-slate-300" /><span>Available</span></span>
-                      <span className="font-medium text-slate-900">38</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dept Bars */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                {[
-                  { label: 'Cardiology', cur: 28, max: 35, pct: '80%', color: 'bg-purple-600' },
-                  { label: 'Emergency', cur: 42, max: 45, pct: '93%', color: 'bg-indigo-600' },
-                  { label: 'Surgery', cur: 35, max: 40, pct: '87%', color: 'bg-purple-600' },
-                ].map((d) => (
-                  <div key={d.label} className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-100 space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="font-normal text-slate-800">{d.label}</span>
-                      <span className="text-purple-600 font-medium text-[9px]">{d.cur} / {d.max}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                      <div className={`${d.color} h-full rounded-full`} style={{ width: d.pct }} />
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
 
-            {/* Trust Strip */}
-            <div className="flex items-center gap-3 pt-4 pr-2">
-              <div className="flex -space-x-2 overflow-hidden">
-                {[
-                  'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&auto=format&fit=crop&q=80',
-                  'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&auto=format&fit=crop&q=80',
-                  'https://images.unsplash.com/photo-1594824813583-a7b219cf1f64?w=120&auto=format&fit=crop&q=80',
-                ].map((src, i) => (
-                  <img key={i} className="inline-block size-7 rounded-full ring-2 ring-white object-cover" src={src} alt="Doctor" />
-                ))}
-              </div>
-              <span className="text-xs font-normal text-slate-700">Trusted by 2,000+ clinicians worldwide</span>
-            </div>
+            <p className="mt-8 text-base sm:text-lg font-medium text-slate-800 leading-snug">
+              To simplify healthcare management with smart, reliable, and scalable technology
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* ─── SOCIAL PROOF LOGOS ─── */}
-      <section className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-slate-50/60 relative z-10">
-        <p className="text-center text-[11px] font-medium text-slate-400 uppercase tracking-widest mb-8">
-          Trusted by leading clinics &amp; hospitals across the region
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-10 opacity-50 grayscale">
-          {['Reveal Clinics', 'MedCore Group', 'AlShifa Hospital', 'PrimeCare Centers', 'HealthBridge', 'NovaMed'].map((name) => (
-            <span key={name} className="text-sm font-bold text-slate-700 tracking-tight whitespace-nowrap">{name}</span>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── FEATURES ─── */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-purple-50 border border-purple-200/80 text-purple-700 text-xs font-medium tracking-wider uppercase mb-4">
-            Built for Modern Healthcare
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-tight text-slate-900">
-            Every clinical operation in one unified workspace
-          </h2>
-          <p className="text-sm text-slate-500 mt-3 font-normal leading-relaxed">
-            From AI-powered WhatsApp bookings to pharmacy inventory and doctor payouts — PULSEware handles it all.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              icon: <MessageSquare className="size-5" />,
-              color: 'bg-purple-100 text-purple-700',
-              title: 'AI WhatsApp Fast Router',
-              desc: 'Instant sub-50ms responses for patient bookings, language detection (Arabic & English), 3-button pagination, and seamless human staff handoff.',
-            },
-            {
-              icon: <Stethoscope className="size-5" />,
-              color: 'bg-blue-100 text-blue-700',
-              title: 'Doctor Roster & Availability',
-              desc: 'Granular schedule controls, appointment slot duration, buffer times between patients, recurring breaks, and automated multi-day leave handling.',
-            },
-            {
-              icon: <Package className="size-5" />,
-              color: 'bg-indigo-100 text-indigo-700',
-              title: 'Smart Pharmacy & Inventory',
-              desc: 'Track stock levels, expiry dates, supplier purchase orders, and automatic deductions upon appointment service completion.',
-            },
-            {
-              icon: <CreditCard className="size-5" />,
-              color: 'bg-amber-100 text-amber-700',
-              title: 'Doctor Payouts & Compensation',
-              desc: 'Automated salary calculations, revenue incentive percentages, procedure commission rules, and monthly payroll export for all clinical staff.',
-            },
-            {
-              icon: <Receipt className="size-5" />,
-              color: 'bg-teal-100 text-teal-700',
-              title: 'Clinic Accounting & Invoicing',
-              desc: 'Tax-compliant invoices, patient payment collection, supplier expense tracking, and one-click day-end financial closings.',
-            },
-            {
-              icon: <ShieldCheck className="size-5" />,
-              color: 'bg-rose-100 text-rose-700',
-              title: 'Enterprise Tenant Isolation',
-              desc: 'Strict multi-tenant security architecture ensures zero cross-clinic data leaks, encrypted WhatsApp tokens, and full audit trails.',
-            },
-          ].map((f) => (
-            <div key={f.title} className="rounded-2xl bg-slate-50/70 border border-slate-200 p-6 space-y-4 hover:border-purple-300 hover:shadow-md transition-all">
-              <div className={`size-10 rounded-xl ${f.color} flex items-center justify-center`}>{f.icon}</div>
-              <h4 className="text-base font-semibold text-slate-900">{f.title}</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS ─── */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-slate-50/40 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs font-medium tracking-wider uppercase mb-4">
-            Simple Onboarding
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-tight text-slate-900">
-            Up and running in 3 simple steps
-          </h2>
-          <p className="text-sm text-slate-500 mt-3 font-normal">
-            No lengthy setup. No IT team required. Your clinic can go live within 24 hours.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {[
-            {
-              step: '01',
-              icon: <UserCheck className="size-6 text-purple-600" />,
-              title: 'Configure Your Clinic',
-              desc: 'Add your doctors, departments, working hours, and services. PULSEware auto-generates your booking flow.',
-            },
-            {
-              step: '02',
-              icon: <MessageSquare className="size-6 text-purple-600" />,
-              title: 'Connect WhatsApp Channel',
-              desc: 'Plug in your WhatsApp Business number. Our AI bot goes live instantly with full language support.',
-            },
-            {
-              step: '03',
-              icon: <TrendingUp className="size-6 text-purple-600" />,
-              title: 'Grow & Automate',
-              desc: 'Watch bookings, revenue, and patient satisfaction climb — all automated, all in real-time.',
-            },
-          ].map((s, i) => (
-            <div key={s.step} className="relative flex flex-col items-center text-center group">
-              {/* Connector line */}
-              {i < 2 && (
-                <div className="hidden md:block absolute top-10 left-[calc(50%+40px)] w-[calc(100%-80px)] h-px bg-slate-200 z-0" />
-              )}
-              <div className="relative z-10 size-20 rounded-2xl bg-white border-2 border-purple-100 flex items-center justify-center mb-5 group-hover:border-purple-400 transition-all shadow-sm">
-                {s.icon}
-                <span className="absolute -top-2.5 -right-2.5 size-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center">{i + 1}</span>
-              </div>
-              <h4 className="text-base font-semibold text-slate-900 mb-2">{s.title}</h4>
-              <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── PRODUCT EDITIONS (Solutions) ─── */}
-      <section id="editions" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-cyan-50 border border-cyan-200/80 text-cyan-700 text-xs font-medium tracking-wider uppercase mb-4">
-            Tailored Product Editions
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-tight text-slate-900">
-            Choose the edition that fits your clinic
-          </h2>
-          <p className="text-sm text-slate-500 mt-3 font-normal leading-relaxed">
-            Whether you need a lean automated booking engine or a full-scale hospital OS, PULSEware delivers.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* Pulse Now */}
-          <div className="rounded-3xl bg-white border border-slate-200 p-8 flex flex-col justify-between relative shadow-lg hover:border-purple-300 transition-all duration-300">
+          {/* ─── Card 2: Our Vision ─── */}
+          <div className="bg-[#eef9f6] border border-[#d2eee5] rounded-[32px] sm:rounded-[36px] p-6 sm:p-9 flex flex-col justify-between shadow-[0_4px_24px_rgba(13,92,86,0.04)] relative overflow-hidden">
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="size-12 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-700">
-                  <Zap className="size-6 stroke-[2.5]" />
-                </div>
-                <span className="px-3 py-1 rounded-[8px] bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-semibold uppercase tracking-wider">Express Edition</span>
-              </div>
-              <h4 className="text-2xl font-semibold text-slate-900 mb-2">Pulse Now</h4>
-              <p className="text-xs text-slate-600 mb-6 leading-relaxed">
-                Lightweight, frictionless AI WhatsApp booking engine designed for rapid deployment and high conversion without administrative bloat.
-              </p>
-              <div className="space-y-3 pt-4 border-t border-slate-100 mb-8">
-                {[
-                  '24/7 WhatsApp AI Booking Assistant (Arabic & English)',
-                  'Instant 0.05s Slot Engine with live availability',
-                  'Self-service WhatsApp Rescheduling & Cancellation',
-                  'Multi-Doctor Working Hours, Breaks & Time-Off management',
-                  'Automated WhatsApp Reminder notifications (2h prior)',
-                ].map((f) => (
-                  <div key={f} className="flex items-start gap-2.5 text-xs text-slate-700">
-                    <CheckCircle2 className="size-4 text-cyan-600 shrink-0 mt-0.5" />
-                    <span>{f}</span>
+              {/* Floating Badges & Consultation Mockup */}
+              <div className="space-y-3 mb-6">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-white shadow-sm border border-slate-100/90 text-xs font-semibold text-slate-700">
+                    08:00 AM
                   </div>
-                ))}
-              </div>
-            </div>
-            <Link href={portalHref} className="w-full py-3.5 rounded-[8px] bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold text-center transition-colors shadow-md block">
-              Get Started with Pulse Now
-            </Link>
-          </div>
+                  <div className="px-3.5 py-1.5 rounded-xl bg-white shadow-sm border border-slate-100/90 text-xs font-semibold text-slate-800 flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-amber-500" />
+                    <span>Occupied</span>
+                    <span className="text-slate-400 font-normal">Dr. Michael Chen &bull; Until 12:00 PM</span>
+                  </div>
+                </div>
 
-          {/* Pulse Health OS */}
-          <div className="rounded-3xl bg-white border-2 border-purple-600 p-8 flex flex-col justify-between relative shadow-xl shadow-purple-500/10 hover:border-purple-700 transition-all duration-300">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-purple-600 text-white font-semibold text-[10px] uppercase tracking-widest shadow-md">
-              Complete Clinic Enterprise OS
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="size-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
-                  <HeartPulse className="size-6 stroke-[2.5]" />
-                </div>
-                <span className="px-3 py-1 rounded-[8px] bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold uppercase tracking-wider">Full Operating System</span>
-              </div>
-              <h4 className="text-2xl font-semibold text-slate-900 mb-2">Pulse Health OS</h4>
-              <p className="text-xs text-slate-600 mb-6 leading-relaxed">
-                The comprehensive clinic OS for visionaries. Powers full medical records, automated doctor compensation, pharmacy inventory, and accounting.
-              </p>
-              <div className="space-y-3 pt-4 border-t border-slate-100 mb-8">
-                {[
-                  'Everything included in Pulse Now +',
-                  'Patient Portal with auto-generated login credentials',
-                  'Doctor Payment Structures (Salary, % Revenue & Procedure Fees)',
-                  'Full Pharmacy Inventory (Batches, Expiries & Purchase Orders)',
-                  'Complete Accounting Suite (Invoicing, Supplier Bills & Day-End Reconciliation)',
-                  'Clinic Staff & Coordinator Role-Based Permissions (RBAC)',
-                ].map((f, i) => (
-                  <div key={f} className={`flex items-start gap-2.5 text-xs ${i === 0 ? 'font-semibold text-purple-700' : 'text-slate-700'}`}>
-                    <CheckCircle2 className={`size-4 shrink-0 mt-0.5 ${i === 0 ? 'text-purple-600' : 'text-purple-600'}`} />
-                    <span>{f}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  <div className="sm:col-span-4 px-3.5 py-2 rounded-xl bg-white shadow-sm border border-slate-100/90 text-xs font-mono text-slate-600">
+                    Rx ID: RX-2026-001
                   </div>
-                ))}
+
+                  {/* Patient Consultation Card */}
+                  <div className="sm:col-span-8 bg-white rounded-2xl p-4 shadow-sm border border-slate-100/90 space-y-2.5">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900 tracking-tight">Sarah Miller</div>
+                      <div className="text-[11px] text-slate-400">Patient: (UHID-2024-1524)</div>
+                    </div>
+                    <div className="flex items-center gap-2.5 pt-1.5 border-t border-slate-50">
+                      <div className="size-7 rounded-full bg-gradient-to-tr from-amber-400 to-rose-400 flex items-center justify-center text-white font-semibold text-xs shrink-0 shadow-sm">
+                        SW
+                      </div>
+                      <div className="leading-tight">
+                        <div className="text-xs font-semibold text-slate-800">Dr. Sarah Williams</div>
+                        <div className="text-[10px] text-slate-400">Cardiology</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mt-2">
+                Our Vision
+              </h2>
             </div>
-            <Link href={portalHref} className="w-full py-3.5 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold text-center shadow-lg shadow-purple-500/25 transition-all block">
-              Deploy Pulse Health OS
-            </Link>
+
+            <p className="mt-8 text-base sm:text-lg font-medium text-slate-800 leading-snug">
+              To empower hospitals with digital solutions that improve efficiency and patient care globally
+            </p>
           </div>
         </div>
-      </section>
 
+        {/* Bottom 2-Column Grid: Milestones & Journey */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-6 sm:pt-8">
+          
+          {/* Left: Visual Timeline Card */}
+          <div className="lg:col-span-6 bg-[#eef9f6] border border-[#d2eee5] rounded-[32px] sm:rounded-[36px] p-8 sm:p-12 relative overflow-hidden shadow-[0_4px_24px_rgba(13,92,86,0.04)]">
+            <div className="space-y-10 relative">
+              
+              {/* Timeline Connector Line */}
+              <div className="absolute left-3.5 top-5 bottom-5 w-0.5 bg-gradient-to-b from-slate-200 via-teal-500 to-teal-700 pointer-events-none" />
 
-      {/* ─── KEY METRICS / SOCIAL PROOF ─── */}
-
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            { metric: '2,000+', label: 'Clinicians on Platform' },
-            { metric: '1.2M+', label: 'Appointments Booked' },
-            { metric: '99.9%', label: 'Uptime SLA' },
-            { metric: '<50ms', label: 'Average Response Time' },
-          ].map((s) => (
-            <div key={s.label} className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-normal text-purple-600">{s.metric}</div>
-              <div className="text-xs text-slate-500 font-normal">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── WHATSAPP DEMO SECTION ─── */}
-      <section id="whatsapp" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-slate-50/30 relative z-10">
-        <div className="rounded-3xl bg-slate-950 text-white border border-slate-800 p-8 sm:p-12 overflow-hidden relative shadow-2xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left */}
-            <div className="lg:col-span-6 space-y-5 text-left">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-[8px] bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-semibold">
-                <Bot className="size-3.5" />
-                <span>Zero Latency Fast Router</span>
+              {/* Step 1: 2023 */}
+              <div className="relative flex items-center gap-6 pl-10">
+                <div className="absolute left-2.5 size-2.5 rounded-full bg-slate-300 ring-4 ring-[#eef9f6]" />
+                <span className="text-3xl sm:text-4xl font-semibold text-slate-300 tracking-tight">2023</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-normal text-white tracking-tight">
-                WhatsApp Patient Experience Reimagined
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Patients book in seconds directly on WhatsApp. The bot handles language preferences, checks medical files, offers doctor choices, and books confirmed slots with zero human delay.
-              </p>
-              <div className="space-y-2.5 pt-2">
-                {[
-                  'Instant language selection prompt (English & Arabic)',
-                  'Dynamic 3-button pagination complying with WhatsApp Cloud API',
-                  'Instant cancel & reschedule options post-booking',
-                ].map((b) => (
-                  <div key={b} className="flex items-center gap-2 text-xs font-medium text-slate-200">
-                    <div className="size-2 rounded-full bg-purple-400 shrink-0" />
-                    <span>{b}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Right: WhatsApp Mockup */}
-            <div className="lg:col-span-6 flex justify-center">
-              <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-2xl space-y-3 font-sans">
-                <div className="flex items-center gap-3 pb-3 border-b border-slate-800 px-1">
-                  <div className="size-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs">PW</div>
-                  <div>
-                    <h5 className="text-xs font-bold text-white">Reveal Clinics • PULSEware</h5>
-                    <p className="text-[10px] text-emerald-400 font-medium">● Online • Instant Replies</p>
-                  </div>
-                </div>
-                <div className="bg-slate-950 rounded-2xl rounded-tl-sm p-3 text-[11px] text-slate-200 space-y-2 border border-slate-800/80">
-                  <p className="font-medium">Welcome to Reveal Clinics! 👋<br />Please select your preferred language:</p>
-                  <div className="flex gap-1.5 pt-1">
-                    <span className="px-2.5 py-1 rounded-lg bg-purple-600 text-white font-bold text-[10px]">🇬🇧 English</span>
-                    <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[10px]">🇸🇦 العربية</span>
-                  </div>
-                </div>
-                <div className="bg-slate-950 rounded-2xl rounded-tl-sm p-3 text-[11px] text-slate-200 space-y-1.5 border border-slate-800/80">
-                  <p className="font-bold text-purple-400">🎉 Appointment Confirmed! (PID-0001)</p>
-                  <p className="text-[10px] text-slate-300">
-                    • <b>Doctor:</b> Dr. Saud Al-Obaida<br />
-                    • <b>Service:</b> Dermatology Consultation<br />
-                    • <b>When:</b> Tomorrow at 10:00 AM
+              {/* Step 2: 2024 */}
+              <div className="relative pl-10 space-y-2">
+                <div className="absolute left-2 size-3.5 rounded-full bg-slate-900 ring-4 ring-[#eef9f6]" />
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4">
+                  <span className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">2024</span>
+                  <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed max-w-sm">
+                    Scaled operations to 50+ countries with multi-language &amp; localization support.
                   </p>
-                  <div className="flex gap-1.5 pt-1">
-                    <span className="px-2 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold text-[9px]">🔄 Reschedule</span>
-                    <span className="px-2 py-1 rounded-lg bg-rose-950/60 text-rose-300 border border-rose-800/60 font-bold text-[9px]">❌ Cancel</span>
+                </div>
+              </div>
+
+              {/* Step 3: 2025 - Present */}
+              <div className="relative pl-10 space-y-2">
+                <div className="absolute left-2 size-3.5 rounded-full bg-teal-600 ring-4 ring-[#eef9f6]" />
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4">
+                  <span className="text-3xl sm:text-4xl font-semibold text-teal-800 tracking-tight">2025</span>
+                  <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed max-w-sm">
+                    Automated WhatsApp booking router, smart EHR, and autonomous clinic intelligence.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Journey Text Details */}
+          <div className="lg:col-span-6 lg:pl-6 space-y-6">
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200/60 text-slate-700 text-xs font-semibold tracking-wide uppercase">
+              Our Journey
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900 leading-[1.15]">
+              Milestones That <br className="hidden sm:block" />
+              Define Us
+            </h2>
+
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+              Pulseware is a cloud-based hospital management system that connects every department into one platform, helping hospitals operate faster and more efficiently.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="text-2xl sm:text-3xl font-semibold text-teal-700">50+</div>
+                <div className="text-xs text-slate-500 font-medium mt-1">Countries Supported</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="text-2xl sm:text-3xl font-semibold text-teal-700">99.9%</div>
+                <div className="text-xs text-slate-500 font-medium mt-1">Platform Uptime</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SECTION 3: KEY BENEFITS / WHY HOSPITALS CHOOSE PULSEWARE (Exact Meditech Layout) ─── */}
+      <section className="py-8 sm:py-12 px-2 sm:px-4 lg:px-6 max-w-[1360px] mx-auto relative z-10">
+        <div className="relative overflow-hidden rounded-[32px] sm:rounded-[44px] border-[4px] sm:border-[6px] border-white shadow-[0_12px_40px_rgba(13,92,86,0.06)] bg-gradient-to-b from-[#e8f7f4] via-[#f1faf8] to-[#d8f2eb] p-6 sm:p-10 lg:p-14">
+          
+          {/* Top Header: Badge + Headline (Left) & Get Started (Right) */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-10 sm:pb-14 border-b border-[#cde8e1]/60">
+            <div className="space-y-3">
+              <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white text-slate-700 text-xs font-semibold shadow-xs border border-slate-200/70">
+                Key Benefits
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900">
+                Why Hospitals Choose Pulseware
+              </h2>
+            </div>
+
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-full bg-[#0d6157] hover:bg-[#0a4e46] text-white text-sm font-semibold shadow-md transition-all hover:scale-105 active:scale-95 shrink-0 group w-fit"
+            >
+              <span>Get Started</span>
+              <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+
+          {/* 2-Column Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-8 sm:pt-12">
+            
+            {/* Left Column: Feature Items / Interactive Accordion */}
+            <div className="lg:col-span-5 space-y-4">
+              
+              {/* Item 1: Integrated Patient Records */}
+              <div className="flex items-center gap-3.5 p-3.5 rounded-2xl hover:bg-white/40 transition-colors cursor-pointer group">
+                <div className="size-6 text-slate-800 flex items-center justify-center shrink-0">
+                  <FileText className="size-5" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
+                  Integrated Patient Records
+                </h3>
+              </div>
+
+              {/* Item 2: Customizable Workflows (Active/Expanded Card) */}
+              <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-100 space-y-2">
+                <div className="flex items-center gap-3 text-slate-900">
+                  <div className="size-6 text-slate-900 flex items-center justify-center shrink-0">
+                    <HeartPulse className="size-5 fill-slate-900 text-slate-900" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
+                    Customizable Workflows
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal pl-9">
+                  Streamline workflows across all departments with one unified platform. Streamline workflows across all departments.
+                </p>
+              </div>
+
+              {/* Item 3: Inventory & Billing Systems */}
+              <div className="flex items-center gap-3.5 p-3.5 rounded-2xl hover:bg-white/40 transition-colors cursor-pointer group">
+                <div className="size-6 text-slate-800 flex items-center justify-center shrink-0">
+                  <Receipt className="size-5" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
+                  Inventory &amp; Billing Systems
+                </h3>
+              </div>
+
+              {/* Item 4: All Your Needs In One Platform */}
+              <div className="flex items-center gap-3.5 p-3.5 rounded-2xl hover:bg-white/40 transition-colors cursor-pointer group">
+                <div className="size-6 text-slate-800 flex items-center justify-center shrink-0">
+                  <Server className="size-5" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
+                  All Your Needs In One Platform
+                </h3>
+              </div>
+
+              {/* Item 5: Integration Capabilities */}
+              <div className="flex items-center gap-3.5 p-3.5 rounded-2xl hover:bg-white/40 transition-colors cursor-pointer group">
+                <div className="size-6 text-slate-800 flex items-center justify-center shrink-0">
+                  <Zap className="size-5" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
+                  Integration Capabilities
+                </h3>
+              </div>
+            </div>
+
+            {/* Right Column: Doctor Visual Showcase with Floating Overlays */}
+            <div className="lg:col-span-7">
+              <div className="relative rounded-[28px] sm:rounded-[36px] overflow-hidden shadow-lg border-[3px] border-white min-h-[460px] sm:min-h-[520px] bg-slate-100 flex items-center justify-center">
+                
+                {/* Background Image of Clinician/Doctor in Scrubs at PC */}
+                <img
+                  src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=1200&q=80"
+                  alt="Doctor at computer in modern clinic"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+
+                {/* Subtle dark gradient for contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-slate-900/10 pointer-events-none" />
+
+                {/* ─── Floating Overlay Top Left: Payment Methods Card ─── */}
+                <div className="absolute top-4 sm:top-6 left-4 sm:left-6 bg-white/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 shadow-xl border border-slate-100/90 w-[200px] sm:w-[230px] z-10 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
+                    <span>Payment Methods</span>
+                    <span className="text-[10px] text-slate-400 font-normal flex items-center gap-0.5">
+                      Month <ChevronDown className="size-2.5" />
+                    </span>
+                  </div>
+
+                  {/* Bar Chart Mockup */}
+                  <div className="h-28 flex items-end justify-between gap-2 pt-4 px-1 relative">
+                    
+                    {/* Floating cyan 100k tooltip on Insurance bar */}
+                    <div className="absolute top-0 right-7 bg-white text-slate-900 shadow-md border border-cyan-200 text-[9px] font-semibold px-1.5 py-0.5 rounded-md flex flex-col items-center">
+                      <span className="text-[8px] text-slate-400 font-normal">Insurance</span>
+                      <span>100k</span>
+                    </div>
+
+                    {/* Bars */}
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="w-full bg-slate-100 rounded-t-md h-14" />
+                      <span className="text-[8px] text-slate-400">Cash</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="w-full bg-slate-100 rounded-t-md h-20" />
+                      <span className="text-[8px] text-slate-400">Card</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="w-full bg-cyan-400 rounded-t-md h-24 shadow-sm" />
+                      <span className="text-[8px] font-semibold text-cyan-700">Insurance</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <div className="w-full bg-slate-100 rounded-t-md h-16" />
+                      <span className="text-[8px] text-slate-400">UPI</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* ─── Floating Overlay Bottom Right: Total Beds Card ─── */}
+                <div className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 bg-white/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 shadow-xl border border-slate-100/90 min-w-[150px] sm:min-w-[170px] z-10 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                    <Activity className="size-3.5 text-teal-600" />
+                    <span>Total Beds</span>
+                  </div>
+                  <div className="text-2xl font-semibold tracking-tight text-slate-900">
+                    155
+                  </div>
+                  <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
+                    <TrendingUp className="size-3" />
+                    <span>+12% vs last week</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS / REVIEWS ─── */}
-      <section id="testimonials" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-amber-50 border border-amber-200/80 text-amber-700 text-xs font-medium tracking-wider uppercase mb-4">
-            Customer Stories
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-tight text-slate-900">
-            Loved by clinicians worldwide
-          </h2>
-          <p className="text-sm text-slate-500 mt-3 font-normal">
-            Hear from the doctors and clinic managers who rely on PULSEware every day.
-          </p>
-        </div>
+      {/* ─── FOOTER (Pulseware Theme) ─── */}
+      <div className="relative w-full px-2 sm:px-4 lg:px-6 pb-3 mt-4">
+        <div className="relative w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_8px_30px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8]">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              name: 'Dr. Saud Al-Obaida',
-              role: 'Medical Director, Reveal Clinics',
-              avatar: 'SO',
-              color: 'bg-purple-100 text-purple-700',
-              stars: 5,
-              quote: 'PULSEware transformed how we manage patient flow. Our WhatsApp booking volume went from 40 to 200+ daily appointments within the first month. The AI bot just works.',
-            },
-            {
-              name: 'Dr. Layla Hassan',
-              role: 'Chief of Operations, AlShifa Hospital',
-              avatar: 'LH',
-              color: 'bg-indigo-100 text-indigo-700',
-              stars: 5,
-              quote: 'The doctor compensation module alone saved us 15 hours every month on payroll. Revenue splits, procedure commissions — all automated. Absolutely game-changing.',
-            },
-            {
-              name: 'Ahmed Al-Rashidi',
-              role: 'Clinic Manager, MedCore Group',
-              avatar: 'AR',
-              color: 'bg-cyan-100 text-cyan-700',
-              stars: 5,
-              quote: 'We tried three other clinic systems before PULSEware. None matched the speed and reliability. Sub-50ms booking responses is not a marketing claim — we measured it ourselves.',
-            },
-            {
-              name: 'Dr. Nora Khalil',
-              role: 'Dermatologist, PrimeCare Centers',
-              avatar: 'NK',
-              color: 'bg-rose-100 text-rose-700',
-              stars: 5,
-              quote: 'Patients love the WhatsApp experience. They can book, reschedule and cancel without calling us. My reception staff can now focus on in-clinic care, not phone calls.',
-            },
-            {
-              name: 'Omar Al-Farsi',
-              role: 'Finance Director, HealthBridge',
-              avatar: 'OF',
-              color: 'bg-teal-100 text-teal-700',
-              stars: 5,
-              quote: 'The accounting module gives us real-time P&L visibility. Day-end reconciliation that used to take 3 hours now takes under 5 minutes. The ROI was instant.',
-            },
-            {
-              name: 'Dr. Yasmine Saleh',
-              role: 'General Practitioner, NovaMed',
-              avatar: 'YS',
-              color: 'bg-amber-100 text-amber-700',
-              stars: 5,
-              quote: 'Setup took less than a day. The onboarding team walked us through everything and our clinic was live on WhatsApp the same evening. Exceptional product and support.',
-            },
-          ].map((t) => (
-            <div key={t.name} className="rounded-2xl bg-white border border-slate-200 p-6 space-y-4 hover:shadow-md hover:border-purple-200 transition-all">
-              {/* Stars */}
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: t.stars }).map((_, i) => (
-                  <Star key={i} className="size-3.5 fill-amber-400 text-amber-400" />
-                ))}
+          {/* Vertical Fluted / Slat Texture Overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-70"
+            style={{
+              backgroundImage: `repeating-linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.25) 0px,
+                rgba(255, 255, 255, 0) 36px,
+                rgba(13, 92, 86, 0.025) 72px,
+                rgba(255, 255, 255, 0.6) 72px,
+                rgba(255, 255, 255, 0.6) 73px,
+                rgba(13, 92, 86, 0.05) 73px,
+                rgba(13, 92, 86, 0.05) 74px
+              )`,
+            }}
+          />
+
+          {/* Soft Center Glow */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[250px] bg-white/30 blur-[80px] rounded-full pointer-events-none" />
+
+          <footer className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-12 sm:py-16">
+
+            {/* Top grid */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-10 pb-10 border-b border-[#0d6157]/15">
+
+              {/* Brand col */}
+              <div className="col-span-2 md:col-span-2 space-y-4 pr-6">
+                {/* Logo */}
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-xl bg-gradient-to-tr from-[#0d6157] to-[#0d8276] flex items-center justify-center text-white shadow-md">
+                    <HeartPulse className="size-4" />
+                  </div>
+                  <span className="text-base font-semibold text-[#0d5c56] tracking-tight">
+                    Pulse<span className="text-[#0d8276]">ware</span>
+                  </span>
+                </div>
+                <p className="text-[13px] text-[#0d6157]/70 leading-relaxed max-w-[280px]">
+                  The complete Healthcare Operating System for modern clinics — AI-powered, WhatsApp-native, and built for scale.
+                </p>
+                {/* Social / contact chips */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Link href="/contact" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#0d8276]/20 text-[11px] font-medium text-[#0d6157] hover:bg-white hover:border-[#0d8276]/50 transition-all shadow-sm">
+                    <MessageSquare className="size-3" /> Contact Us
+                  </Link>
+                  <Link href="/pricing" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#0d8276]/20 text-[11px] font-medium text-[#0d6157] hover:bg-white hover:border-[#0d8276]/50 transition-all shadow-sm">
+                    <Sparkles className="size-3" /> View Pricing
+                  </Link>
+                </div>
+                <p className="text-[11px] text-[#0d6157]/50 pt-1">© 2026 Pulseware Healthcare OS. All rights reserved.</p>
               </div>
-              {/* Quote */}
-              <p className="text-xs text-slate-600 leading-relaxed italic">"{t.quote}"</p>
-              {/* Author */}
-              <div className="flex items-center gap-3 pt-1 border-t border-slate-100">
-                <div className={`size-8 rounded-full ${t.color} flex items-center justify-center text-xs font-bold shrink-0`}>{t.avatar}</div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-900">{t.name}</div>
-                  <div className="text-[10px] text-slate-400 font-normal">{t.role}</div>
+
+              {/* Product */}
+              <div className="space-y-3">
+                <h6 className="text-[11px] font-semibold text-[#0d5c56] uppercase tracking-widest">Product</h6>
+                <div className="space-y-2.5 flex flex-col">
+                  {[
+                    { label: 'Features', href: '/features' },
+                    { label: 'Pricing', href: '/pricing' },
+                    { label: 'Pulse Now', href: '/pricing' },
+                    { label: 'Pulse HealthOS', href: '/pricing' },
+                    { label: 'Pulse Speak', href: '/pricing' },
+                  ].map((l) => (
+                    <Link key={l.label} href={l.href} className="text-[12px] text-[#0d6157]/65 hover:text-[#0d6157] transition-colors font-normal">
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Company */}
+              <div className="space-y-3">
+                <h6 className="text-[11px] font-semibold text-[#0d5c56] uppercase tracking-widest">Company</h6>
+                <div className="space-y-2.5 flex flex-col">
+                  {[
+                    { label: 'About Us', href: '/about' },
+                    { label: 'Contact', href: '/contact' },
+                    { label: 'Clinic Login', href: '/login' },
+                  ].map((l) => (
+                    <Link key={l.label} href={l.href} className="text-[12px] text-[#0d6157]/65 hover:text-[#0d6157] transition-colors font-normal">
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Legal */}
+              <div className="space-y-3">
+                <h6 className="text-[11px] font-semibold text-[#0d5c56] uppercase tracking-widest">Legal</h6>
+                <div className="space-y-2.5 flex flex-col">
+                  {[
+                    { label: 'Privacy Policy', href: '#' },
+                    { label: 'Terms of Service', href: '#' },
+                    { label: 'Security', href: '#' },
+                  ].map((l) => (
+                    <Link key={l.label} href={l.href} className="text-[12px] text-[#0d6157]/65 hover:text-[#0d6157] transition-colors font-normal">
+                      {l.label}
+                    </Link>
+                  ))}
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ─── INTEGRATIONS ─── */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-slate-50/40 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium tracking-wider uppercase mb-4">
-            Integrations
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-slate-900">
-            Connects to the tools you already use
-          </h2>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {[
-            { name: 'WhatsApp Business', color: 'bg-green-50 border-green-200 text-green-800' },
-            { name: 'Stripe Payments', color: 'bg-indigo-50 border-indigo-200 text-indigo-800' },
-            { name: 'Google Calendar', color: 'bg-blue-50 border-blue-200 text-blue-800' },
-            { name: 'Twilio SMS', color: 'bg-red-50 border-red-200 text-red-800' },
-            { name: 'Neon Database', color: 'bg-teal-50 border-teal-200 text-teal-800' },
-            { name: 'REST API & Webhooks', color: 'bg-purple-50 border-purple-200 text-purple-800' },
-          ].map((intg) => (
-            <div key={intg.name} className={`px-4 py-2 rounded-[8px] border ${intg.color} text-xs font-medium`}>
-              {intg.name}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── FAQ ─── */}
-      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium tracking-wider uppercase mb-4">
-            Frequently Asked Questions
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-tight text-slate-900">
-            Everything you need to know
-          </h2>
-        </div>
-
-        <div className="max-w-3xl mx-auto space-y-3">
-          {[
-            {
-              q: 'How long does it take to set up PULSEware?',
-              a: 'Most clinics are fully live within 24 hours. Our onboarding team handles everything — WhatsApp connection, doctor setup, and services configuration — so you can focus on patient care.',
-            },
-            {
-              q: 'Does the AI bot support Arabic?',
-              a: 'Yes. The WhatsApp AI bot supports both English and Arabic natively. Patients are prompted to choose their language at the start of every conversation, and the entire booking flow continues in their selected language.',
-            },
-            {
-              q: 'Is my clinic data secure and isolated?',
-              a: 'Absolutely. PULSEware uses strict multi-tenant architecture with full database-level isolation between clinics. Your patient data is never shared with or accessible by other clinics on the platform.',
-            },
-            {
-              q: 'Can I manage multiple branches from one account?',
-              a: 'Yes. Our Enterprise plan supports unlimited branches and clinic locations under one unified dashboard, with individual branch-level reporting, staff permissions, and financial tracking.',
-            },
-            {
-              q: 'What happens after the 14-day free trial?',
-              a: 'After your trial, you simply choose the plan that fits your clinic and enter your payment details. No automatic charges during the trial — we require your explicit confirmation before billing.',
-            },
-            {
-              q: 'Do you offer dedicated support?',
-              a: 'Growth and Enterprise plans include 24/7 priority support via WhatsApp and email. Starter plans include email support with a 24-hour response time. Enterprise clients also get a dedicated account manager.',
-            },
-          ].map((item, i) => (
-            <details key={i} className="group rounded-xl border border-slate-200 bg-slate-50/60 overflow-hidden">
-              <summary className="flex items-center justify-between px-6 py-4 cursor-pointer list-none text-sm font-medium text-slate-900 hover:text-purple-600 transition-colors">
-                <span>{item.q}</span>
-                <ChevronRight className="size-4 text-slate-400 group-open:rotate-90 transition-transform duration-200 shrink-0 ml-4" />
-              </summary>
-              <div className="px-6 pb-4 text-xs text-slate-600 leading-relaxed border-t border-slate-200 pt-3">
-                {item.a}
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── FINAL CTA ─── */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-x border-slate-200/80 bg-white relative z-10 text-center">
-        <div className="rounded-3xl bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-950 border border-purple-500/30 p-10 sm:p-16 space-y-6 text-white shadow-2xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium tracking-wider uppercase">
-            Start Your Free Trial Today
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-normal tracking-tight max-w-2xl mx-auto">
-            Ready to upgrade your clinic to{' '}
-            <span className="text-purple-400">PULSEware?</span>
-          </h2>
-          <p className="text-sm text-slate-300 max-w-xl mx-auto font-normal">
-            Join visionary medical clinics automating their bookings, rosters, inventory, and accounts with PULSEware. Free 14-day trial. No credit card required.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <Link
-              href={portalHref}
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow-xl shadow-purple-500/30 transition-all hover:scale-105 active:scale-95"
-            >
-              <span>Request Demo</span>
-              <ArrowRight className="size-4" />
-            </Link>
-            <a
-              href="#pricing"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-[8px] bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-normal transition-all"
-            >
-              View Pricing
-            </a>
-          </div>
-          {/* Mini trust strip */}
-          <p className="text-[11px] text-slate-400 pt-2">
-            ✓ 14-day free trial &nbsp;·&nbsp; ✓ No credit card required &nbsp;·&nbsp; ✓ Cancel anytime
-          </p>
-        </div>
-      </section>
-
-      {/* ─── FOOTER ─── */}
-      <footer className="w-full pt-14 pb-8 border-t border-slate-200 bg-white text-slate-500 text-xs z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Top footer grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-10 border-b border-slate-100">
-            {/* Brand col */}
-            <div className="col-span-2 md:col-span-2 space-y-3 pr-4">
-              <div className="flex items-center gap-2">
-                <div className="size-7 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white">
-                  <HeartPulse className="size-3.5" />
-                </div>
-                <span className="text-sm font-semibold text-slate-900">PULSE<span className="text-purple-600">ware</span></span>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                The complete Healthcare Operating System for modern private clinics. AI-powered, WhatsApp-native, and built for scale.
-              </p>
-              <p className="text-[11px] text-slate-400">© 2026 PULSEware Healthcare OS. All rights reserved.</p>
-            </div>
-
-            {/* Product */}
-            <div className="space-y-3">
-              <h6 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Product</h6>
-              <div className="space-y-2 flex flex-col">
-                <a href="#features" className="hover:text-purple-600 transition-colors">Platform</a>
-                <a href="#editions" className="hover:text-purple-600 transition-colors">Solutions</a>
-                <a href="#pricing" className="hover:text-purple-600 transition-colors">Pricing</a>
-                <a href="#whatsapp" className="hover:text-purple-600 transition-colors">WhatsApp Bot</a>
+            {/* Bottom strip */}
+            <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-[11px] text-[#0d6157]/50">Built with ♥ for healthcare professionals everywhere.</p>
+              <div className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] text-[#0d6157]/50">All systems operational</span>
               </div>
             </div>
 
-            {/* Company */}
-            <div className="space-y-3">
-              <h6 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Company</h6>
-              <div className="space-y-2 flex flex-col">
-                <a href="#testimonials" className="hover:text-purple-600 transition-colors">Customers</a>
-                <a href="#faq" className="hover:text-purple-600 transition-colors">FAQ</a>
-                <a href="#" className="hover:text-purple-600 transition-colors">About</a>
-                <a href="#" className="hover:text-purple-600 transition-colors">Blog</a>
-              </div>
-            </div>
-
-            {/* Legal */}
-            <div className="space-y-3">
-              <h6 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Legal</h6>
-              <div className="space-y-2 flex flex-col">
-                <a href="#" className="hover:text-purple-600 transition-colors">Privacy Policy</a>
-                <a href="#" className="hover:text-purple-600 transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-purple-600 transition-colors">Security</a>
-                <Link href="/login" className="hover:text-purple-600 transition-colors">Clinic Login</Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom strip */}
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[11px] text-slate-400">Built with ♥ for healthcare professionals everywhere.</p>
-            <div className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[11px] text-slate-400">All systems operational</span>
-            </div>
-          </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Loader2, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 
 function safeRedirect(candidate: string | undefined, fallback: string): string {
   if (!candidate) return fallback;
@@ -14,6 +14,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -31,7 +32,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
       const body = await response.json();
 
       if (!response.ok) {
-        setError(body?.error?.message ?? 'Sign in failed. Please check your credentials.');
+        setError(body?.error?.message ?? 'Invalid credentials. Please check your username and password.');
         setPending(false);
         return;
       }
@@ -39,7 +40,7 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
       router.replace(safeRedirect(nextPath, body.redirectTo ?? '/'));
       router.refresh();
     } catch {
-      setError('Could not reach the server. Check your connection and try again.');
+      setError('Could not reach the server. Please check your connection.');
       setPending(false);
     }
   }
@@ -51,11 +52,11 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
         {/* Email / Username Field */}
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-medium text-slate-700">
-            Username, Staff ID or Email
+            Work Email or Staff ID
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <Mail className="size-4 text-slate-400" />
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Mail className="size-4" />
             </div>
             <input
               id="email"
@@ -65,9 +66,9 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. admin@revealclinic.com"
+              placeholder="name@clinic.com"
               disabled={pending}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-[8px] text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 disabled:bg-slate-50"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50/70 border border-slate-200/90 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0d8276] focus:ring-4 focus:ring-[#0d8276]/10 transition-all disabled:opacity-50"
             />
           </div>
         </div>
@@ -80,48 +81,56 @@ export function LoginForm({ nextPath }: { nextPath?: string }) {
             </label>
           </div>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <Lock className="size-4 text-slate-400" />
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Lock className="size-4" />
             </div>
             <input
               id="password"
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={pending}
               placeholder="••••••••••••"
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-[8px] text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50 disabled:bg-slate-50"
+              className="w-full pl-10 pr-10 py-2.5 bg-slate-50/70 border border-slate-200/90 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0d8276] focus:ring-4 focus:ring-[#0d8276]/10 transition-all disabled:opacity-50"
             />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
           </div>
         </div>
 
         {/* Error message */}
-        {error ? (
+        {error && (
           <div
             role="alert"
-            className="rounded-[8px] border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700"
+            className="rounded-xl border border-rose-200 bg-rose-50/90 p-3 text-xs font-medium text-rose-700 animate-in fade-in duration-200"
           >
             {error}
           </div>
-        ) : null}
+        )}
 
         {/* Submit button */}
         <button
           type="submit"
           disabled={pending || !email || !password}
-          className="w-full py-2.5 px-6 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm shadow-sm shadow-purple-500/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-1"
+          className="w-full py-3 px-6 rounded-xl bg-[#0d6157] hover:bg-[#0a4e46] text-white font-medium text-sm shadow-[0_4px_16px_rgba(13,97,87,0.25)] transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 cursor-pointer mt-2"
         >
           {pending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              <span>Signing in…</span>
+              <span>Authenticating…</span>
             </>
           ) : (
             <>
-              <span>Sign in to Dashboard</span>
+              <span>Sign In to Workspace</span>
               <ArrowRight className="size-4" />
             </>
           )}

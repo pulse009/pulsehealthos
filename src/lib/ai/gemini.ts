@@ -86,9 +86,6 @@ export async function generateContent(options: GenerateOptions): Promise<Generat
   if (!model.includes('/')) {
     model = `google/${model}`;
   }
-  if (!model.includes('gemma')) {
-    model = 'google/gemma-4-26b-a4b-it:free';
-  }
 
   return generateOpenRouterContent(options, apiKey, model);
 }

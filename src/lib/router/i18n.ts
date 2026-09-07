@@ -243,7 +243,7 @@ export const i18n = {
     visited_before_title: (clinicName: string) =>
       `مرحباً بك في ${clinicName}! 👋\n\nهل قمت بزيارة عيادتنا من قبل؟`,
     ask_file_number:
-      '📋 *يرجى تزويدنا برقم المريض الخاص بك (Patient ID):*\n\nيرجى كتابة رقم المريض (مثال: *PID-0001* أو *1*) لنتمكن من مطابقة ملفك الطبي وربط حجزك بسجلك الحالي مباشرة.',
+      '📋 *يرجى تزويدنا برقم المريض الخاص بك:*\n\nيرجى كتابة رقم المريض (مثال: *PID-0001* أو *1*) لنتمكن من مطابقة ملفك الطبي وربط حجزك بسجلك الحالي مباشرة.',
     file_found_welcome: (name: string, fileNumber: number) =>
       `أهلاً بك مجدداً، *${name}*! ✅\nتم العثور على ملفك الطبي بنجاح (*PID-${String(fileNumber).padStart(4, '0')}*).\n\nكيف يمكننا مساعدتك اليوم؟`,
     file_not_found: (fileNum: string | number) =>

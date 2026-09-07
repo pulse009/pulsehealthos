@@ -52,11 +52,17 @@ export interface PromptSettings {
 }
 
 const WEEKDAYS = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const WEEKDAYS_AR = ['', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
 
-function renderHours(hours: PromptClinic['hours']): string {
+function renderHours(hours: PromptClinic['hours'], locale: PromptLocale = 'en'): string {
   const open = hours.filter((h) => !h.isClosed);
-  if (open.length === 0) return 'Opening hours are not configured — use get_clinic_information.';
+  if (open.length === 0) {
+    return locale === 'ar'
+      ? 'مواعيد العمل غير مُعدّة — استخدم get_clinic_information.'
+      : 'Opening hours are not configured — use get_clinic_information.';
+  }
 
+  const dayNames = locale === 'ar' ? WEEKDAYS_AR : WEEKDAYS;
   const byDay = new Map<number, string[]>();
   for (const h of open.sort((a, b) => a.weekday - b.weekday || a.startMinute - b.startMinute)) {
     const list = byDay.get(h.weekday) ?? [];
@@ -64,14 +70,14 @@ function renderHours(hours: PromptClinic['hours']): string {
     byDay.set(h.weekday, list);
   }
   return [...byDay.entries()]
-    .map(([weekday, windows]) => `  - ${WEEKDAYS[weekday]}: ${windows.join(', ')}`)
+    .map(([weekday, windows]) => `  - ${dayNames[weekday]}: ${windows.join(', ')}`)
     .join('\n');
 }
 
 function renderServices(services?: PromptClinic['services'], locale: PromptLocale = 'en'): string {
   if (!services || services.length === 0) return '';
   const lines = services.map((s) => {
-    const displayName = locale === 'ar' && s.nameAr ? `${s.nameAr} (${s.name})` : s.name;
+    const displayName = locale === 'ar' && s.nameAr ? `${s.nameAr} (EN: ${s.name})` : s.name;
     return `- ${displayName} (Duration: ${s.durationMinutes} min, ID: ${s.id})`;
   });
   return `\n## Available Services\n${lines.join('\n')}\n`;
@@ -80,9 +86,11 @@ function renderServices(services?: PromptClinic['services'], locale: PromptLocal
 function renderDoctors(doctors?: PromptClinic['doctors'], locale: PromptLocale = 'en'): string {
   if (!doctors || doctors.length === 0) return '';
   const lines = doctors.map((d) => {
-    const displayName = locale === 'ar' && d.nameAr ? `${d.nameAr} (${d.name})` : d.name;
+    // d.nameAr already carries its own "\u062f." honorific \u2014 do not also prepend the English "Dr."
+    const displayName =
+      locale === 'ar' && d.nameAr ? `${d.nameAr} (EN: ${d.name})` : `Dr. ${d.name}`;
     const specialty = locale === 'ar' && d.specialtyAr ? d.specialtyAr : d.specialty;
-    return `- Dr. ${displayName}${specialty ? ` \u2014 Specialty: ${specialty}` : ''} (ID: ${d.id})`;
+    return `- ${displayName}${specialty ? ` \u2014 Specialty: ${specialty}` : ''} (ID: ${d.id})`;
   });
   return `\n## Doctors\n${lines.join('\n')}\n`;
 }
@@ -117,7 +125,7 @@ ${clinic.description ? `- About: ${clinic.description}\n` : ''}- Location: ${
 - Timezone: ${clinic.timezone}
 
 ## Opening hours
-${renderHours(clinic.hours)}
+${renderHours(clinic.hours, locale)}
 ${renderServices(clinic.services, locale)}${renderDoctors(clinic.doctors, locale)}
 ## Right now
 The current date and time at the clinic is ${formatLocalIso(now, clinic.timezone)} (${clinic.timezone}).
@@ -183,11 +191,11 @@ For anything that sounds like a medical emergency, tell them immediately to call
       ? [
           '',
           '\u26a0\ufe0f ARABIC MODE ACTIVE \u2014 You MUST reply entirely in Arabic for this entire conversation.',
-          '- Every word of your response must be in Arabic, including service names, doctor names, greetings, and questions.',
-          '- When listing services use their Arabic names (provided above alongside English names in parentheses).',
-          '- When listing doctors use their Arabic names (provided above alongside English names in parentheses).',
+          '- Every word of your response must be in Arabic, including service names, doctor names, greetings, questions, labels, and confirmations. Do not write any English sentence, word, or label (e.g. "Duration", "ID", "Specialty", "Dr.") in your reply \u2014 those only appear above as internal reference data for you, never for the patient.',
+          '- Services and doctors above are listed as "Arabic Name (EN: English Name)" so you can match them internally \u2014 in your reply say ONLY the Arabic name. Never output the "(EN: ...)" part or the English name itself.',
           '- If a patient asks about services, doctors, or appointments \u2014 answer fully in Arabic.',
-          '- DO NOT mix English words into your Arabic reply except for proper nouns with no Arabic equivalent.',
+          '- The only English allowed in your reply is a genuine proper noun with no Arabic form (e.g. a brand name) or an alphanumeric code the patient must use verbatim (e.g. a slot token, PID-0001). Everything else \u2014 every sentence, label, and connecting word \u2014 must be Arabic.',
+          '- Use Arabic-Indic or Western numerals as the clinic\'s configuration already does; do not translate numbers into English words.',
         ].join('\n')
       : '';
 

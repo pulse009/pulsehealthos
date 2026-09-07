@@ -4,17 +4,12 @@ import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/session';
 import { LoginForm } from './login-form';
 import {
-  ArrowRight,
-  CheckCircle2,
-  HeartPulse,
-  ChevronDown,
+  ArrowLeft,
   ShieldCheck,
-  Sparkles,
-  Users,
-  Zap,
+  Star,
 } from 'lucide-react';
 
-export const metadata: Metadata = { title: 'Sign In · PULSEware' };
+export const metadata: Metadata = { title: 'Sign In · Pulseware' };
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage({
@@ -28,210 +23,162 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen w-full bg-white text-slate-900 font-sans antialiased selection:bg-purple-600 selection:text-white relative overflow-x-hidden">
-      {/* Background grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
+    <div className="h-screen w-full overflow-hidden bg-white font-sans antialiased selection:bg-teal-600 selection:text-white p-2 sm:p-3 lg:p-4 flex flex-col">
+      {/* ─── Main Viewport Card ─── */}
+      <div className="relative h-full w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_12px_40px_rgba(13,92,86,0.07)] bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8] flex flex-col justify-between">
 
-      {/* ─── HEADER (same as landing page) ─── */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[56px] flex items-center justify-between">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="size-6 rounded-md bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-500 p-0.5 shadow-xs group-hover:scale-105 transition-transform duration-200">
-              <div className="w-full h-full bg-white rounded-[4px] flex items-center justify-center">
-                <HeartPulse className="size-3.5 text-purple-600 stroke-[2]" />
-              </div>
+        {/* Fluted texture overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-75"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              90deg,
+              rgba(255,255,255,0.25) 0px,
+              rgba(255,255,255,0) 36px,
+              rgba(13,92,86,0.02) 72px,
+              rgba(255,255,255,0.6) 72px,
+              rgba(255,255,255,0.6) 73px,
+              rgba(13,92,86,0.04) 73px,
+              rgba(13,92,86,0.04) 74px
+            )`,
+          }}
+        />
+
+        {/* Soft center ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[550px] bg-white/45 blur-[110px] rounded-full pointer-events-none" />
+
+        {/* ─── Top Utility Strip ─── */}
+        <div className="relative z-20 px-6 sm:px-10 lg:px-14 pt-5 sm:pt-7 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="relative size-7 sm:size-8 flex items-center justify-center text-[#0d8276] group-hover:scale-105 transition-transform duration-200">
+              <svg viewBox="0 0 24 24" className="size-7 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="3.5" />
+                <circle cx="12" cy="3" r="1.5" />
+                <circle cx="12" cy="21" r="1.5" />
+                <circle cx="3" cy="12" r="1.5" />
+                <circle cx="21" cy="12" r="1.5" />
+                <circle cx="5.636" cy="5.636" r="1.5" />
+                <circle cx="18.364" cy="18.364" r="1.5" />
+                <circle cx="5.636" cy="18.364" r="1.5" />
+                <circle cx="18.364" cy="5.636" r="1.5" />
+              </svg>
             </div>
-            <span className="text-sm font-semibold tracking-tight text-slate-900">
-              PULSE<span className="text-purple-600">ware</span>
+            <span className="text-lg sm:text-xl font-semibold tracking-tight text-slate-900">
+              Pulseware
             </span>
           </Link>
 
-          {/* Center Nav */}
-          <nav className="hidden md:flex items-center gap-6 text-[13px] font-normal text-slate-600">
-            <Link href="/platform" className="hover:text-purple-600 transition-colors">Platform</Link>
-            <Link href="/solutions" className="flex items-center gap-1 hover:text-purple-600 transition-colors">
-              <span>Solutions</span>
-              <ChevronDown className="size-3 mt-0.5" />
-            </Link>
-            <Link href="/customers" className="hover:text-purple-600 transition-colors">Customers</Link>
-            <Link href="/faq" className="hover:text-purple-600 transition-colors">FAQ</Link>
-          </nav>
-
-          {/* Right */}
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="px-2.5 py-1 text-xs font-normal text-slate-700 hover:text-purple-600 transition-colors rounded-[8px] bg-slate-100/80 hover:bg-slate-200/80"
-            >
-              ← Back to Home
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-[8px] bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium shadow-xs transition-all hover:scale-105 active:scale-95"
-            >
-              <span>Sign In</span>
-              <ArrowRight className="size-3" />
-            </Link>
-          </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-xs font-semibold text-slate-700 hover:text-slate-900 border border-slate-200/60 shadow-xs transition-all hover:scale-105 active:scale-95"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Back to website</span>
+          </Link>
         </div>
-      </header>
 
-      {/* ─── MAIN CONTENT ─── */}
-      <main className="relative z-10 pt-[56px] min-h-screen flex items-center">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-x border-slate-200/80">
-          <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[calc(100vh-56px)]">
+        {/* ─── Center Hero Content ─── */}
+        <div className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0 px-6 sm:px-10 lg:px-14 items-center gap-8 lg:gap-12 py-4">
 
-            {/* ─── LEFT: Branding & Features Panel ─── */}
-            <div className="hidden lg:flex flex-col justify-center py-16 pr-16 space-y-10 border-r border-slate-200/80">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-[8px] bg-purple-50 border border-purple-200 text-purple-700 text-xs font-medium tracking-wider uppercase w-fit">
-                <Sparkles className="size-3" />
-                PULSEware Healthcare OS
+          {/* Left Brand Panel — Clean & High-Impact */}
+          <div className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-6 pr-6 xl:pr-12">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-[#0d8276]/20 text-[#0d6157] text-[11px] font-semibold tracking-wide uppercase shadow-2xs">
+                Clinical Intelligence Platform
               </div>
-
-              {/* Headline */}
-              <div className="space-y-3">
-                <h1 className="text-4xl font-normal tracking-tight text-slate-900 leading-tight">
-                  Your clinic's complete operating system
-                </h1>
-                <p className="text-sm text-slate-500 font-normal leading-relaxed">
-                  Sign in to manage doctor rosters, AI WhatsApp bookings, pharmacy inventory, doctor payroll, and clinic accounts — all in one place.
-                </p>
-              </div>
-
-              {/* Feature list */}
-              <div className="space-y-4">
-                {[
-                  { icon: <Zap className="size-4 text-purple-600" />, title: 'AI WhatsApp Booking', desc: 'Sub-50ms automated bookings in Arabic & English' },
-                  { icon: <Users className="size-4 text-purple-600" />, title: 'Doctor & Staff Management', desc: 'Rosters, schedules, and role-based permissions' },
-                  { icon: <ShieldCheck className="size-4 text-purple-600" />, title: 'Enterprise Security', desc: 'Multi-tenant isolation, encrypted data, full audit trails' },
-                ].map((f) => (
-                  <div key={f.title} className="flex items-start gap-3">
-                    <div className="size-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0 mt-0.5">
-                      {f.icon}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">{f.title}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{f.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Mini dashboard mockup */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-4 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="size-5 rounded-md bg-purple-600 flex items-center justify-center">
-                      <Sparkles className="size-3 text-white" />
-                    </div>
-                    <span className="text-xs font-semibold text-slate-800">Live Overview</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400">Today</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: "Patients", value: "247", change: "+12%", up: true },
-                    { label: "Bookings", value: "89", change: "+8%", up: true },
-                    { label: "Revenue", value: "$18.5K", change: "+15%", up: true },
-                  ].map((m) => (
-                    <div key={m.label} className="bg-slate-50 rounded-xl p-2.5 space-y-0.5 border border-slate-100">
-                      <span className="text-[9px] text-slate-400 font-normal block">{m.label}</span>
-                      <span className="text-sm font-semibold text-slate-900 block">{m.value}</span>
-                      <span className="text-[9px] font-medium text-emerald-600 block">{m.change}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-                  All systems operational
-                </div>
-              </div>
-
-              {/* Trust line */}
-              <p className="text-xs text-slate-400 font-normal">
-                Trusted by <span className="font-semibold text-slate-600">2,000+ clinicians</span> across leading hospitals & clinics.
+              <h1 className="text-4xl xl:text-5xl font-semibold tracking-tight text-slate-900 leading-[1.14]">
+                The modern operating system for healthcare leaders.
+              </h1>
+              <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed max-w-lg font-normal">
+                Seamlessly unify AI WhatsApp consultations, doctor scheduling, multi-clinic records, and revenue operations into one continuous workflow.
               </p>
             </div>
 
-            {/* ─── RIGHT: Login Form Panel ─── */}
-            <div className="flex flex-col justify-center py-16 lg:pl-16">
-              <div className="w-full max-w-sm mx-auto lg:mx-0 space-y-7">
+            {/* Minimalist Client Quote Card */}
+            <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-white/80 shadow-[0_4px_20px_rgba(13,92,86,0.06)] p-5 space-y-3 max-w-md">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="size-3.5 fill-[#0d8276] text-[#0d8276]" />
+                ))}
+              </div>
+              <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed italic">
+                &ldquo;Pulseware eliminated 80% of our patient scheduling overhead in the first month. Our doctors and patients both love the speed.&rdquo;
+              </p>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100/80">
+                <div>
+                  <div className="text-xs font-semibold text-slate-900">Dr. Saud Al-Obaida</div>
+                  <div className="text-[10px] text-slate-500">Medical Director, Reveal Clinics</div>
+                </div>
+                <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Verified Partner
+                </div>
+              </div>
+            </div>
+          </div>
 
-                {/* Form header */}
-                <div className="space-y-1.5">
-                  {/* Mobile logo */}
-                  <div className="flex items-center gap-2 mb-5 lg:hidden">
-                    <div className="size-7 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center">
-                      <HeartPulse className="size-4 text-white" />
-                    </div>
-                    <span className="text-base font-semibold text-slate-900">
-                      PULSE<span className="text-purple-600">ware</span>
-                    </span>
-                  </div>
-
-                  <h2 className="text-2xl font-normal tracking-tight text-slate-900">Welcome back</h2>
-                  <p className="text-xs text-slate-500 font-normal">
-                    Sign in to your clinic portal to continue.
+          {/* Right Auth Card */}
+          <div className="lg:col-span-6 flex items-center justify-center lg:justify-end">
+            <div className="w-full max-w-md space-y-4">
+              
+              {/* Card Container */}
+              <div className="bg-white/95 backdrop-blur-md rounded-[24px] border border-white shadow-[0_12px_40px_rgba(13,92,86,0.12)] p-7 sm:p-9 space-y-6">
+                
+                {/* Header */}
+                <div className="space-y-1.5 text-left">
+                  <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">
+                    Welcome back
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 font-normal">
+                    Enter your clinic credentials to access your workspace.
                   </p>
                 </div>
 
-                {/* Configuration error */}
+                {/* Configuration error alert */}
                 {params.error === 'configuration' ? (
-                  <div className="rounded-[8px] border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-800">
                     The server is not fully configured. Contact your system administrator.
                   </div>
                 ) : null}
 
-                {/* Form card */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-                  <LoginForm nextPath={params.next} />
-                </div>
+                {/* Login Form */}
+                <LoginForm nextPath={params.next} />
 
-                {/* Security strip */}
-                <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 font-normal">
-                  <ShieldCheck className="size-3.5 text-purple-500" />
-                  <span>End-to-end encrypted · Multi-tenant isolated</span>
-                </div>
-
-                {/* Features (mobile only) */}
-                <div className="lg:hidden space-y-2 pt-2 border-t border-slate-100">
-                  {[
-                    'AI WhatsApp bookings in Arabic & English',
-                    'Doctor roster & compensation management',
-                    'Pharmacy, accounting & invoicing',
-                  ].map((f) => (
-                    <div key={f} className="flex items-center gap-2 text-xs text-slate-500">
-                      <CheckCircle2 className="size-3.5 text-purple-500 shrink-0" />
-                      {f}
-                    </div>
-                  ))}
+                {/* Card Sub-links */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <span>Need an enterprise account?</span>
+                  <Link
+                    href="/contact"
+                    className="font-semibold text-[#0d6157] hover:text-[#09433c] transition-colors"
+                  >
+                    Contact sales →
+                  </Link>
                 </div>
               </div>
-            </div>
 
+              {/* Security note */}
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+                <ShieldCheck className="size-3.5 text-[#0d8276]" />
+                <span>Enterprise grade security &bull; 256-bit encrypted session</span>
+              </div>
+            </div>
           </div>
         </div>
-      </main>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="w-full py-6 border-t border-slate-200 bg-white text-slate-400 text-xs relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="size-5 rounded-md bg-purple-600 flex items-center justify-center">
-              <HeartPulse className="size-3 text-white" />
-            </div>
-            <span className="font-medium text-slate-500">PULSEware Healthcare OS</span>
-            <span>· © 2026 All Rights Reserved</span>
-          </div>
+        {/* ─── Bottom Status Strip ─── */}
+        <div className="relative z-10 px-6 sm:px-10 lg:px-14 py-3.5 border-t border-[#0d8276]/10 flex items-center justify-between text-[11px] text-slate-500">
+          <p>© 2026 Pulseware Technologies Inc. All rights reserved.</p>
           <div className="flex items-center gap-5">
-            <Link href="/platform" className="hover:text-purple-600 transition-colors">Platform</Link>
-            <Link href="/solutions" className="hover:text-purple-600 transition-colors">Solutions</Link>
-            <Link href="/faq" className="hover:text-purple-600 transition-colors">FAQ</Link>
+            <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms</Link>
+            <div className="hidden sm:flex items-center gap-1.5 text-slate-600">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span>All Systems Operational</span>
+            </div>
           </div>
         </div>
-      </footer>
+
+      </div>
     </div>
   );
 }

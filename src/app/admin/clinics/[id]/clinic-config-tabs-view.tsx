@@ -339,7 +339,7 @@ export function ClinicConfigTabsView({
                     customInstructions: null,
                     escalationRules: null,
                     escalationKeywords: [],
-                    model: 'gemini-3.6-flash',
+                    model: 'google/gemini-2.5-flash',
                     temperature: 0.3,
                     maxOutputTokens: 1024,
                     historyWindow: 20,

@@ -509,7 +509,7 @@ model AIConfiguration {
   escalationRules    String?
   escalationKeywords String[] @default([])
 
-  model           String  @default("gemini-3.6-flash")
+  model           String  @default("google/gemini-2.5-flash")
   temperature     Float   @default(0.3)
   maxOutputTokens Int     @default(1024)
   /// Turns of history replayed into the model.
