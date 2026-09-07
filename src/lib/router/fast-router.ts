@@ -219,6 +219,49 @@ export async function routeMessage(input: FastRouterInput): Promise<FastRouterRe
     }
   }
 
+  // Check if user replied with a service name or doctor name directly
+  if (!pendingToken && rawText.length >= 3) {
+    try {
+      const cleanInput = rawText.toLowerCase().replace(/^(dr\.?|doctor|د\.?|دكتور|دكتورة)\s*/i, '').trim();
+
+      // Check services
+      const services = await prisma.service.findMany({
+        where: { clinicId: input.clinicId, isActive: true },
+        select: { id: true, name: true },
+      });
+      const matchedService = services.find((s) => {
+        const sName = s.name.toLowerCase();
+        return (
+          sName.includes(cleanInput) ||
+          cleanInput.includes(sName) ||
+          cleanInput.split(/\s+/).some((w) => w.length >= 4 && sName.includes(w))
+        );
+      });
+      if (matchedService) {
+        return handleShowDoctorsForService(input, matchedService.id, locale, now, startedAt, 0);
+      }
+
+      // Check doctors
+      const doctors = await prisma.doctor.findMany({
+        where: { clinicId: input.clinicId, isActive: true },
+        select: { id: true, name: true },
+      });
+      const matchedDoctor = doctors.find((d) => {
+        const dName = d.name.toLowerCase();
+        return (
+          dName.includes(cleanInput) ||
+          cleanInput.includes(dName) ||
+          cleanInput.split(/\s+/).some((w) => w.length >= 3 && dName.includes(w))
+        );
+      });
+      if (matchedDoctor) {
+        return handleCheckDoctorAppointmentTypes(input, 'any', matchedDoctor.id, locale, now, startedAt);
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   // Action: Show Doctors List
   if (actionPayload === 'get_doctors' || actionPayload?.startsWith('get_doctors:')) {
     const offset = actionPayload.startsWith('get_doctors:')
@@ -1901,8 +1944,12 @@ function isMyAppointmentsQuery(text: string): boolean {
   );
 }
 
+function isKeepAppointmentIntent(text: string): boolean {
+  return /(keep\s*appointment|keep|لا،?\s*إبقاء|لا،?\s*ابقاء|إبقاء\s*الموعد|ابقاء\s*الموعد)/i.test(text);
+}
+
 function isCancellationIntent(text: string): boolean {
-  return /(cancel\s*appointment|cancel\s*booking|cancel\s*my\s*appointment|إلغاء\s*الموعد|الغاء\s*الموعد|الغاء\s*الحجز|إلغاء\s*الحجز|ابغى\s*الغي\s*الموعد)/i.test(
+  return /(cancel\s*appointment|cancel\s*booking|cancel\s*my\s*appointment|cancel_booking|confirm_cancel|cancel|إلغاء\s*الموعد|الغاء\s*الموعد|الغاء\s*الحجز|إلغاء\s*الحجز|إلغاء|الغاء|ابغى\s*الغي\s*الموعد)/i.test(
     text,
   );
 }
@@ -1914,8 +1961,23 @@ function isRescheduleIntent(text: string): boolean {
 }
 
 function isBookIntent(text: string): boolean {
-  return /^(book(\s*an?)?\s*appointment|book\s*now|new\s*booking|i\s*want\s*to\s*book|احجز|حجز\s*موعد|ابغى\s*احجز|اريد\s*حجز(\s*موعد)?|أريد\s*حجز(\s*موعد)?|حجز|حجز\s*جديد|حجز\s*موعد\s*جديد)$/i.test(
-    text.trim(),
+  const clean = text.toLowerCase().trim();
+  if (
+    isCancellationIntent(clean) ||
+    isRescheduleIntent(clean) ||
+    isMyAppointmentsQuery(clean) ||
+    isKeepAppointmentIntent(clean) ||
+    clean.includes('cancel') ||
+    clean.includes('keep') ||
+    clean.includes('إلغاء') ||
+    clean.includes('الغاء') ||
+    clean.includes('إبقاء') ||
+    clean.includes('ابقاء')
+  ) {
+    return false;
+  }
+  return /(book|booked|booking|schedule|appointment|reservation|احجز|أحجز|حجز|موعد|ابغى\s*موعد|ابي\s*موعد|اريد\s*موعد|أريد\s*موعد|حجز\s*جديد)/i.test(
+    clean,
   );
 }
 

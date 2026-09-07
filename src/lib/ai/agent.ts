@@ -10,9 +10,29 @@ import {
   userText,
   type GeminiContent,
 } from '@/lib/ai/gemini';
-import { buildSystemPrompt, FALLBACK_REPLY, ESCALATION_ACKNOWLEDGEMENT } from '@/lib/ai/prompts';
+import { buildSystemPrompt, getFallbackReply, getEscalationAcknowledgement } from '@/lib/ai/prompts';
 import { executeTool, toolDeclarations, type ToolContext } from '@/lib/ai/tools';
 import { loadRecentMessages } from '@/lib/conversations/conversation.service';
+import { translateServiceName, translateDoctorName, translateSpecialty } from '@/lib/router/i18n';
+
+/** Thin wrappers that return undefined (not the original name) when no Arabic translation is found */
+function translateServiceNameForPrompt(name: string): string | undefined {
+  const ar = translateServiceName(name, 'ar');
+  return ar !== name ? ar : undefined;
+}
+function translateDoctorNameForPrompt(name: string): string | undefined {
+  // translateDoctorName adds prefix "د." — strip it for the raw name field
+  const raw = name.replace(/^(dr\.?|doctor|د\.?)\s+/i, '').trim();
+  const ar = translateDoctorName(name, 'ar');
+  // If the Arabic result is just "د. <same english name>" it means no translation was found
+  const arStripped = ar.replace(/^د\.\s*/, '').trim();
+  return arStripped.toLowerCase() !== raw.toLowerCase() ? ar : undefined;
+}
+function translateSpecialtyForPrompt(specialty: string | null): string | undefined {
+  if (!specialty) return undefined;
+  const ar = translateSpecialty(specialty, 'ar');
+  return ar && ar !== specialty ? ar : undefined;
+}
 
 /**
  * The agent loop.
@@ -113,7 +133,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
       aiEnabled: ai?.isEnabled ?? false,
       geminiConfigured: isGeminiConfigured(),
     });
-    return { reply: FALLBACK_REPLY, escalated: false, toolCalls: [], usedFallback: true };
+    return { reply: getFallbackReply(locale), escalated: false, toolCalls: [], usedFallback: true };
   }
 
   const patient = await prisma.patient.findUnique({
@@ -135,13 +155,16 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
     services: clinic.services.map((s) => ({
       id: s.id,
       name: s.name,
+      nameAr: locale === 'ar' ? translateServiceNameForPrompt(s.name) : undefined,
       durationMinutes: s.durationMinutes,
       price: s.priceMinor !== null ? `${s.currency ?? ''} ${(s.priceMinor / 100).toFixed(2)}`.trim() : null,
     })),
     doctors: clinic.doctors.map((d) => ({
       id: d.id,
       name: d.name,
+      nameAr: locale === 'ar' ? translateDoctorNameForPrompt(d.name) : undefined,
       specialty: d.specialty,
+      specialtyAr: locale === 'ar' ? translateSpecialtyForPrompt(d.specialty) : undefined,
     })),
   };
 
@@ -171,6 +194,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
     isReturningPatient: Boolean(
       patient && now.getTime() - patient.createdAt.getTime() > 24 * 3_600_000,
     ),
+    locale,
   });
 
   // Replay history. Keep context small (max 8 messages) for fast token generation.
@@ -236,18 +260,20 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
 
         // If no tool buttons yet, extract buttons from options/numbered list or confirmation prompt
         if (!turnButtons) {
-          // 1. Check for numbered list options (e.g. "1. Option A\n2. Option B\n3. Option C")
-          const numberedLines = reply
+          // 1. Check for list options (numbered "1. Option", bullet points "• Option", "- Option", "* Option")
+          const listLines = reply
             .split('\n')
             .map((line) => line.trim())
-            .filter((line) => /^\d+[\.\)]\s+.+/.test(line));
+            .filter((line) => /^(\d+[\.\)]|[•\-\*])\s+.+/.test(line));
 
-          if (numberedLines.length >= 2 && numberedLines.length <= 10) {
-            turnButtons = numberedLines.map((line, idx) => {
+          if (listLines.length >= 2 && listLines.length <= 10) {
+            turnButtons = listLines.map((line, idx) => {
               const cleanTitle = line
-                .replace(/^\d+[\.\)]\s*/, '')
+                .replace(/^(\d+[\.\)]|[•\-\*])\s*/, '')
                 .replace(/\*+/g, '')
                 .replace(/\([^\)]*\)/g, '')
+                .split('—')[0]!
+                .split(' - ')[0]!
                 .trim();
               return {
                 id: `option_${idx + 1}`,
@@ -296,7 +322,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
     if (escalated) {
       console.log('🤖 [AGENT] Escalated to human — returning escalation acknowledgement');
       return {
-        reply: ESCALATION_ACKNOWLEDGEMENT,
+        reply: getEscalationAcknowledgement(locale),
         escalated: true,
         toolCalls: trace,
         usedFallback: false,
@@ -311,5 +337,5 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
     toolCalls: trace.length,
     ms: Date.now() - startedAt,
   });
-  return { reply: FALLBACK_REPLY, escalated, toolCalls: trace, usedFallback: true };
+  return { reply: getFallbackReply(locale), escalated, toolCalls: trace, usedFallback: true };
 }
