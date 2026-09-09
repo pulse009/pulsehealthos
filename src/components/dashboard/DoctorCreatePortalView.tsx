@@ -4,35 +4,35 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ChevronsLeft,
-  Stethoscope,
-  Building2,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Plus,
-  Save,
-  Trash2,
-  Check,
-  AlertCircle,
-  Tag,
-  ShieldCheck,
-  Users,
-  FileText,
-  UserCheck,
-  X,
-  Mail,
-  Lock,
-  Search,
-  ChevronDown,
-  Sparkles,
-  Image as ImageIcon,
-  Flag,
-  CalendarDays,
-  UserPlus,
-  Coffee,
-} from 'lucide-react';
+  LuChevronsLeft as ChevronsLeft,
+  LuBuilding2 as Building2,
+  LuCalendar as Calendar,
+  LuClock as Clock,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuPlus as Plus,
+  LuSave as Save,
+  LuTrash2 as Trash2,
+  LuCheck as Check,
+  LuCircleAlert as AlertCircle,
+  LuTag as Tag,
+  LuShieldCheck as ShieldCheck,
+  LuUsers as Users,
+  LuFileText as FileText,
+  LuUserCheck as UserCheck,
+  LuX as X,
+  LuMail as Mail,
+  LuLock as Lock,
+  LuSearch as Search,
+  LuChevronDown as ChevronDown,
+  LuSparkles as Sparkles,
+  LuImage as ImageIcon,
+  LuFlag as Flag,
+  LuCalendarDays as CalendarDays,
+  LuUserPlus as UserPlus,
+  LuCoffee as Coffee,
+} from 'react-icons/lu';
+import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 
 export interface BreakSlot {
   id: string;
@@ -47,6 +47,7 @@ export interface DoctorCreateProps {
   availableServices?: Array<{ id: string; name: string }>;
   availableStaff?: Array<{ id: string; name: string; email: string }>;
   backHref?: string;
+  isPulseNow?: boolean;
 }
 
 const WEEKDAYS = [
@@ -65,6 +66,7 @@ export function DoctorCreatePortalView({
   availableServices: initialServices = [],
   availableStaff: initialStaff = [],
   backHref = '/portal/doctors',
+  isPulseNow = false,
 }: DoctorCreateProps) {
   const router = useRouter();
   const [servicesList, setServicesList] = useState(initialServices);
@@ -383,7 +385,7 @@ export function DoctorCreatePortalView({
   return (
     <div className="h-full w-full flex flex-col overflow-hidden bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
       {/* 1. FIXED TOP HEADER — shrink-0 keeps it pinned, never scrolls */}
-      <header className="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-2.5 flex items-center justify-between gap-4 shadow-sm z-30">
+      <header className="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-2.5 flex items-center justify-between gap-4 shadow-2xs z-30">
         {/* Left Breadcrumbs: << 🩺 [Clinic Name] / Doctors / Create */}
         <div className="flex items-center gap-2.5 min-w-0">
           <Link
@@ -396,15 +398,15 @@ export function DoctorCreatePortalView({
 
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">
             <span className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
-              <Stethoscope className="size-4 text-blue-600" />
+              <Stethoscope className="size-4 text-[#0d6157]" />
               <span>{clinicName}</span>
             </span>
             <span className="text-slate-300 dark:text-slate-600">/</span>
-            <Link href="/portal/doctors" className="hover:text-blue-600 hover:underline">
+            <Link href="/portal/doctors" className="hover:text-[#0d6157] hover:underline">
               Doctors
             </Link>
             <span className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-blue-600 dark:text-blue-400 font-bold">Create</span>
+            <span className="text-[#0d6157] dark:text-teal-400 font-bold">Create</span>
           </div>
         </div>
 
@@ -412,7 +414,7 @@ export function DoctorCreatePortalView({
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href={backHref}
-            className="px-3 py-1.5 rounded-[8px] border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
           >
             <X className="size-3.5 text-slate-400" />
             <span>Discard</span>
@@ -420,7 +422,7 @@ export function DoctorCreatePortalView({
 
           <Link
             href={backHref}
-            className="p-1.5 rounded-[8px] border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="size-3.5" />
           </Link>
@@ -435,7 +437,7 @@ export function DoctorCreatePortalView({
         <div className="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6 min-h-0">
           {/* Section Header: 📄 Doctor Details & Profile */}
           <div className="flex items-center gap-2">
-            <FileText className="size-4.5 text-slate-700 dark:text-slate-300" />
+            <FileText className="size-4.5 text-[#0d6157] dark:text-teal-400" />
             <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
               Doctor Details &amp; Profile
             </h2>
@@ -456,10 +458,10 @@ export function DoctorCreatePortalView({
                   onChange={(e) => {
                     setName(e.target.value);
                   }}
-                  className={`w-full bg-white dark:bg-slate-800 border rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
+                  className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
                     isNameInvalid
                       ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/10 focus:border-rose-500 focus:ring-rose-500/20'
-                      : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]'
                   }`}
                 />
               </div>
@@ -477,10 +479,10 @@ export function DoctorCreatePortalView({
                   onChange={(e) => {
                     setSpecialty(e.target.value);
                   }}
-                  className={`w-full bg-white dark:bg-slate-800 border rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
+                  className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all ${
                     isSpecialtyInvalid
                       ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/10 focus:border-rose-500 focus:ring-rose-500/20'
-                      : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]'
                   }`}
                 />
               </div>
@@ -499,7 +501,7 @@ export function DoctorCreatePortalView({
                     placeholder="doctor@clinic.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
               </div>
@@ -515,50 +517,13 @@ export function DoctorCreatePortalView({
                     placeholder="Defaults to Doctor123!"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
               </div>
             </div>
 
-            {/* ROW 3: Slot Duration & Buffer Gap */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Per-Doctor Slot Duration <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={slotDuration}
-                  onChange={(e) => setSlotDuration(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono cursor-pointer"
-                >
-                  <option value={15}>15 minutes</option>
-                  <option value={20}>20 minutes</option>
-                  <option value={30}>30 minutes (Standard)</option>
-                  <option value={45}>45 minutes</option>
-                  <option value={60}>60 minutes (1 Hour)</option>
-                  <option value={90}>90 minutes</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Buffer Gap After Appointments
-                </label>
-                <select
-                  value={bufferMinutes}
-                  onChange={(e) => setBufferMinutes(Number(e.target.value))}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono cursor-pointer"
-                >
-                  <option value={0}>0 minutes (No gap)</option>
-                  <option value={5}>5 minutes</option>
-                  <option value={10}>10 minutes</option>
-                  <option value={15}>15 minutes</option>
-                </select>
-              </div>
-            </div>
-
-            {/* ROW 4: Coordinator & Services Dropdowns with z-30 stacking */}
+            {/* ROW 3: Coordinator & Services Dropdowns with z-30 stacking */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-30">
               {/* Assigned Coordinator */}
               <div ref={coordinatorRef} className="relative">
@@ -571,7 +536,7 @@ export function DoctorCreatePortalView({
                     setIsCoordinatorDropdownOpen(!isCoordinatorDropdownOpen);
                     setIsServicesDropdownOpen(false);
                   }}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white flex items-center justify-between text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-xs text-slate-900 dark:text-white flex items-center justify-between text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 >
                   <span className="flex items-center gap-2 truncate text-slate-500 dark:text-slate-400">
                     <Search className="size-3.5 text-slate-400 shrink-0" />
@@ -583,7 +548,7 @@ export function DoctorCreatePortalView({
                 </button>
 
                 {isCoordinatorDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[10px] shadow-2xl z-50 p-2.5 space-y-2">
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 p-2.5 space-y-2">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
                       <input
@@ -591,7 +556,7 @@ export function DoctorCreatePortalView({
                         placeholder="Search coordinator..."
                         value={coordinatorSearch}
                         onChange={(e) => setCoordinatorSearch(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                       />
                     </div>
 
@@ -601,14 +566,14 @@ export function DoctorCreatePortalView({
                           setCoordinatorId('');
                           setIsCoordinatorDropdownOpen(false);
                         }}
-                        className={`p-2 rounded-[8px] cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
+                        className={`p-2 rounded-lg cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
                           coordinatorId === ''
-                            ? 'bg-blue-50/80 dark:bg-slate-800 text-blue-700 dark:text-blue-300 font-bold'
+                            ? 'bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 font-bold'
                             : 'text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         <span className="text-xs">None</span>
-                        {coordinatorId === '' && <Check className="size-3.5 text-blue-600 shrink-0" />}
+                        {coordinatorId === '' && <Check className="size-3.5 text-[#0d6157] dark:text-teal-400 shrink-0" />}
                       </div>
 
                       {filteredStaff.map((staff) => {
@@ -620,9 +585,9 @@ export function DoctorCreatePortalView({
                               setCoordinatorId(staff.id);
                               setIsCoordinatorDropdownOpen(false);
                             }}
-                            className={`p-2 rounded-[8px] cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
+                            className={`p-2 rounded-lg cursor-pointer flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
                               isSel
-                                ? 'bg-blue-50/80 dark:bg-slate-800 text-blue-700 dark:text-blue-300 font-bold'
+                                ? 'bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 font-bold'
                                 : 'text-slate-700 dark:text-slate-300'
                             }`}
                           >
@@ -632,7 +597,7 @@ export function DoctorCreatePortalView({
                                 {staff.email}
                               </div>
                             </div>
-                            {isSel && <Check className="size-3.5 text-blue-600 shrink-0" />}
+                            {isSel && <Check className="size-3.5 text-[#0d6157] dark:text-teal-400 shrink-0" />}
                           </div>
                         );
                       })}
@@ -646,7 +611,7 @@ export function DoctorCreatePortalView({
                           setIsCoordinatorDropdownOpen(false);
                           setIsAddCoordinatorModalOpen(true);
                         }}
-                        className="w-full py-1.5 text-center text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-[8px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        className="w-full py-1.5 text-center text-xs font-bold text-[#0d6157] dark:text-teal-400 hover:bg-[#e6f6f3] dark:hover:bg-[#0d6157]/20 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <Plus className="size-3.5" />
                         <span>+ Create New Coordinator</span>
@@ -667,7 +632,7 @@ export function DoctorCreatePortalView({
                     setIsServicesDropdownOpen(!isServicesDropdownOpen);
                     setIsCoordinatorDropdownOpen(false);
                   }}
-                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white flex items-center justify-between text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-xs text-slate-900 dark:text-white flex items-center justify-between text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 >
                   <span className="flex items-center gap-2 truncate text-slate-500 dark:text-slate-400">
                     <Search className="size-3.5 text-slate-400 shrink-0" />
@@ -681,7 +646,7 @@ export function DoctorCreatePortalView({
                 </button>
 
                 {isServicesDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[10px] shadow-2xl z-50 p-2.5 space-y-2">
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl z-50 p-2.5 space-y-2">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
                       <input
@@ -689,7 +654,7 @@ export function DoctorCreatePortalView({
                         placeholder="Search services..."
                         value={serviceSearch}
                         onChange={(e) => setServiceSearch(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                       />
                     </div>
 
@@ -711,9 +676,9 @@ export function DoctorCreatePortalView({
                                   setSelectedServiceIds([...selectedServiceIds, srv.id]);
                                 }
                               }}
-                              className={`flex items-center justify-between p-2 rounded-[8px] cursor-pointer transition-colors ${
+                              className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
                                 checked
-                                  ? 'bg-blue-50/80 dark:bg-slate-800 text-blue-700 dark:text-blue-300 font-semibold'
+                                  ? 'bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 font-semibold'
                                   : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                               }`}
                             >
@@ -721,7 +686,7 @@ export function DoctorCreatePortalView({
                                 <div
                                   className={`size-4 rounded-full flex items-center justify-center transition-all shrink-0 ${
                                     checked
-                                      ? 'bg-blue-600 text-white ring-2 ring-blue-500/20'
+                                      ? 'bg-[#0d6157] text-white ring-2 ring-[#0d8276]/20'
                                       : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
                                   }`}
                                 >
@@ -729,7 +694,7 @@ export function DoctorCreatePortalView({
                                 </div>
                                 <span className="text-xs truncate">{srv.name}</span>
                               </div>
-                              {checked && <Check className="size-3.5 text-blue-600 shrink-0" />}
+                              {checked && <Check className="size-3.5 text-[#0d6157] dark:text-teal-400 shrink-0" />}
                             </div>
                           );
                         })
@@ -744,7 +709,7 @@ export function DoctorCreatePortalView({
                           setIsServicesDropdownOpen(false);
                           setIsAddServiceModalOpen(true);
                         }}
-                        className="w-full py-1.5 text-center text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-[8px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        className="w-full py-1.5 text-center text-xs font-bold text-[#0d6157] dark:text-teal-400 hover:bg-[#e6f6f3] dark:hover:bg-[#0d6157]/20 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <Plus className="size-3.5" />
                         <span>+ Create New Service</span>
@@ -766,12 +731,12 @@ export function DoctorCreatePortalView({
                   <div
                     className={`size-4 rounded-full flex items-center justify-center border transition-all ${
                       scheduleMode === 'standard'
-                        ? 'border-blue-600 bg-white dark:bg-slate-900 ring-2 ring-blue-500/20'
+                        ? 'border-[#0d6157] bg-white dark:bg-slate-900 ring-2 ring-[#0d8276]/20'
                         : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400'
                     }`}
                   >
                     {scheduleMode === 'standard' && (
-                      <div className="size-2 rounded-full bg-blue-600" />
+                      <div className="size-2 rounded-full bg-[#0d6157]" />
                     )}
                   </div>
                   <span className={`font-medium ${scheduleMode === 'standard' ? 'text-slate-900 dark:text-white font-semibold' : ''}`}>
@@ -787,12 +752,12 @@ export function DoctorCreatePortalView({
                   <div
                     className={`size-4 rounded-full flex items-center justify-center border transition-all ${
                       scheduleMode === 'custom'
-                        ? 'border-blue-600 bg-white dark:bg-slate-900 ring-2 ring-blue-500/20'
+                        ? 'border-[#0d6157] bg-white dark:bg-slate-900 ring-2 ring-[#0d8276]/20'
                         : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400'
                     }`}
                   >
                     {scheduleMode === 'custom' && (
-                      <div className="size-2 rounded-full bg-blue-600" />
+                      <div className="size-2 rounded-full bg-[#0d6157]" />
                     )}
                   </div>
                   <span className={`font-medium ${scheduleMode === 'custom' ? 'text-slate-900 dark:text-white font-semibold' : ''}`}>
@@ -803,14 +768,14 @@ export function DoctorCreatePortalView({
 
               {/* Standard Mode Break Option */}
               {scheduleMode === 'standard' && (
-                <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-[10px] border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in duration-150">
+                <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs animate-in fade-in duration-150">
                   <div className="flex items-center gap-2.5">
                     <input
                       type="checkbox"
                       id="standard-break-toggle"
                       checked={standardBreakEnabled}
                       onChange={(e) => setStandardBreakEnabled(e.target.checked)}
-                      className="size-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="size-4 rounded text-[#0d6157] focus:ring-[#0d8276] cursor-pointer"
                     />
                     <label htmlFor="standard-break-toggle" className="font-semibold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-1.5">
                       <Coffee className="size-3.5 text-amber-600 dark:text-amber-400" />
@@ -822,7 +787,7 @@ export function DoctorCreatePortalView({
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 dark:text-slate-400 text-xs">Break:</span>
                       {/* Start Time */}
-                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs">
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs shadow-2xs">
                         <input
                           type="time"
                           value={minuteToTimeStr(standardBreakStart)}
@@ -835,7 +800,7 @@ export function DoctorCreatePortalView({
                       <span className="text-slate-400 text-xs font-medium">to</span>
 
                       {/* End Time */}
-                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs">
+                      <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs shadow-2xs">
                         <input
                           type="time"
                           value={minuteToTimeStr(standardBreakEnd)}
@@ -850,7 +815,7 @@ export function DoctorCreatePortalView({
               )}
 
               {scheduleMode === 'custom' && (
-                <div className="bg-white dark:bg-slate-900/80 rounded-[12px] border border-slate-200/90 dark:border-slate-800 shadow-2xs divide-y divide-slate-100 dark:divide-slate-800/80 animate-in fade-in duration-150 overflow-hidden">
+                <div className="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs divide-y divide-slate-100 dark:divide-slate-800/80 animate-in fade-in duration-150 overflow-hidden">
                   {WEEKDAYS.map((day) => {
                     const cfg = scheduleState[day.num] || {
                       isWorking: false,
@@ -882,7 +847,7 @@ export function DoctorCreatePortalView({
                             <div
                               className={`size-5 rounded-full flex items-center justify-center transition-all shrink-0 ${
                                 cfg.isWorking
-                                  ? 'bg-blue-600 text-white shadow-2xs ring-2 ring-blue-500/20'
+                                  ? 'bg-[#0d6157] text-white shadow-2xs ring-2 ring-[#0d8276]/20'
                                   : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-500'
                               }`}
                             >
@@ -904,7 +869,7 @@ export function DoctorCreatePortalView({
                           {cfg.isWorking ? (
                             <div className="flex flex-wrap items-center gap-2">
                               {/* Start Time Pill */}
-                              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-[#0d8276]/20 focus-within:border-[#0d8276] transition-all">
                                 <input
                                   type="time"
                                   value={minuteToTimeStr(cfg.startMinute)}
@@ -925,7 +890,7 @@ export function DoctorCreatePortalView({
                               <span className="text-slate-400 text-xs font-medium px-0.5">to</span>
 
                               {/* End Time Pill */}
-                              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+                              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 focus-within:ring-2 focus-within:ring-[#0d8276]/20 focus-within:border-[#0d8276] transition-all">
                                 <input
                                   type="time"
                                   value={minuteToTimeStr(cfg.endMinute)}
@@ -947,10 +912,10 @@ export function DoctorCreatePortalView({
                               <button
                                 type="button"
                                 onClick={() => handleAddBreak(day.num)}
-                                className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 rounded-[8px] px-2.5 py-1 transition-all cursor-pointer shadow-2xs"
+                                className="flex items-center gap-1 text-[11px] font-semibold text-[#0d5c56] dark:text-teal-300 hover:text-[#0d3d38] bg-[#e6f6f3] hover:bg-[#d6f0eb] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 border border-[#0d8276]/25 rounded-lg px-2.5 py-1 transition-all cursor-pointer shadow-2xs"
                                 title="Add break time for this day"
                               >
-                                <Coffee className="size-3 text-blue-600 dark:text-blue-400" />
+                                <Coffee className="size-3 text-[#0d6157] dark:text-teal-400" />
                                 <span>+ Break</span>
                               </button>
                             </div>
@@ -967,7 +932,7 @@ export function DoctorCreatePortalView({
                             {dayBreaks.map((brk, bIdx) => (
                               <div
                                 key={brk.id || bIdx}
-                                className="flex flex-wrap items-center justify-between gap-2 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-[8px] px-3 py-1.5 text-xs animate-in fade-in duration-100"
+                                className="flex flex-wrap items-center justify-between gap-2 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 rounded-lg px-3 py-1.5 text-xs animate-in fade-in duration-100"
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="flex items-center gap-1 font-bold text-amber-800 dark:text-amber-300 text-[11px]">
@@ -1052,7 +1017,7 @@ export function DoctorCreatePortalView({
                 placeholder="Doctor credentials, medical education, certifications, and clinical background..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] resize-none leading-relaxed"
               />
             </div>
           </div>
@@ -1072,7 +1037,7 @@ export function DoctorCreatePortalView({
               <button
                 type="button"
                 onClick={() => setDoctorStatus('ACTIVE')}
-                className={`px-3 py-2 rounded-[8px] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
                   doctorStatus === 'ACTIVE'
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 shadow-2xs'
                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
@@ -1086,7 +1051,7 @@ export function DoctorCreatePortalView({
               <button
                 type="button"
                 onClick={() => setDoctorStatus('INACTIVE')}
-                className={`px-3 py-2 rounded-[8px] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
                   doctorStatus === 'INACTIVE'
                     ? 'bg-slate-200 text-slate-800 border-slate-400 dark:bg-slate-800 dark:text-slate-200 shadow-2xs'
                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
@@ -1100,9 +1065,9 @@ export function DoctorCreatePortalView({
 
           {/* Booking Channel Info Card */}
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-            <div className="p-3.5 rounded-[8px] bg-blue-50/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+            <div className="p-3.5 rounded-xl bg-[#e6f6f3]/60 dark:bg-[#0d6157]/10 border border-[#0d8276]/20 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="size-3.5 text-blue-600" />
+                <Sparkles className="size-3.5 text-[#0d6157]" />
                 <span>WhatsApp AI Booking</span>
               </div>
               <p className="text-[11px] leading-relaxed">
@@ -1114,7 +1079,7 @@ export function DoctorCreatePortalView({
       </div>
 
       {/* 3. FIXED BOTTOM FOOTER */}
-      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 px-6 py-3 flex items-center justify-between gap-4 shadow-xs z-30">
+      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0 px-6 py-3 flex items-center justify-between gap-4 shadow-2xs z-30">
         <Link
           href={backHref}
           className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
@@ -1125,7 +1090,7 @@ export function DoctorCreatePortalView({
         <div className="flex items-center gap-2.5">
           <Link
             href={backHref}
-            className="px-4 py-1.5 rounded-[8px] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             Cancel
           </Link>
@@ -1134,7 +1099,7 @@ export function DoctorCreatePortalView({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-5 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-bold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-60 flex items-center gap-2"
+            className="px-5 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-bold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-60 flex items-center gap-2"
           >
             <Save className="size-3.5" />
             <span>{isSubmitting ? 'Creating Doctor...' : 'Create Doctor'}</span>
@@ -1145,16 +1110,16 @@ export function DoctorCreatePortalView({
       {/* 4. MODAL: ADD COORDINATOR */}
       {isAddCoordinatorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <UserCheck className="size-4 text-emerald-600" />
+                <UserCheck className="size-4 text-[#0d6157]" />
                 <span>Add Clinic Coordinator</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddCoordinatorModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -1171,7 +1136,7 @@ export function DoctorCreatePortalView({
                   placeholder="e.g. Sara Ahmed"
                   value={newCoordName}
                   onChange={(e) => setNewCoordName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
               </div>
 
@@ -1185,43 +1150,47 @@ export function DoctorCreatePortalView({
                   placeholder="sara@example.com"
                   value={newCoordEmail}
                   onChange={(e) => setNewCoordEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Doctor Service Commission (%)
-                </label>
-                <div className="relative">
+              {!isPulseNow && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Doctor Service Commission (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      placeholder="e.g. 5 (Percentage given by doctor on services)"
+                      value={newCoordCommissionPercent}
+                      onChange={(e) => setNewCoordCommissionPercent(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                  </div>
+                </div>
+              )}
+
+              {!isPulseNow && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Clinic Monthly Base Salary (SAR)
+                  </label>
                   <input
                     type="number"
                     min="0"
-                    max="100"
-                    step="0.5"
-                    placeholder="e.g. 5 (Percentage given by doctor on services)"
-                    value={newCoordCommissionPercent}
-                    onChange={(e) => setNewCoordCommissionPercent(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-3 pr-8 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    step="50"
+                    placeholder="e.g. 4000 (Optional)"
+                    value={newCoordSalary}
+                    onChange={(e) => setNewCoordSalary(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Clinic Monthly Base Salary (SAR)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  placeholder="e.g. 4000 (Optional)"
-                  value={newCoordSalary}
-                  onChange={(e) => setNewCoordSalary(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
+              )}
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
@@ -1232,7 +1201,7 @@ export function DoctorCreatePortalView({
                   placeholder="Defaults to ClinicStaff123!"
                   value={newCoordPassword}
                   onChange={(e) => setNewCoordPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
               </div>
 
@@ -1240,14 +1209,14 @@ export function DoctorCreatePortalView({
                 <button
                   type="button"
                   onClick={() => setIsAddCoordinatorModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingCoord}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
                 >
                   {isCreatingCoord ? 'Creating...' : 'Create Coordinator'}
                 </button>
@@ -1260,16 +1229,16 @@ export function DoctorCreatePortalView({
       {/* 5. MODAL: ADD SERVICE */}
       {isAddServiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Tag className="size-4 text-purple-600" />
+                <Tag className="size-4 text-[#0d6157]" />
                 <span>Create New Clinic Service</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddServiceModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -1286,7 +1255,7 @@ export function DoctorCreatePortalView({
                   placeholder="e.g. Hydrafacial & Deep Cleansing"
                   value={newServiceName}
                   onChange={(e) => setNewServiceName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
               </div>
 
@@ -1297,7 +1266,7 @@ export function DoctorCreatePortalView({
                 <select
                   value={newServiceDuration}
                   onChange={(e) => setNewServiceDuration(Number(e.target.value))}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
                 >
                   <option value={15}>15 minutes</option>
                   <option value={20}>20 minutes</option>
@@ -1312,14 +1281,14 @@ export function DoctorCreatePortalView({
                 <button
                   type="button"
                   onClick={() => setIsAddServiceModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingService}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
                 >
                   {isCreatingService ? 'Creating...' : 'Create & Link Service'}
                 </button>

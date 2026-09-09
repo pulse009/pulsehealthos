@@ -2,24 +2,27 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  Tag,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Search,
-  RotateCcw,
-  LayoutGrid,
-  List,
-  Plus,
-  X,
-  Edit2,
-  Trash2,
-  Stethoscope,
-  Calendar,
-  Save,
-  Check,
-  ChevronDown,
-} from 'lucide-react';
+  LuTag as Tag,
+  LuClock as Clock,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuSearch as Search,
+  LuRotateCcw as RotateCcw,
+  LuLayoutGrid as LayoutGrid,
+  LuList as List,
+  LuPlus as Plus,
+  LuX as X,
+  LuPencil as Edit2,
+  LuTrash2 as Trash2,
+  LuCalendar as Calendar,
+  LuSave as Save,
+  LuCheck as Check,
+  LuChevronDown as ChevronDown,
+  LuSparkles as Sparkles,
+  LuLayers as Layers,
+} from 'react-icons/lu';
+import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
+import { cn } from '@/components/ui/primitives';
 
 export interface ServiceItem {
   id: string;
@@ -281,13 +284,13 @@ export function ServicesPortalDashboard({
 
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
-      {/* 1. TOP COMPACT HEADER */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      {/* ─── 1. TOP HEADER BAR ─── */}
+      <div className="px-6 py-3.5 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
         <div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+          <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
             Clinic Services &amp; Treatments
           </h1>
-          <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Manage medical and cosmetic treatments offered at{' '}
             <span className="font-semibold text-slate-800 dark:text-slate-200">{clinicName}</span> ({timezone}).
           </p>
@@ -296,102 +299,102 @@ export function ServicesPortalDashboard({
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-4 py-2 rounded-[8px] shadow-2xs hover:shadow-xs transition-all cursor-pointer"
           >
-            <Plus className="size-3.5" />
+            <Plus className="size-3.5 stroke-[2.5]" />
             <span>Add Service</span>
           </button>
         </div>
       </div>
 
-      {/* 2. STAT CARDS ROW */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+      {/* ─── 2. STAT METRICS ROW ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-slate-800 border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         {/* Card 1: Total Services */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+        <div className="px-6 py-3.5 flex items-center justify-between hover:bg-[#f0f9f7]/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
+            <span className="block text-[10px] font-bold text-[#0d5c56] dark:text-teal-400 tracking-wider uppercase">
               Total Services
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
               {totalServicesCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-purple-100 dark:border-purple-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/25 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2.5 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Catalog offerings
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-purple-50/80 dark:bg-purple-950/60 text-purple-500 flex items-center justify-center shrink-0 border border-purple-100/70 dark:border-purple-900/50 shadow-2xs">
-            <Tag className="size-4" />
+          <div className="size-10 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
+            <Tag className="size-4.5" />
           </div>
         </div>
 
         {/* Card 2: Active on WhatsApp */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+        <div className="px-6 py-3.5 flex items-center justify-between hover:bg-[#f0f9f7]/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
+            <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">
               Active on WhatsApp
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
               {activeServicesCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-emerald-100 dark:border-emerald-900/50 inline-block">
+              <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold px-2.5 py-0.5 rounded-[8px] border border-emerald-200/80 dark:border-emerald-800 inline-block">
                 Offered to patients
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
-            <CheckCircle2 className="size-4" />
+          <div className="size-10 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-800 shadow-2xs">
+            <CheckCircle2 className="size-4.5" />
           </div>
         </div>
 
         {/* Card 3: Assigned Doctors */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+        <div className="px-6 py-3.5 flex items-center justify-between hover:bg-[#f0f9f7]/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
+            <span className="block text-[10px] font-bold text-[#0d5c56] dark:text-teal-400 tracking-wider uppercase">
               Assigned Doctors
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
               {totalDoctorAssignments}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/25 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2.5 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Specialists linked
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
-            <Stethoscope className="size-4" />
+          <div className="size-10 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
+            <Stethoscope className="size-4.5" />
           </div>
         </div>
 
         {/* Card 4: Total Appointments */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+        <div className="px-6 py-3.5 flex items-center justify-between hover:bg-[#f0f9f7]/50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
+            <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase">
               Total Bookings
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
               {totalAppointments}
             </div>
             <div className="pt-0.5">
-              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-100 dark:border-amber-900/50 inline-block">
+              <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-semibold px-2.5 py-0.5 rounded-[8px] border border-amber-200/80 dark:border-amber-800 inline-block">
                 Historical &amp; upcoming
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
-            <Calendar className="size-4" />
+          <div className="size-10 rounded-[8px] bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-200/80 dark:border-amber-800 shadow-2xs">
+            <Calendar className="size-4.5" />
           </div>
         </div>
       </div>
 
-      {/* 3. MAIN SECTION: TOOLBAR & TABLE / CARDS */}
+      {/* ─── 3. MAIN SECTION: TOOLBAR & TABLE / CARDS ─── */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         {/* Top Toolbar */}
-        <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
-          <div className="flex items-center gap-2.5">
+        <div className="px-6 py-3 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
             {/* Search Input */}
             <div className="relative w-72 sm:w-80 shrink-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
@@ -400,7 +403,7 @@ export function ServicesPortalDashboard({
                 placeholder="Search services, doctors, description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-9 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] transition-all"
               />
             </div>
 
@@ -408,7 +411,7 @@ export function ServicesPortalDashboard({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
             >
               <option value="ALL">All Statuses</option>
               <option value="ACTIVE">Active</option>
@@ -419,7 +422,7 @@ export function ServicesPortalDashboard({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[8px] flex items-center gap-1 font-semibold cursor-pointer"
+                className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[8px] flex items-center gap-1 font-semibold cursor-pointer transition-colors"
               >
                 <RotateCcw className="size-3" />
                 <span>Reset</span>
@@ -428,15 +431,16 @@ export function ServicesPortalDashboard({
           </div>
 
           {/* View Mode Switcher */}
-          <div className="bg-slate-100/90 dark:bg-slate-800 p-0.5 rounded-[8px] flex items-center gap-0.5 shrink-0">
+          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-[8px] flex items-center gap-1 shrink-0 border border-slate-200/80 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              className={`px-3 py-1 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={cn(
+                'px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer',
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-              }`}
+                  ? 'bg-white dark:bg-slate-700 text-[#0d5c56] dark:text-teal-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+              )}
             >
               <LayoutGrid className="size-3.5" />
               <span>Cards</span>
@@ -444,11 +448,12 @@ export function ServicesPortalDashboard({
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={cn(
+                'px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer',
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-              }`}
+                  ? 'bg-white dark:bg-slate-700 text-[#0d5c56] dark:text-teal-300 shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+              )}
             >
               <List className="size-3.5" />
               <span>Table</span>
@@ -456,9 +461,9 @@ export function ServicesPortalDashboard({
           </div>
         </div>
 
-        {/* VIEW 1: GRID CARDS VIEW */}
+        {/* ─── VIEW 1: GRID CARDS VIEW ─── */}
         {viewMode === 'grid' ? (
-          <div className="flex-1 overflow-y-auto p-5 bg-slate-50/40 dark:bg-slate-950/40 min-h-0">
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 dark:bg-slate-950/40 min-h-0">
             {filteredServices.length === 0 ? (
               <div className="py-16 text-center text-slate-400 text-xs font-medium">
                 No services matching selected filters.
@@ -468,15 +473,15 @@ export function ServicesPortalDashboard({
                 {filteredServices.map((srv) => (
                   <div
                     key={srv.id}
-                    className="bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 rounded-[8px] p-4 shadow-xs hover:border-blue-400 dark:hover:border-blue-500 transition-all flex flex-col justify-between"
+                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[8px] p-5 shadow-2xs hover:shadow-md hover:border-[#0d8276]/30 transition-all flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                             {srv.name}
                           </h3>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                             {srv.description || 'No description provided.'}
                           </p>
                         </div>
@@ -484,38 +489,45 @@ export function ServicesPortalDashboard({
                         <button
                           type="button"
                           onClick={(e) => handleToggleStatus(srv.id, srv.isActive, e)}
-                          className={`px-2 py-0.5 rounded-[8px] text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
+                          className={cn(
+                            'px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold border transition-all cursor-pointer shrink-0 shadow-2xs',
                             srv.isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                               : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
-                          }`}
+                          )}
                         >
                           {srv.isActive ? 'Active' : 'Inactive'}
                         </button>
                       </div>
 
-                      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs">
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-400 text-[11px]">Duration:</span>
-                          <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                          <span className="text-slate-400 text-xs flex items-center gap-1.5">
+                            <Clock className="size-3.5 text-slate-400" />
+                            <span>Duration:</span>
+                          </span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
                             {srv.durationMinutes} mins
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-400 text-[11px]">Assigned Doctors:</span>
-                          <span className="font-bold text-blue-600 dark:text-blue-400">
+                          <span className="text-slate-400 text-xs flex items-center gap-1.5">
+                            <Stethoscope className="size-3.5 text-slate-400" />
+                            <span>Assigned Doctors:</span>
+                          </span>
+                          <span className="font-bold text-[#0d5c56] dark:text-teal-300">
                             {srv.doctors.length} Doctors
                           </span>
                         </div>
 
                         {/* Doctors badges */}
                         {srv.doctors.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pt-1">
+                          <div className="flex flex-wrap gap-1.5 pt-1">
                             {srv.doctors.map((d) => (
                               <span
                                 key={d.doctor.id}
-                                className="px-1.5 py-0.2 rounded-[6px] text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-100"
+                                className="px-2.5 py-0.5 rounded-[8px] text-[11px] font-medium bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20"
                               >
                                 {d.doctor.name}
                               </span>
@@ -529,7 +541,7 @@ export function ServicesPortalDashboard({
                       <button
                         type="button"
                         onClick={() => handleOpenEditModal(srv)}
-                        className="px-2.5 py-1 rounded-[8px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-1.5 rounded-[8px] bg-[#e6f6f3] hover:bg-[#d6f0eb] text-[#0d5c56] dark:bg-[#0d6157]/25 dark:text-teal-300 font-semibold text-xs inline-flex items-center gap-1.5 border border-[#0d8276]/20 transition-colors cursor-pointer"
                       >
                         <Edit2 className="size-3" />
                         <span>Edit</span>
@@ -537,7 +549,7 @@ export function ServicesPortalDashboard({
                       <button
                         type="button"
                         onClick={() => promptDeleteService(srv)}
-                        className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                        className="p-1.5 rounded-[8px] text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
                         title="Delete Service"
                       >
                         <Trash2 className="size-3.5" />
@@ -549,29 +561,29 @@ export function ServicesPortalDashboard({
             )}
           </div>
         ) : (
-          /* VIEW 2: TABLE LIST VIEW */
+          /* ─── VIEW 2: TABLE LIST VIEW ─── */
           <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 z-10 border-b-2 border-slate-200 dark:border-slate-700 shadow-2xs">
-                <tr className="divide-x divide-slate-200 dark:divide-slate-700/60">
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 z-10 border-b border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                <tr>
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     SERVICE NAME
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-3 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     STATUS
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
+                  <th className="py-3 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
                     DURATION
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-3 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     ASSIGNED DOCTORS
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase text-right">
+                  <th className="py-3 px-6 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-right">
                     ACTION
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800 text-xs">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                 {filteredServices.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400 font-medium text-xs">
@@ -582,46 +594,47 @@ export function ServicesPortalDashboard({
                   filteredServices.map((srv) => (
                     <tr
                       key={srv.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60"
+                      className="hover:bg-[#f0f9f7]/40 dark:hover:bg-slate-800/40 transition-colors group"
                     >
-                      <td className="py-2.5 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-6">
+                        <div className="font-bold text-slate-900 dark:text-white text-xs">
                           {srv.name}
                         </div>
                         {srv.description && (
-                          <span className="text-[11px] text-slate-400 block truncate max-w-sm">
+                          <span className="text-[11px] text-slate-400 block truncate max-w-md mt-0.5">
                             {srv.description}
                           </span>
                         )}
                       </td>
 
-                      <td className="py-2.5 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={(e) => handleToggleStatus(srv.id, srv.isActive, e)}
-                          className={`px-2 py-0.5 rounded-[8px] text-[11px] font-bold border transition-all cursor-pointer ${
+                          className={cn(
+                            'px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold border transition-all cursor-pointer shadow-2xs',
                             srv.isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                               : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
-                          }`}
+                          )}
                         >
                           {srv.isActive ? 'Active' : 'Inactive'}
                         </button>
                       </td>
 
-                      <td className="py-2.5 px-4 font-mono whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {srv.durationMinutes} mins
                       </td>
 
-                      <td className="py-2.5 px-4">
-                        <div className="flex flex-wrap gap-1">
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-wrap gap-1.5">
                           {srv.doctors.length === 0 ? (
                             <span className="text-slate-400 italic text-[11px]">No doctors assigned</span>
                           ) : (
                             srv.doctors.map((d) => (
                               <span
                                 key={d.doctor.id}
-                                className="px-1.5 py-0.2 rounded-[6px] text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-100"
+                                className="px-2.5 py-0.5 rounded-[8px] text-[11px] font-medium bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20"
                               >
                                 {d.doctor.name}
                               </span>
@@ -630,12 +643,12 @@ export function ServicesPortalDashboard({
                         </div>
                       </td>
 
-                      <td className="py-2.5 px-4 text-right whitespace-nowrap">
+                      <td className="py-3.5 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(srv)}
-                            className="px-2.5 py-1 rounded-[8px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs inline-flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1.5 rounded-[8px] bg-[#e6f6f3] hover:bg-[#d6f0eb] text-[#0d5c56] dark:bg-[#0d6157]/25 dark:text-teal-300 font-semibold text-xs inline-flex items-center gap-1.5 border border-[#0d8276]/20 transition-colors cursor-pointer"
                           >
                             <Edit2 className="size-3" />
                             <span>Edit</span>
@@ -643,7 +656,7 @@ export function ServicesPortalDashboard({
                           <button
                             type="button"
                             onClick={() => promptDeleteService(srv)}
-                            className="p-1 rounded text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                            className="p-1.5 rounded-[8px] text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
                             title="Delete Service"
                           >
                             <Trash2 className="size-3.5" />
@@ -659,20 +672,24 @@ export function ServicesPortalDashboard({
         )}
       </div>
 
-      {/* 4. MODAL: ADD / EDIT SERVICE */}
+      {/* ─── 4. MODAL: ADD / EDIT SERVICE ─── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-lg w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100 max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-lg w-full p-6 relative text-xs animate-in fade-in zoom-in-95 duration-100 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Tag className="size-4 text-purple-600" />
-                <span>{editingServiceId ? 'Edit Service' : 'Add New Service'}</span>
-              </h3>
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20 flex items-center justify-center">
+                  <Tag className="size-4" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {editingServiceId ? 'Edit Service' : 'Add New Service'}
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -680,7 +697,7 @@ export function ServicesPortalDashboard({
 
             <form onSubmit={handleSaveService} className="flex flex-col flex-1 min-h-0">
               {/* Scrollable fields section */}
-              <div className="space-y-3.5 pt-3 overflow-y-auto flex-1 pr-1">
+              <div className="space-y-4 pt-4 overflow-y-auto flex-1 pr-1">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Service / Treatment Name *
@@ -691,7 +708,7 @@ export function ServicesPortalDashboard({
                     placeholder="e.g. Laser Genesis &amp; Skin Tightening"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] font-medium"
                   />
                 </div>
 
@@ -703,7 +720,7 @@ export function ServicesPortalDashboard({
                     <select
                       value={durationMinutes}
                       onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
                     >
                       <option value={15}>15 minutes</option>
                       <option value={20}>20 minutes</option>
@@ -721,7 +738,7 @@ export function ServicesPortalDashboard({
                     <select
                       value={bufferMinutes}
                       onChange={(e) => setBufferMinutes(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
                     >
                       <option value={0}>0 minutes (No gap)</option>
                       <option value={5}>5 minutes</option>
@@ -740,22 +757,22 @@ export function ServicesPortalDashboard({
                     placeholder="Clinical purpose, patient preparations, or instructions..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] resize-none"
                   />
                 </div>
               </div>
 
-              {/* Practitioners dropdown — OUTSIDE overflow-y-auto so panel is never clipped */}
+              {/* Practitioners dropdown */}
               {availableDoctors.length > 0 && (
-                <div ref={doctorsDropdownRef} className="relative mt-3.5 shrink-0">
+                <div ref={doctorsDropdownRef} className="relative mt-4 shrink-0">
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                    Assigned Practitioners (Doctors who perform this) ({selectedDoctorIds.length})
+                    Assigned Practitioners ({selectedDoctorIds.length})
                   </label>
 
                   <button
                     type="button"
                     onClick={() => setIsDoctorsDropdownOpen(!isDoctorsDropdownOpen)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white flex items-center justify-between text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white flex items-center justify-between text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   >
                     <span className="flex items-center gap-2 truncate text-slate-500 dark:text-slate-400">
                       <Search className="size-3.5 text-slate-400 shrink-0" />
@@ -769,7 +786,7 @@ export function ServicesPortalDashboard({
                   </button>
 
                   {isDoctorsDropdownOpen && (
-                    <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[10px] shadow-2xl z-[200] p-2.5 space-y-2">
+                    <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] shadow-2xl z-[200] p-2.5 space-y-2">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
                         <input
@@ -777,7 +794,7 @@ export function ServicesPortalDashboard({
                           placeholder="Search doctors..."
                           value={doctorSearch}
                           onChange={(e) => setDoctorSearch(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                         />
                       </div>
 
@@ -797,25 +814,27 @@ export function ServicesPortalDashboard({
                                     setSelectedDoctorIds([...selectedDoctorIds, doc.id]);
                                   }
                                 }}
-                                className={`flex items-center justify-between p-2 rounded-[8px] cursor-pointer transition-colors ${
+                                className={cn(
+                                  'flex items-center justify-between p-2 rounded-[8px] cursor-pointer transition-colors',
                                   checked
-                                    ? 'bg-blue-50/80 dark:bg-slate-800 text-blue-700 dark:text-blue-300 font-semibold'
+                                    ? 'bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/25 dark:text-teal-300 font-semibold'
                                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                                }`}
+                                )}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div
-                                    className={`size-4 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                                    className={cn(
+                                      'size-4 rounded-[4px] flex items-center justify-center transition-all shrink-0',
                                       checked
-                                        ? 'bg-blue-600 text-white ring-2 ring-blue-500/20'
+                                        ? 'bg-[#0d6157] text-white'
                                         : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                                    }`}
+                                    )}
                                   >
                                     {checked && <Check className="size-2.5 stroke-[3]" />}
                                   </div>
                                   <span className="text-xs truncate">{doc.name}</span>
                                 </div>
-                                {checked && <Check className="size-3.5 text-blue-600 shrink-0" />}
+                                {checked && <Check className="size-3.5 text-[#0d6157] shrink-0" />}
                               </div>
                             );
                           })
@@ -827,18 +846,18 @@ export function ServicesPortalDashboard({
               )}
 
               {/* Action Buttons */}
-              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2 shrink-0">
+              <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60"
+                  className="px-5 py-2 rounded-[8px] bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 transition-all"
                 >
                   {isSubmitting ? 'Saving...' : editingServiceId ? 'Update Service' : 'Create Service'}
                 </button>
@@ -848,13 +867,13 @@ export function ServicesPortalDashboard({
         </div>
       )}
 
-      {/* 5. MODAL: CONFIRM DELETE SERVICE */}
+      {/* ─── 5. MODAL: CONFIRM DELETE SERVICE ─── */}
       {isDeleteModalOpen && serviceToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="size-9 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <Trash2 className="size-4 stroke-[2.5]" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-xl max-w-sm w-full p-6 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center gap-3 mb-3.5">
+              <div className="size-10 rounded-[8px] bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800 flex items-center justify-center shrink-0">
+                <Trash2 className="size-5 stroke-[2.2]" />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -864,11 +883,11 @@ export function ServicesPortalDashboard({
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-5 leading-relaxed">
               Are you sure you want to delete <span className="font-bold text-slate-900 dark:text-white">&ldquo;{serviceToDelete.name}&rdquo;</span>? This will remove this treatment offering from the clinic catalog, automated WhatsApp booking, and unassign it from all specialists.
             </p>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-3.5 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 disabled={isDeleting}
@@ -876,7 +895,7 @@ export function ServicesPortalDashboard({
                   setIsDeleteModalOpen(false);
                   setServiceToDelete(null);
                 }}
-                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -884,7 +903,7 @@ export function ServicesPortalDashboard({
                 type="button"
                 disabled={isDeleting}
                 onClick={confirmDeleteService}
-                className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
+                className="px-4 py-2 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isDeleting ? (
                   <span>Deleting...</span>

@@ -5,40 +5,41 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDoctorActiveTab } from '@/lib/stores/doctorTabStore';
 import {
-  ArrowLeft,
-  Stethoscope,
-  Calendar,
-  Clock,
-  Plus,
-  Save,
-  Trash2,
-  Check,
-  Tag,
-  Info,
-  CalendarOff,
-  UserCheck,
-  X,
-  Search,
-  Coffee,
-  Coins,
-  Sparkles,
-  Layers,
-  ChevronRight,
-  ChevronDown,
-  Calculator,
-  Percent,
-  Receipt,
-  HelpCircle,
-  Star,
-  Filter,
-  Folder,
-  Key,
-  Copy,
-  Lock,
-  CheckCheck,
-  Pencil,
-  MoreHorizontal,
-} from 'lucide-react';
+  LuArrowLeft as ArrowLeft,
+  LuCalendar as Calendar,
+  LuClock as Clock,
+  LuPlus as Plus,
+  LuSave as Save,
+  LuTrash2 as Trash2,
+  LuCheck as Check,
+  LuTag as Tag,
+  LuInfo as Info,
+  LuCalendarOff as CalendarOff,
+  LuUserCheck as UserCheck,
+  LuX as X,
+  LuSearch as Search,
+  LuCoffee as Coffee,
+  LuCoins as Coins,
+  LuSparkles as Sparkles,
+  LuLayers as Layers,
+  LuChevronRight as ChevronRight,
+  LuChevronDown as ChevronDown,
+  LuCalculator as Calculator,
+  LuPercent as Percent,
+  LuReceipt as Receipt,
+  LuCircleHelp as HelpCircle,
+  LuStar as Star,
+  LuFilter as Filter,
+  LuFolder as Folder,
+  LuKey as Key,
+  LuCopy as Copy,
+  LuLock as Lock,
+  LuCheckCheck as CheckCheck,
+  LuPencil as Pencil,
+  LuEllipsis as MoreHorizontal,
+} from 'react-icons/lu';
+import { FaUserDoctor as Stethoscope, FaWhatsapp } from 'react-icons/fa6';
+import { RiShieldCheckLine } from 'react-icons/ri';
 
 export interface DoctorAppointmentTypeItem {
   id: string;
@@ -162,6 +163,7 @@ export interface DoctorDetailProps {
   availableStaff?: StaffItem[];
   backHref?: string;
   userRole?: string;
+  isPulseNow?: boolean;
 }
 
 export function DoctorDetailPortalView({
@@ -170,6 +172,7 @@ export function DoctorDetailPortalView({
   availableStaff: initialStaff = [],
   backHref = '/portal/doctors',
   userRole,
+  isPulseNow = false,
 }: DoctorDetailProps) {
   const [doctor, setDoctor] = useState(initialDoctor);
   const [staffList, setStaffList] = useState<StaffItem[]>(initialStaff);
@@ -221,10 +224,10 @@ export function DoctorDetailPortalView({
   };
 
   useEffect(() => {
-    if (userRole === 'DOCTOR' && activeTab === 'payment-structure') {
+    if ((userRole === 'DOCTOR' || isPulseNow) && activeTab === 'payment-structure') {
       setActiveTab('schedule');
     }
-  }, [userRole, activeTab, setActiveTab]);
+  }, [userRole, isPulseNow, activeTab, setActiveTab]);
 
   const [doctorName, setDoctorName] = useState(doctor.name);
   const [doctorSpecialty, setDoctorSpecialty] = useState(doctor.specialty || '');
@@ -1040,7 +1043,7 @@ export function DoctorDetailPortalView({
           <button
             type="button"
             onClick={() => setIsAddServiceModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer"
           >
             <Plus className="size-3.5 stroke-[2.5]" />
             <span>Create Appointment Type</span>
@@ -1050,7 +1053,7 @@ export function DoctorDetailPortalView({
           <button
             type="button"
             onClick={() => setIsBlockedModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer"
           >
             <Plus className="size-3.5 stroke-[2.5]" />
             <span>Add Blocked Period</span>
@@ -1064,7 +1067,7 @@ export function DoctorDetailPortalView({
                 setDeleteDoctorError(null);
                 setIsDeleteDoctorModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer"
             >
               <Trash2 className="size-3.5 stroke-[2.5]" />
               <span>Delete Doctor</span>
@@ -1076,7 +1079,7 @@ export function DoctorDetailPortalView({
             type="button"
             onClick={handleSaveOperational}
             disabled={isSaving}
-            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer disabled:opacity-60"
           >
             <Save className="size-3.5 stroke-[2.5]" />
             <span>{isSaving ? 'Saving…' : 'Save Changes'}</span>
@@ -1089,69 +1092,11 @@ export function DoctorDetailPortalView({
         {/* TAB 1: SCHEDULE CONFIGURATION & BREAKS */}
         {activeTab === 'schedule' && (
           <div>
-            {/* Slot Duration & Booking Status Bar */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/30">
-              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Clock className="size-4 text-blue-600" />
-                <span>Slot Duration &amp; Active Booking Status</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Doctor Booking Status
-                  </label>
-                  <select
-                    value={isActive ? 'ACTIVE' : 'INACTIVE'}
-                    onChange={(e) => setIsActive(e.target.value === 'ACTIVE')}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
-                  >
-                    <option value="ACTIVE">Active (Accepting Bookings on WhatsApp)</option>
-                    <option value="INACTIVE">Inactive (Hidden from WhatsApp &amp; New Bookings)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Default Slot Duration
-                  </label>
-                  <select
-                    value={slotDuration}
-                    onChange={(e) => setSlotDuration(Number(e.target.value))}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
-                  >
-                    <option value={15}>15 minutes</option>
-                    <option value={20}>20 minutes</option>
-                    <option value={30}>30 minutes (Standard)</option>
-                    <option value={45}>45 minutes</option>
-                    <option value={60}>60 minutes (1 Hour)</option>
-                    <option value={90}>90 minutes</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Post-Appointment Buffer Gap
-                  </label>
-                  <select
-                    value={bufferMinutes}
-                    onChange={(e) => setBufferMinutes(Number(e.target.value))}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
-                  >
-                    <option value={0}>0 minutes (No gap)</option>
-                    <option value={5}>5 minutes</option>
-                    <option value={10}>10 minutes</option>
-                    <option value={15}>15 minutes</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
             {/* Weekly Working Hours & Breaks Header */}
             <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="size-4 text-blue-600" />
+                  <Calendar className="size-4 text-[#0d6157] dark:text-teal-400" />
                   <span>Weekly Working Hours &amp; Break Times ({doctor.clinic.timezone})</span>
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1191,8 +1136,8 @@ export function DoctorDetailPortalView({
                         <div
                           className={`size-5 rounded-full flex items-center justify-center transition-all shrink-0 ${
                             cfg.isWorking
-                              ? 'bg-blue-600 text-white shadow-2xs ring-2 ring-blue-500/20'
-                              : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-slate-400'
+                              ? 'bg-[#0d6157] text-white shadow-2xs ring-2 ring-[#0d8276]/20'
+                              : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:border-[#0d8276]'
                           }`}
                         >
                           {cfg.isWorking && <Check className="size-3 stroke-[3]" />}
@@ -1213,7 +1158,7 @@ export function DoctorDetailPortalView({
                       {cfg.isWorking ? (
                         <div className="flex flex-wrap items-center gap-2">
                           {/* Shift Start */}
-                          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/20">
+                          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs shadow-2xs focus-within:ring-2 focus-within:ring-[#0d8276]/20 focus-within:border-[#0d8276]">
                             <input
                               type="time"
                               value={minuteToTimeStr(cfg.startMinute)}
@@ -1234,7 +1179,7 @@ export function DoctorDetailPortalView({
                           <span className="text-slate-400 text-xs font-bold px-0.5">to</span>
 
                           {/* Shift End */}
-                          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1 text-xs shadow-2xs focus-within:ring-2 focus-within:ring-blue-500/20">
+                          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs shadow-2xs focus-within:ring-2 focus-within:ring-[#0d8276]/20 focus-within:border-[#0d8276]">
                             <input
                               type="time"
                               value={minuteToTimeStr(cfg.endMinute)}
@@ -1256,10 +1201,10 @@ export function DoctorDetailPortalView({
                           <button
                             type="button"
                             onClick={() => handleAddBreak(day.num)}
-                            className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200/80 dark:border-blue-800/60 rounded-[8px] px-2.5 py-1 transition-all cursor-pointer shadow-2xs"
+                            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#0d5c56] dark:text-teal-300 hover:text-[#0d6157] bg-[#e6f6f3]/60 dark:bg-[#0d6157]/20 hover:bg-[#e6f6f3] dark:hover:bg-[#0d6157]/30 border border-[#0d8276]/25 rounded-lg px-2.5 py-1 transition-all cursor-pointer shadow-2xs"
                             title="Add break time slot for this day"
                           >
-                            <Coffee className="size-3 text-blue-600 dark:text-blue-400" />
+                            <Coffee className="size-3 text-[#0d5c56] dark:text-teal-300" />
                             <span>+ Break</span>
                           </button>
                         </div>
@@ -1272,11 +1217,11 @@ export function DoctorDetailPortalView({
 
                     {/* Daily Break Slots List */}
                     {cfg.isWorking && dayBreaks.length > 0 && (
-                      <div className="mt-2.5 ml-8 pl-3 border-l-2 border-blue-200 dark:border-blue-900/60 space-y-2">
+                      <div className="mt-2.5 ml-8 pl-3 border-l-2 border-[#0d8276]/30 space-y-2">
                         {dayBreaks.map((b) => (
                           <div
                             key={b.id}
-                            className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-[8px] p-2 text-xs"
+                            className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-lg p-2 text-xs"
                           >
                             <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[11px] font-semibold">
                               <Coffee className="size-3 text-amber-500" />
@@ -1290,10 +1235,10 @@ export function DoctorDetailPortalView({
                               onChange={(e) =>
                                 handleUpdateBreak(day.num, b.id, 'label', e.target.value)
                               }
-                              className="w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#0d8276]"
                             />
 
-                            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-0.5 text-xs">
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs">
                               <input
                                 type="time"
                                 value={minuteToTimeStr(b.startMinute)}
@@ -1311,7 +1256,7 @@ export function DoctorDetailPortalView({
 
                             <span className="text-slate-400 text-[11px] font-bold">to</span>
 
-                            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-0.5 text-xs">
+                            <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs">
                               <input
                                 type="time"
                                 value={minuteToTimeStr(b.endMinute)}
@@ -1349,11 +1294,11 @@ export function DoctorDetailPortalView({
         {/* TAB 2: APPOINTMENT TYPES & SERVICES (CLEAN COLLAPSIBLE SERVICES TABLE) */}
         {activeTab === 'appointment-types' && (
           <div className="p-6">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs overflow-hidden">
               {/* Header Toolbar */}
               <div className="px-5 py-3.5 border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/40 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-7 rounded-[7px] bg-purple-600 text-white flex items-center justify-center shadow-2xs shrink-0">
+                  <div className="size-7 rounded-lg bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20 flex items-center justify-center shadow-2xs shrink-0">
                     <Layers className="size-3.5 stroke-[2.5]" />
                   </div>
                   <div>
@@ -1361,7 +1306,7 @@ export function DoctorDetailPortalView({
                       <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                         Assigned Services &amp; Appointment Types
                       </h3>
-                      <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20 whitespace-nowrap">
                         {doctorAssignedServices.length} Services Assigned
                       </span>
                     </div>
@@ -1379,7 +1324,7 @@ export function DoctorDetailPortalView({
                       placeholder="Search doctor services..."
                       value={appointmentTypeSearch}
                       onChange={(e) => setAppointmentTypeSearch(e.target.value)}
-                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[7px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                     />
                   </div>
                   <button
@@ -1388,7 +1333,7 @@ export function DoctorDetailPortalView({
                       setNewServiceTargetServiceId(doctorAssignedServices[0]?.id || '');
                       setIsAddServiceModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-purple-600 dark:hover:bg-purple-500 text-white font-semibold text-xs px-3 py-1.5 rounded-[7px] shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                    className="inline-flex items-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer whitespace-nowrap"
                   >
                     <Plus className="size-3.5 stroke-[2.5]" />
                     <span>+ Create Appointment Type</span>
@@ -1450,16 +1395,16 @@ export function DoctorDetailPortalView({
                                   <button
                                     type="button"
                                     onClick={() => toggleExpandService(srv.id)}
-                                    className="p-1 rounded-[5px] text-slate-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                                    className="p-1 rounded-md text-slate-400 hover:text-[#0d6157] hover:bg-[#e6f6f3] dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                                     title={isExpanded ? 'Collapse service' : 'Expand service'}
                                   >
                                     {isExpanded ? (
-                                      <ChevronDown className="size-4 text-purple-600 stroke-[2.5]" />
+                                      <ChevronDown className="size-4 text-[#0d6157] stroke-[2.5]" />
                                     ) : (
                                       <ChevronRight className="size-4 stroke-[2.5]" />
                                     )}
                                   </button>
-                                  <div className="size-5 rounded-[5px] bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                                  <div className="size-5 rounded-md bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0">
                                     <Layers className="size-3 stroke-[2.5]" />
                                   </div>
                                   <div className="min-w-0">
@@ -1476,19 +1421,19 @@ export function DoctorDetailPortalView({
                               </td>
                               <td className="py-3 px-5 whitespace-nowrap">
                                 {specificTypes.length > 0 ? (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[5px] text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20 whitespace-nowrap">
                                     <Tag className="size-3" />
                                     {specificTypes.length} Specific Type{specificTypes.length === 1 ? '' : 's'}
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 whitespace-nowrap">
                                     Uses General Types
                                   </span>
                                 )}
                               </td>
                               <td className="py-3 px-5 whitespace-nowrap font-mono text-slate-700 dark:text-slate-300">
-                                <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[5px] text-[11px] font-semibold">
-                                  <Clock className="size-3 text-blue-500" />
+                                <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px] font-semibold">
+                                  <Clock className="size-3 text-[#0d6157] dark:text-teal-400" />
                                   {srv.durationMinutes || 30} min
                                 </span>
                               </td>
@@ -1509,7 +1454,7 @@ export function DoctorDetailPortalView({
                                     setNewServiceTargetServiceId(srv.id);
                                     setIsAddServiceModalOpen(true);
                                   }}
-                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:text-white hover:bg-[#0f172a] bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-[6px] transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0d5c56] dark:text-teal-300 hover:text-white hover:bg-[#0d6157] bg-[#e6f6f3]/60 dark:bg-[#0d6157]/20 px-2.5 py-1 rounded-md transition-all cursor-pointer shadow-2xs whitespace-nowrap"
                                   title={`Add specific appointment type for ${srv.name}`}
                                 >
                                   <Plus className="size-3 stroke-[2.5]" />
@@ -1534,7 +1479,7 @@ export function DoctorDetailPortalView({
                                             setNewServiceTargetServiceId(srv.id);
                                             setIsAddServiceModalOpen(true);
                                           }}
-                                          className="text-purple-600 dark:text-purple-400 font-semibold hover:underline cursor-pointer shrink-0"
+                                          className="text-[#0d5c56] dark:text-teal-300 font-semibold hover:underline cursor-pointer shrink-0"
                                         >
                                           + Add Type for {srv.name}
                                         </button>
@@ -1545,12 +1490,12 @@ export function DoctorDetailPortalView({
                                   specificTypes.map((at) => (
                                     <tr
                                       key={at.id}
-                                      className="bg-purple-50/20 dark:bg-purple-950/10 hover:bg-purple-50/40 transition-colors"
+                                      className="bg-[#e6f6f3]/20 dark:bg-[#0d6157]/10 hover:bg-[#e6f6f3]/40 transition-colors"
                                     >
                                       <td className="py-2.5 pl-12 pr-5">
                                         <div className="flex items-center gap-2 min-w-0">
-                                          <span className="text-purple-400 font-mono font-bold text-xs shrink-0">↳</span>
-                                          <div className="size-4 rounded-[4px] bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0">
+                                          <span className="text-[#0d8276] font-mono font-bold text-xs shrink-0">↳</span>
+                                          <div className="size-4 rounded bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0">
                                             <Tag className="size-2.5 stroke-[2.5]" />
                                           </div>
                                           <div className="min-w-0">
@@ -1566,18 +1511,18 @@ export function DoctorDetailPortalView({
                                         </div>
                                       </td>
                                       <td className="py-2.5 px-5 whitespace-nowrap">
-                                        <span className="px-2 py-0.5 rounded-[5px] text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800 whitespace-nowrap">
+                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20 whitespace-nowrap">
                                           Specific to {srv.name}
                                         </span>
                                       </td>
                                       <td className="py-2.5 px-5 whitespace-nowrap font-mono text-xs text-slate-700 dark:text-slate-300">
-                                        <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[5px] text-[11px] font-semibold">
-                                          <Clock className="size-3 text-purple-500" />
+                                        <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px] font-semibold">
+                                          <Clock className="size-3 text-[#0d5c56] dark:text-teal-400" />
                                           {at.durationMinutes} min
                                         </span>
                                       </td>
                                       <td className="py-2.5 px-5 whitespace-nowrap">
-                                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-[5px]">
+                                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md">
                                           {at.price ? `${at.price} ${at.currency || 'SAR'}` : 'Standard'}
                                         </span>
                                       </td>
@@ -1591,7 +1536,7 @@ export function DoctorDetailPortalView({
                                         <button
                                           type="button"
                                           onClick={() => promptDeleteAppointmentType(at)}
-                                          className="p-1.5 rounded-[6px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                          className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                                           title="Delete appointment type"
                                         >
                                           <Trash2 className="size-3.5" />
@@ -1691,7 +1636,7 @@ export function DoctorDetailPortalView({
           <div>
             <div className="px-6 py-3 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <Calendar className="size-3.5 text-blue-600" />
+                <Calendar className="size-3.5 text-[#0d6157] dark:text-teal-400" />
                 <span>Upcoming Bookings ({upcomingAppointments.length})</span>
               </h3>
             </div>
@@ -1725,7 +1670,7 @@ export function DoctorDetailPortalView({
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {upcomingAppointments.map((app) => (
                       <tr key={app.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                        <td className="py-2.5 px-6 font-mono font-bold text-blue-600 dark:text-blue-400">
+                        <td className="py-2.5 px-6 font-mono font-bold text-[#0d5c56] dark:text-teal-400">
                           {app.appointmentNumber ? `AP-${String(app.appointmentNumber).padStart(3, '0')}` : '—'}
                         </td>
                         <td className="py-2.5 px-6 font-semibold text-slate-900 dark:text-white">
@@ -1743,7 +1688,7 @@ export function DoctorDetailPortalView({
                           {formatFriendlyDate(app.startsAt)}
                         </td>
                         <td className="py-2.5 px-6">
-                          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             {app.status}
                           </span>
                         </td>
@@ -1777,7 +1722,7 @@ export function DoctorDetailPortalView({
             <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <Stethoscope className="size-4 text-blue-600" />
+                  <Stethoscope className="size-4 text-[#0d6157] dark:text-teal-400" />
                   <span>Doctor Credentials &amp; Profile</span>
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1797,7 +1742,7 @@ export function DoctorDetailPortalView({
                     required
                     value={doctorName}
                     onChange={(e) => setDoctorName(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
 
@@ -1810,7 +1755,7 @@ export function DoctorDetailPortalView({
                     required
                     value={doctorSpecialty}
                     onChange={(e) => setDoctorSpecialty(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
 
@@ -1823,7 +1768,7 @@ export function DoctorDetailPortalView({
                     placeholder="https://..."
                     value={doctorImageUrl}
                     onChange={(e) => setDoctorImageUrl(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
 
@@ -1836,13 +1781,13 @@ export function DoctorDetailPortalView({
                     placeholder="Doctor qualifications, education, and clinical background..."
                     value={doctorDescription}
                     onChange={(e) => setDoctorDescription(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none leading-relaxed"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] resize-none leading-relaxed"
                   />
                 </div>
 
                 {userRole !== 'DOCTOR' && (
                   <div className="col-span-2 pt-5 border-t border-rose-200 dark:border-rose-900/50 mt-4">
-                    <div className="bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-[10px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <h4 className="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
                           Danger Zone: Delete Doctor
@@ -1857,7 +1802,7 @@ export function DoctorDetailPortalView({
                           setDeleteDoctorError(null);
                           setIsDeleteDoctorModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer shrink-0"
                       >
                         <Trash2 className="size-3.5" />
                         <span>Delete Doctor</span>
@@ -1892,13 +1837,13 @@ export function DoctorDetailPortalView({
                     placeholder="Search by name, username..."
                     value={coordinatorSearch}
                     onChange={(e) => setCoordinatorSearch(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAddCoordinatorModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-2xs transition-all cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer shrink-0"
                 >
                   <Plus className="size-3.5" />
                   <span>Add Coordinator</span>
@@ -1913,8 +1858,8 @@ export function DoctorDetailPortalView({
                   <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                     <th className="py-3 px-6">Coordinator Name</th>
                     <th className="py-3 px-4">Login Username</th>
-                    {!isDoctor && <th className="py-3 px-4">Base Salary</th>}
-                    <th className="py-3 px-4">Service Commission</th>
+                    {!isDoctor && !isPulseNow && <th className="py-3 px-4">Base Salary</th>}
+                    {!isPulseNow && <th className="py-3 px-4">Service Commission</th>}
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Doctor Assignment</th>
                     <th className="py-3 px-6 text-right">Actions</th>
@@ -1923,7 +1868,7 @@ export function DoctorDetailPortalView({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   {filteredStaff.length === 0 ? (
                     <tr>
-                      <td colSpan={isDoctor ? 6 : 7} className="py-12 text-center text-slate-400 italic">
+                      <td colSpan={!isPulseNow ? (isDoctor ? 6 : 7) : 5} className="py-12 text-center text-slate-400 italic">
                         {coordinatorSearch
                           ? 'No coordinator matches your search.'
                           : 'No coordinators created yet. Click "+ Add Coordinator" to create login credentials.'}
@@ -1945,7 +1890,7 @@ export function DoctorDetailPortalView({
                           {/* 1. Name & Avatar */}
                           <td className="py-3.5 px-6">
                             <div className="flex items-center gap-3">
-                              <div className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-xs border border-slate-200 dark:border-slate-700">
+                              <div className="size-8 rounded-full bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 font-bold flex items-center justify-center text-xs border border-[#0d8276]/20">
                                 {staff.name.charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -1964,12 +1909,12 @@ export function DoctorDetailPortalView({
 
                           {/* 2. Login Username with Copy Button */}
                           <td className="py-3.5 px-4">
-                            <div className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-[6px] font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                            <div className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/60 dark:bg-[#0d6157]/20 border border-[#0d8276]/20 px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold text-[#0d5c56] dark:text-teal-300">
                               <span>{displayUsername}</span>
                               <button
                                 type="button"
                                 onClick={() => handleCopyUsername(staff)}
-                                className="p-0.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                className="p-0.5 text-slate-400 hover:text-[#0d6157] transition-colors cursor-pointer"
                                 title="Copy login username"
                               >
                                 {isCopied ? (
@@ -1986,8 +1931,8 @@ export function DoctorDetailPortalView({
                             )}
                           </td>
 
-                          {/* 3. Base Salary (Clinic only - hidden for DOCTOR role) */}
-                          {!isDoctor && (
+                          {/* 3. Base Salary (PulseHealthOS only - hidden for DOCTOR role and Chatbot/PulseNow) */}
+                          {!isDoctor && !isPulseNow && (
                             <td className="py-3.5 px-4">
                               <div className="inline-flex items-baseline gap-1 font-mono font-bold text-xs text-slate-900 dark:text-white">
                                 <span>{staff.salary ? `${Number(staff.salary).toLocaleString()} SAR` : '0 SAR'}</span>
@@ -1997,22 +1942,23 @@ export function DoctorDetailPortalView({
                             </td>
                           )}
 
-                          {/* 4. Service Commission (%) */}
-                          <td className="py-3.5 px-4">
-                            {staff.commissionPercent ? (
-                              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-xs font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
-                                <Percent className="size-3" />
-                                <span>{staff.commissionPercent}%</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-slate-400 font-mono">0%</span>
-                            )}
-                            <div className="text-[10px] text-slate-400 mt-0.5">On doctor services</div>
-                          </td>
-
+                          {/* 4. Service Commission (%) (PulseHealthOS only - hidden for Chatbot/PulseNow) */}
+                          {!isPulseNow && (
+                            <td className="py-3.5 px-4">
+                              {staff.commissionPercent ? (
+                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
+                                  <Percent className="size-3" />
+                                  <span>{staff.commissionPercent}%</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400 font-mono">0%</span>
+                              )}
+                              <div className="text-[10px] text-slate-400 mt-0.5">On doctor services</div>
+                            </td>
+                          )}
                           {/* 5. Status */}
                           <td className="py-3.5 px-4">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-[10px]">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold text-[10px]">
                               <span className="size-1.5 rounded-full bg-emerald-500" />
                               Active
                             </span>
@@ -2022,7 +1968,7 @@ export function DoctorDetailPortalView({
                           <td className="py-3.5 px-4">
                             {isAssignedToThisDoctor ? (
                               <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-emerald-600 text-white font-semibold text-[11px] shadow-2xs">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-600 text-white font-semibold text-[11px] shadow-2xs">
                                   <Check className="size-3 stroke-[3]" />
                                   <span>Assigned to {displayDoctorName}</span>
                                 </span>
@@ -2040,7 +1986,7 @@ export function DoctorDetailPortalView({
                                 type="button"
                                 disabled={isAssigningStaffId !== null}
                                 onClick={() => handleAssignCoordinator(staff.id)}
-                                className="px-2.5 py-1 rounded-[6px] border border-slate-200 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                                className="px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
                               >
                                 {isAssigningStaffId === staff.id ? 'Assigning...' : `Assign to ${displayDoctorName}`}
                               </button>
@@ -2056,7 +2002,7 @@ export function DoctorDetailPortalView({
                                   e.stopPropagation();
                                   setActiveActionStaffId(activeActionStaffId === staff.id ? null : staff.id);
                                 }}
-                                className="size-8 rounded-[8px] flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 transition-all cursor-pointer shadow-2xs"
+                                className="size-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 transition-all cursor-pointer shadow-2xs"
                                 title="Actions"
                               >
                                 <MoreHorizontal className="size-4" />
@@ -2074,7 +2020,7 @@ export function DoctorDetailPortalView({
                                   }}
                                 />
 
-                                <div className="absolute right-6 top-11 z-40 w-44 bg-white dark:bg-slate-800 rounded-[8px] shadow-xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                                <div className="absolute right-6 top-11 z-40 w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -2084,7 +2030,7 @@ export function DoctorDetailPortalView({
                                     }}
                                     className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2.5 cursor-pointer transition-colors"
                                   >
-                                    <Pencil className="size-3.5 text-blue-600 dark:text-blue-400" />
+                                    <Pencil className="size-3.5 text-[#0d6157] dark:text-teal-400" />
                                     <span>Edit Coordinator</span>
                                   </button>
                                   <button
@@ -2126,8 +2072,8 @@ export function DoctorDetailPortalView({
           </div>
         )}
 
-        {/* TAB 7: PAYMENT STRUCTURE (Hidden for DOCTOR role) */}
-        {activeTab === 'payment-structure' && userRole !== 'DOCTOR' && (
+        {/* TAB 7: PAYMENT STRUCTURE (Hidden for DOCTOR role & Chatbot/PulseNow) */}
+        {activeTab === 'payment-structure' && userRole !== 'DOCTOR' && !isPulseNow && (
           <div>
             {/* Header Bar */}
             <div className="px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
@@ -2148,7 +2094,7 @@ export function DoctorDetailPortalView({
               {/* 1. Fixed Monthly Payment & 2. Revenue Incentive */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Fixed Monthly Payment Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex flex-col justify-between">
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex flex-col justify-between">
                   <div>
                     <label className="block text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">
                       Fixed Monthly Payment (SAR)
@@ -2165,7 +2111,7 @@ export function DoctorDetailPortalView({
                       placeholder="e.g. 18000"
                       value={fixedMonthlyAmount}
                       onChange={(e) => setFixedMonthlyAmount(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                       SAR
@@ -2174,7 +2120,7 @@ export function DoctorDetailPortalView({
                 </div>
 
                 {/* Incentive on Collected Revenue Card */}
-                <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex flex-col justify-between">
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs flex flex-col justify-between">
                   <div>
                     <label className="block text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">
                       Incentive on Collected Revenue (%)
@@ -2192,7 +2138,7 @@ export function DoctorDetailPortalView({
                       placeholder="e.g. 12"
                       value={revenueIncentivePercent}
                       onChange={(e) => setRevenueIncentivePercent(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                       %
@@ -2202,7 +2148,7 @@ export function DoctorDetailPortalView({
               </div>
 
               {/* 3. Procedure-Based Fee Card */}
-              <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -2214,13 +2160,13 @@ export function DoctorDetailPortalView({
                   </div>
 
                   {/* Toggle Selector */}
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-[8px] text-xs font-semibold shrink-0">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs font-semibold shrink-0">
                     <button
                       type="button"
                       onClick={() => setProcedureFeeType('FIXED')}
-                      className={`px-3 py-1 rounded-[6px] transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                         procedureFeeType === 'FIXED'
-                          ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-2xs font-bold'
+                          ? 'bg-white dark:bg-slate-700 text-[#0d5c56] dark:text-teal-300 shadow-2xs font-bold'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                       }`}
                     >
@@ -2229,9 +2175,9 @@ export function DoctorDetailPortalView({
                     <button
                       type="button"
                       onClick={() => setProcedureFeeType('PERCENTAGE')}
-                      className={`px-3 py-1 rounded-[6px] transition-all cursor-pointer ${
+                      className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                         procedureFeeType === 'PERCENTAGE'
-                          ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-2xs font-bold'
+                          ? 'bg-white dark:bg-slate-700 text-[#0d5c56] dark:text-teal-300 shadow-2xs font-bold'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                       }`}
                     >
@@ -2254,7 +2200,7 @@ export function DoctorDetailPortalView({
                         placeholder="e.g. 300"
                         value={procedureFeeAmount}
                         onChange={(e) => setProcedureFeeAmount(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                         SAR per procedure
@@ -2276,7 +2222,7 @@ export function DoctorDetailPortalView({
                           placeholder="e.g. 20"
                           value={procedureFeePercent}
                           onChange={(e) => setProcedureFeePercent(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                           %
@@ -2285,10 +2231,10 @@ export function DoctorDetailPortalView({
                     </div>
 
                     {/* Live Calculation Preview Box */}
-                    <div className="p-3.5 rounded-[8px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 space-y-2 text-xs">
-                      <div className="flex items-center justify-between font-bold text-blue-900 dark:text-blue-200">
+                    <div className="p-3.5 rounded-lg bg-[#e6f6f3]/60 dark:bg-[#0d6157]/15 border border-[#0d8276]/25 space-y-2 text-xs">
+                      <div className="flex items-center justify-between font-bold text-[#0d3d38] dark:text-teal-200">
                         <span className="flex items-center gap-1.5">
-                          <Calculator className="size-3.5 text-blue-600 dark:text-blue-400" />
+                          <Calculator className="size-3.5 text-[#0d5c56] dark:text-teal-400" />
                           <span>Live Calculation Preview</span>
                         </span>
                         <div className="flex items-center gap-1.5 font-normal text-[11px]">
@@ -2299,7 +2245,7 @@ export function DoctorDetailPortalView({
                             step="100"
                             value={sampleProcedureValue}
                             onChange={(e) => setSampleProcedureValue(Number(e.target.value) || 0)}
-                            className="w-20 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-right font-mono font-bold text-blue-900 dark:text-blue-100 text-xs"
+                            className="w-20 bg-white dark:bg-slate-900 border border-[#0d8276]/30 dark:border-teal-700 rounded px-1.5 py-0.5 text-right font-mono font-bold text-[#0d3d38] dark:text-teal-100 text-xs"
                           />
                           <span>SAR</span>
                         </div>
@@ -2322,7 +2268,7 @@ export function DoctorDetailPortalView({
               </div>
 
               {/* 4. Other Payments Section */}
-              <div className="bg-white dark:bg-slate-900 rounded-[10px] border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-2xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -2335,7 +2281,7 @@ export function DoctorDetailPortalView({
                   <button
                     type="button"
                     onClick={handleAddOtherPayment}
-                    className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-semibold text-xs px-3 py-1.5 rounded-[8px] shadow-2xs transition-all cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer shrink-0"
                   >
                     <Plus className="size-3.5" />
                     <span>Add other payment</span>
@@ -2344,7 +2290,7 @@ export function DoctorDetailPortalView({
 
                 {/* List of Other Payments */}
                 {otherPayments.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-xs italic bg-slate-50/50 dark:bg-slate-900/30 rounded-[8px]">
+                  <div className="p-6 text-center text-slate-400 text-xs italic bg-slate-50/50 dark:bg-slate-900/30 rounded-lg">
                     No other payments or allowances configured for this doctor. Click &ldquo;Add other payment&rdquo; to add one.
                   </div>
                 ) : (
@@ -2352,7 +2298,7 @@ export function DoctorDetailPortalView({
                     {otherPayments.map((op, idx) => (
                       <div
                         key={op.id || idx}
-                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs"
+                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                       >
                         <div className="flex-1">
                           <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
@@ -2363,7 +2309,7 @@ export function DoctorDetailPortalView({
                             placeholder="e.g. On-call allowance, Housing retainer"
                             value={op.label}
                             onChange={(e) => handleUpdateOtherPayment(idx, 'label', e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0d8276] font-medium"
                           />
                         </div>
 
@@ -2374,7 +2320,7 @@ export function DoctorDetailPortalView({
                           <select
                             value={op.type}
                             onChange={(e) => handleUpdateOtherPayment(idx, 'type', e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0d8276] cursor-pointer"
                           >
                             <option value="AMOUNT">Amount (SAR)</option>
                             <option value="PERCENTAGE">Percentage (%)</option>
@@ -2392,7 +2338,7 @@ export function DoctorDetailPortalView({
                             placeholder="e.g. 1500"
                             value={op.value}
                             onChange={(e) => handleUpdateOtherPayment(idx, 'value', e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[6px] px-3 py-1.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#0d8276]"
                           />
                         </div>
 
@@ -2400,7 +2346,7 @@ export function DoctorDetailPortalView({
                           <button
                             type="button"
                             onClick={() => handleRemoveOtherPayment(idx)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[6px] transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                             title="Remove other payment"
                           >
                             <Trash2 className="size-4" />
@@ -2413,7 +2359,7 @@ export function DoctorDetailPortalView({
               </div>
 
               {/* 5. Monthly Payout Formula Summary Card */}
-              <div className="bg-slate-900 text-white rounded-[10px] p-5 shadow-sm space-y-3">
+              <div className="bg-slate-900 text-white rounded-xl p-5 shadow-sm space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-400 uppercase">
                   <Receipt className="size-4" />
                   <span>Monthly Payout Formula</span>
@@ -2431,13 +2377,13 @@ export function DoctorDetailPortalView({
                   )}
 
                   {procedureFeeType === 'PERCENTAGE' && procedureFeePctNum > 0 && (
-                    <div className="text-blue-300">
+                    <div className="text-teal-300">
                       + {procedureFeePctNum}% per procedure value
                     </div>
                   )}
 
                   {procedureFeeType === 'FIXED' && procedureFeeAmtNum > 0 && (
-                    <div className="text-blue-300">
+                    <div className="text-teal-300">
                       + SAR {procedureFeeAmtNum.toLocaleString()} per procedure
                     </div>
                   )}
@@ -2467,7 +2413,7 @@ export function DoctorDetailPortalView({
       {/* 4. MODAL: ADD BLOCKED PERIOD */}
       {isBlockedModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <CalendarOff className="size-4 text-rose-600" />
@@ -2476,7 +2422,7 @@ export function DoctorDetailPortalView({
               <button
                 type="button"
                 onClick={() => setIsBlockedModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -2490,7 +2436,7 @@ export function DoctorDetailPortalView({
                 <select
                   value={newBlockedReason}
                   onChange={(e) => setNewBlockedReason(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
                 >
                   <option value="Leave">Annual Leave / Vacation</option>
                   <option value="Meeting">Staff Meeting / Conference</option>
@@ -2511,7 +2457,7 @@ export function DoctorDetailPortalView({
                     required
                     value={newBlockedStartDate}
                     onChange={(e) => setNewBlockedStartDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
 
@@ -2524,7 +2470,7 @@ export function DoctorDetailPortalView({
                     required
                     value={newBlockedEndDate}
                     onChange={(e) => setNewBlockedEndDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
               </div>
@@ -2539,14 +2485,14 @@ export function DoctorDetailPortalView({
                     placeholder="From"
                     value={newBlockedStartHour}
                     onChange={(e) => setNewBlockedStartHour(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                   <input
                     type="time"
                     placeholder="To"
                     value={newBlockedEndHour}
                     onChange={(e) => setNewBlockedEndHour(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                 </div>
               </div>
@@ -2555,13 +2501,13 @@ export function DoctorDetailPortalView({
                 <button
                   type="button"
                   onClick={() => setIsBlockedModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all"
                 >
                   Add Blocked Period
                 </button>
@@ -2574,7 +2520,7 @@ export function DoctorDetailPortalView({
       {/* 5. MODAL: ADD COORDINATOR */}
       {isAddCoordinatorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <UserCheck className="size-4 text-emerald-600" />
@@ -2583,7 +2529,7 @@ export function DoctorDetailPortalView({
               <button
                 type="button"
                 onClick={() => setIsAddCoordinatorModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -2600,33 +2546,35 @@ export function DoctorDetailPortalView({
                   placeholder="e.g. Sara Ahmed"
                   value={newCoordinatorName}
                   onChange={(e) => setNewCoordinatorName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] font-medium"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Doctor Service Commission (%)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    placeholder="e.g. 5 (Percentage given by doctor on services)"
-                    value={newCoordinatorCommissionPercent}
-                    onChange={(e) => setNewCoordinatorCommissionPercent(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-3 pr-8 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+              {!isPulseNow && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Doctor Service Commission (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      placeholder="e.g. 5 (Percentage given by doctor on services)"
+                      value={newCoordinatorCommissionPercent}
+                      onChange={(e) => setNewCoordinatorCommissionPercent(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Optional commission percentage provided by the doctor on completed services/procedures.
+                  </p>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Optional commission percentage provided by the doctor on completed services/procedures.
-                </p>
-              </div>
+              )}
 
-              {!isDoctor && (
+              {!isDoctor && !isPulseNow && (
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Clinic Monthly Base Salary (SAR)
@@ -2638,7 +2586,7 @@ export function DoctorDetailPortalView({
                     placeholder="e.g. 4000 (Base salary paid by clinic)"
                     value={newCoordinatorSalary}
                     onChange={(e) => setNewCoordinatorSalary(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     Fixed monthly base compensation paid directly by the clinic.
@@ -2656,11 +2604,11 @@ export function DoctorDetailPortalView({
                   placeholder="Enter login password (min 6 characters)"
                   value={newCoordinatorPassword}
                   onChange={(e) => setNewCoordinatorPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
               </div>
 
-              <div className="p-2.5 rounded-[8px] bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 text-[11px] text-blue-900 dark:text-blue-200 leading-relaxed">
+              <div className="p-2.5 rounded-lg bg-[#e6f6f3]/70 dark:bg-[#0d6157]/20 border border-[#0d8276]/20 text-[11px] text-[#0d3d38] dark:text-teal-200 leading-relaxed">
                 A unique login username (e.g. <span className="font-mono font-bold">{newCoordinatorName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '.') || 'sara.ahmed'}</span>) will be generated automatically. You can provide this username and password to the coordinator to log in and manage appointments.
               </div>
 
@@ -2668,14 +2616,14 @@ export function DoctorDetailPortalView({
                 <button
                   type="button"
                   onClick={() => setIsAddCoordinatorModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingCoordinator}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 transition-all"
                 >
                   {isSubmittingCoordinator ? 'Creating...' : 'Create Coordinator'}
                 </button>
@@ -2688,10 +2636,10 @@ export function DoctorDetailPortalView({
       {/* 5B. MODAL: EDIT CLINIC COORDINATOR */}
       {isEditCoordinatorModalOpen && coordinatorToEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Pencil className="size-4 text-blue-600" />
+                <Pencil className="size-4 text-[#0d6157] dark:text-teal-400" />
                 <span>Edit Clinic Coordinator</span>
               </h3>
               <button
@@ -2700,7 +2648,7 @@ export function DoctorDetailPortalView({
                   setIsEditCoordinatorModalOpen(false);
                   setCoordinatorToEdit(null);
                 }}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -2717,33 +2665,35 @@ export function DoctorDetailPortalView({
                   placeholder="e.g. Sara Ahmed"
                   value={editCoordinatorName}
                   onChange={(e) => setEditCoordinatorName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] font-medium"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Doctor Service Commission (%)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    placeholder="e.g. 5"
-                    value={editCoordinatorCommissionPercent}
-                    onChange={(e) => setEditCoordinatorCommissionPercent(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-3 pr-8 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+              {!isPulseNow && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Doctor Service Commission (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      placeholder="e.g. 5"
+                      value={editCoordinatorCommissionPercent}
+                      onChange={(e) => setEditCoordinatorCommissionPercent(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Commission percentage given by the doctor on services provided.
+                  </p>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Commission percentage given by the doctor on services provided.
-                </p>
-              </div>
+              )}
 
-              {!isDoctor && (
+              {!isDoctor && !isPulseNow && (
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
                     Clinic Monthly Base Salary (SAR)
@@ -2755,7 +2705,7 @@ export function DoctorDetailPortalView({
                     placeholder="e.g. 4000"
                     value={editCoordinatorSalary}
                     onChange={(e) => setEditCoordinatorSalary(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     Fixed base salary paid directly by the clinic.
@@ -2772,7 +2722,7 @@ export function DoctorDetailPortalView({
                   placeholder="Leave blank to keep existing password"
                   value={editCoordinatorPassword}
                   onChange={(e) => setEditCoordinatorPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">Only enter a password if you want to reset it (min 6 characters).</p>
               </div>
@@ -2784,14 +2734,14 @@ export function DoctorDetailPortalView({
                     setIsEditCoordinatorModalOpen(false);
                     setCoordinatorToEdit(null);
                   }}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingEditCoordinator}
-                  className="px-4 py-1.5 rounded-[8px] bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 transition-all"
                 >
                   {isSubmittingEditCoordinator ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -2804,7 +2754,7 @@ export function DoctorDetailPortalView({
       {/* MODAL: RESET COORDINATOR PASSWORD */}
       {isResetPasswordModalOpen && coordinatorToReset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Key className="size-4 text-amber-600" />
@@ -2816,13 +2766,13 @@ export function DoctorDetailPortalView({
                   setIsResetPasswordModalOpen(false);
                   setCoordinatorToReset(null);
                 }}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-[8px] border border-slate-200 dark:border-slate-700 mb-3.5 space-y-1">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 mb-3.5 space-y-1">
               <div className="text-[11px] text-slate-500">Coordinator:</div>
               <div className="font-bold text-slate-900 dark:text-white text-xs">{coordinatorToReset.name}</div>
               <div className="font-mono text-[11px] text-slate-500">Username: {coordinatorToReset.username || coordinatorToReset.email}</div>
@@ -2839,12 +2789,12 @@ export function DoctorDetailPortalView({
                   placeholder="Enter new password (min 6 characters)"
                   value={resetNewPassword}
                   onChange={(e) => setResetNewPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                 />
               </div>
 
               {resetSuccessMessage && (
-                <div className="p-2 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-semibold text-xs text-center animate-in fade-in">
+                <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-semibold text-xs text-center animate-in fade-in">
                   {resetSuccessMessage}
                 </div>
               )}
@@ -2856,14 +2806,14 @@ export function DoctorDetailPortalView({
                     setIsResetPasswordModalOpen(false);
                     setCoordinatorToReset(null);
                   }}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isResettingPassword}
-                  className="px-4 py-1.5 rounded-[8px] bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+                  className="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                 >
                   {isResettingPassword ? 'Saving...' : 'Set New Password'}
                 </button>
@@ -2876,7 +2826,7 @@ export function DoctorDetailPortalView({
       {/* MODAL: CONFIRM DELETE COORDINATOR */}
       {isDeleteCoordinatorModalOpen && coordinatorToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center gap-3 mb-3">
               <div className="size-9 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <Trash2 className="size-4 stroke-[2.5]" />
@@ -2901,7 +2851,7 @@ export function DoctorDetailPortalView({
                   setIsDeleteCoordinatorModalOpen(false);
                   setCoordinatorToDelete(null);
                 }}
-                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -2909,7 +2859,7 @@ export function DoctorDetailPortalView({
                 type="button"
                 disabled={isDeletingCoordinator}
                 onClick={handleConfirmDeleteCoordinator}
-                className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isDeletingCoordinator ? (
                   <span>Deleting...</span>
@@ -2928,16 +2878,16 @@ export function DoctorDetailPortalView({
       {/* 6. MODAL: CREATE APPOINTMENT TYPE WITH SERVICE SCOPE DROPDOWN */}
       {isAddServiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Tag className="size-4 text-blue-600" />
+                <Tag className="size-4 text-[#0d6157] dark:text-teal-400" />
                 <span>Create Appointment Type</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddServiceModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -2952,7 +2902,7 @@ export function DoctorDetailPortalView({
                 <select
                   value={newServiceTargetServiceId}
                   onChange={(e) => setNewServiceTargetServiceId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
                 >
                   {doctorAssignedServices.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -2975,7 +2925,7 @@ export function DoctorDetailPortalView({
                   placeholder="e.g. Follow-up Visit, Consultation, Treatment Session"
                   value={newServiceName}
                   onChange={(e) => setNewServiceName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                 />
               </div>
 
@@ -2987,7 +2937,7 @@ export function DoctorDetailPortalView({
                   <select
                     value={newServiceDuration}
                     onChange={(e) => setNewServiceDuration(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 cursor-pointer"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
                   >
                     <option value={10}>10 minutes</option>
                     <option value={15}>15 minutes (Follow-up)</option>
@@ -3012,7 +2962,7 @@ export function DoctorDetailPortalView({
                       placeholder="e.g. 150"
                       value={newServicePrice}
                       onChange={(e) => setNewServicePrice(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                     />
                   </div>
                 </div>
@@ -3027,11 +2977,11 @@ export function DoctorDetailPortalView({
                   placeholder="Brief description for patients & coordinator..."
                   value={newServiceDescription}
                   onChange={(e) => setNewServiceDescription(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 resize-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] resize-none"
                 />
               </div>
 
-              <div className="p-2.5 rounded-[8px] bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-900/60 text-[11px] text-purple-900 dark:text-purple-200">
+              <div className="p-2.5 rounded-lg bg-[#e6f6f3]/70 dark:bg-[#0d6157]/20 border border-[#0d8276]/20 text-[11px] text-[#0d3d38] dark:text-teal-200">
                 This appointment type will be attached to <span className="font-bold">{doctorAssignedServices.find((s) => s.id === newServiceTargetServiceId)?.name || 'the selected service'}</span>.
               </div>
 
@@ -3039,14 +2989,14 @@ export function DoctorDetailPortalView({
                 <button
                   type="button"
                   onClick={() => setIsAddServiceModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingService}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60"
+                  className="px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs cursor-pointer disabled:opacity-60 transition-all"
                 >
                   {isSubmittingService ? 'Creating...' : 'Create & Assign'}
                 </button>
@@ -3059,7 +3009,7 @@ export function DoctorDetailPortalView({
       {/* 7. MODAL: CONFIRM DELETE APPOINTMENT TYPE */}
       {isDeleteAptModalOpen && aptToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-w-sm w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center gap-3 mb-3">
               <div className="size-9 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <Trash2 className="size-4 stroke-[2.5]" />
@@ -3084,7 +3034,7 @@ export function DoctorDetailPortalView({
                   setIsDeleteAptModalOpen(false);
                   setAptToDelete(null);
                 }}
-                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -3092,7 +3042,7 @@ export function DoctorDetailPortalView({
                 type="button"
                 disabled={isDeletingApt}
                 onClick={confirmDeleteAppointmentType}
-                className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs cursor-pointer transition-all disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isDeletingApt ? (
                   <span>Deleting...</span>
@@ -3111,7 +3061,7 @@ export function DoctorDetailPortalView({
       {/* 8. MODAL: CONFIRM DELETE DOCTOR */}
       {isDeleteDoctorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
                 <Trash2 className="size-4 shrink-0" />
@@ -3125,7 +3075,7 @@ export function DoctorDetailPortalView({
                     setDeleteDoctorError(null);
                   }
                 }}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -3136,7 +3086,7 @@ export function DoctorDetailPortalView({
             </p>
 
             {deleteDoctorError && (
-              <div className="p-3 mb-4 rounded-[8px] bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium leading-relaxed">
+              <div className="p-3 mb-4 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium leading-relaxed">
                 {deleteDoctorError}
               </div>
             )}
@@ -3149,7 +3099,7 @@ export function DoctorDetailPortalView({
                   setIsDeleteDoctorModalOpen(false);
                   setDeleteDoctorError(null);
                 }}
-                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -3157,7 +3107,7 @@ export function DoctorDetailPortalView({
                 type="button"
                 disabled={isDeletingDoctor}
                 onClick={handleConfirmDeleteDoctor}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-60"
               >
                 <Trash2 className="size-3.5" />
                 <span>{isDeletingDoctor ? 'Deleting...' : 'Delete Doctor'}</span>

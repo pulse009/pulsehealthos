@@ -1,6 +1,16 @@
 @import 'tailwindcss';
 
 /*
+ * This app is light-theme only. Tailwind's `dark:` variant defaults to
+ * following the OS/browser's prefers-color-scheme, which is not what we want —
+ * there is no theme toggle anywhere in the app, so "dark" must never trigger
+ * from a visitor's OS setting. Tying the variant to an explicit `.dark`
+ * ancestor class (which nothing in the app ever adds) neutralizes every
+ * `dark:` utility class without having to touch each call site.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
  * Design tokens.
  *
  * Semantic names (surface / border / muted) rather than raw colours, so the
@@ -34,20 +44,13 @@
   --shadow-card: 0 1px 2px oklch(0.2 0.02 255 / 0.05), 0 1px 3px oklch(0.2 0.02 255 / 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --surface: oklch(0.205 0.012 258);
-    --surface-muted: oklch(0.245 0.013 258);
-    --surface-sunken: oklch(0.175 0.011 258);
-    --border: oklch(0.31 0.014 258);
-    --border-strong: oklch(0.4 0.016 258);
-    --text: oklch(0.95 0.006 258);
-    --text-muted: oklch(0.72 0.012 258);
-    --text-subtle: oklch(0.6 0.012 258);
-    --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3);
-  }
-}
-
+/*
+ * Deliberately no `@media (prefers-color-scheme: dark)` block here — this app
+ * is light-theme only and must not follow the visitor's OS setting. The
+ * explicit [data-theme='dark'] override below is kept as dormant
+ * infrastructure for a possible future manual toggle, but nothing in the app
+ * currently sets that attribute, so it never applies on its own.
+ */
 :root[data-theme='dark'] {
   --surface: oklch(0.205 0.012 258);
   --surface-muted: oklch(0.245 0.013 258);

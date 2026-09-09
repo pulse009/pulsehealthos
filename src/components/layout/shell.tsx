@@ -11,8 +11,9 @@ import {
   type NavItem,
 } from '@/components/layout/nav';
 import { DoctorSecondarySidebar } from '@/components/layout/DoctorSecondarySidebar';
+import { UserProfileDropdown } from '@/components/layout/UserProfileDropdown';
 import { Badge, cn } from '@/components/ui/primitives';
-import { Bell, ChevronDown } from 'lucide-react';
+import { LuBell as Bell, LuChevronDown as ChevronDown } from 'react-icons/lu';
 import { TopProgressBar } from '@/components/layout/TopProgressBar';
 
 /**
@@ -60,6 +61,11 @@ export function AppShell({
       pathname.startsWith('/portal/patients') ||
       pathname.startsWith('/portal/appointments') ||
       pathname.startsWith('/portal/roles') ||
+      pathname.startsWith('/portal/organization') ||
+      pathname.startsWith('/portal/profile') ||
+      pathname.startsWith('/portal/security') ||
+      pathname.startsWith('/portal/subscription') ||
+      pathname.startsWith('/portal/upgrade') ||
       (!isPulseNow && pathname.startsWith('/portal/inventory')) ||
       (!isPulseNow && pathname.startsWith('/portal/accounts')));
 
@@ -70,24 +76,24 @@ export function AppShell({
       {/* 1. FIXED PRIMARY MAIN SIDEBAR (LEFTMOST SLIM RAIL) */}
       <aside
         className={cn(
-          'surface hidden shrink-0 flex-col border-r border-slate-200/90 dark:border-slate-800 lg:flex sticky top-0 h-screen z-30 overflow-hidden select-none',
+          'surface hidden shrink-0 flex-col border-r border-[#0d8276]/15 dark:border-slate-800 lg:flex sticky top-0 h-screen z-30 overflow-hidden select-none',
           workspaceKind === 'Clinic'
-            ? 'w-[72px] bg-[#E6E7EB] dark:bg-[#090d16] border-r border-slate-300/80 dark:border-slate-800'
+            ? 'w-[72px] bg-[#f8fcfa] dark:bg-[#090d16] border-r border-[#0d8276]/15 dark:border-slate-800'
             : 'w-60 bg-white dark:bg-slate-900'
         )}
       >
         {/* Brand Header (Admin Portal Only) */}
         {workspaceKind === 'Admin' ? (
-          <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 py-2.5 shrink-0">
+          <div className="h-[52px] flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 shrink-0">
             <Link href={homeHref} className="flex items-center gap-2 group min-w-0">
-              <div className="size-7.5 rounded-lg bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 p-0.5 shadow-xs flex items-center justify-center shrink-0">
+              <div className="size-7.5 rounded-lg bg-gradient-to-tr from-[#0d6157] via-[#0d8276] to-teal-400 p-0.5 shadow-xs flex items-center justify-center shrink-0">
                 <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
-                  <span className="text-[10px] font-black text-emerald-400">PW</span>
+                  <span className="text-[10px] font-black text-teal-300">PW</span>
                 </div>
               </div>
               <div className="min-w-0">
                 <span className="block truncate text-sm font-black tracking-tight text-slate-900 dark:text-white">
-                  PULSE<span className="text-emerald-500">ware</span>
+                  Pulse<span className="text-[#0d8276]">ware</span>
                 </span>
                 <Badge tone="brand" className="text-[9px] px-1.5 py-0 font-bold">
                   Admin
@@ -111,7 +117,7 @@ export function AppShell({
           <div className="p-3 shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
             <div className="rounded-2xl border border-slate-200/70 dark:border-slate-800 p-2.5 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between gap-2 shadow-2xs">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="size-8 rounded-full bg-[#0f172a] dark:bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                <div className="size-8 rounded-full bg-gradient-to-tr from-[#0d6157] to-[#0d8276] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                   {clinicInitials}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -137,50 +143,52 @@ export function AppShell({
 
       {/* 3. MAIN CONTENT AREA WITH TOP HEADER */}
       <div className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
-        {/* COMPACT TOP HEADER */}
-        <header className="surface sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-6 py-3 bg-white dark:bg-slate-900 backdrop-blur-md shrink-0">
+        {/* COMPACT TOP HEADER - Exactly aligned with secondary sidebar header */}
+        <header className="h-[52px] surface sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[#0d8276]/10 dark:border-slate-800 px-4 bg-white dark:bg-slate-900 backdrop-blur-md shrink-0">
           {/* Left Section: Mobile toggle + Clinic Initials Badge + Clinic Name + Owner Email */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <MobileNavToggle
               items={navItems}
               isClinicPortal={workspaceKind === 'Clinic'}
               isPulseNow={isPulseNow}
             />
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Dark Rounded Square Badge */}
-              <div className="size-9 rounded-xl bg-[#0f172a] dark:bg-slate-800 text-white flex items-center justify-center font-bold text-xs tracking-wider shadow-xs shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {/* Teal Rounded Square Badge */}
+              <div className="size-8 rounded-xl bg-gradient-to-tr from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center font-bold text-xs tracking-wider shadow-xs shrink-0">
                 {clinicInitials}
               </div>
               <div className="min-w-0">
-                <span className="block truncate text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                <span className="block truncate text-xs font-bold text-[#0d3d38] dark:text-white leading-tight">
                   {workspaceName}
                 </span>
-                <span className="block truncate text-xs text-slate-400 dark:text-slate-500 font-normal leading-tight mt-0.5">
+                <span className="block truncate text-[11px] text-[#0d6157]/70 dark:text-slate-400 font-normal leading-tight mt-0.5">
                   {userEmail}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right Section: Notification Icon Circle + Profile Circle */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Right Section: Notification Icon Circle + Profile Dropdown */}
+          <div className="flex items-center gap-2.5 shrink-0">
             {/* Notification Bell Button */}
             <Link
               href={workspaceKind === 'Clinic' ? '/portal/notifications' : '/admin/reminders'}
-              className="size-9 rounded-full bg-slate-50/80 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center relative transition-colors shadow-2xs"
+              className="size-8 rounded-full bg-slate-50/80 dark:bg-slate-800 border border-[#0d8276]/15 dark:border-slate-700 hover:bg-[#e6f6f3] hover:border-[#0d8276]/30 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center relative transition-colors shadow-2xs"
               aria-label="Notifications"
             >
-              <Bell className="size-4 text-slate-600 dark:text-slate-300" />
-              <span className="size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 absolute top-2 right-2" />
+              <Bell className="size-3.5 text-[#0d5c56] dark:text-slate-300" />
+              <span className="size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 absolute top-1.5 right-1.5" />
             </Link>
 
-            {/* Profile Circle */}
-            <div
-              title={`${userName} (${userEmail})`}
-              className="size-9 rounded-full bg-[#0f172a] dark:bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-xs cursor-pointer select-none"
-            >
-              {clinicInitials}
-            </div>
+            {/* Profile Dropdown with Clinic Profile & Log Out */}
+            <UserProfileDropdown
+              workspaceName={workspaceName}
+              workspaceKind={workspaceKind}
+              userName={userName}
+              userEmail={userEmail}
+              userRole={userRole}
+              clinicInitials={clinicInitials}
+            />
           </div>
         </header>
 

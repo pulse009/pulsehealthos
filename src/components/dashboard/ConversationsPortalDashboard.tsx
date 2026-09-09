@@ -1,37 +1,45 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  MessagesSquare,
-  MessageCircle,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Bot,
-  User,
-  Search,
-  Filter,
-  RotateCcw,
-  List,
-  Columns,
-  MoreHorizontal,
-  Send,
-  Sparkles,
-  Phone,
-  Calendar,
-  ExternalLink,
-  ShieldCheck,
-  Power,
-  X,
-  XCircle,
-} from 'lucide-react';
+  LuMessagesSquare,
+  LuMessageCircle,
+  LuClock,
+  LuCircleCheck,
+  LuCircleAlert,
+  LuBot,
+  LuUser,
+  LuSearch,
+  LuFilter,
+  LuRotateCcw,
+  LuList,
+  LuColumns2,
+  LuEllipsis,
+  LuSend,
+  LuSparkles,
+  LuPhone,
+  LuCalendar,
+  LuExternalLink,
+  LuShieldCheck,
+  LuPower,
+  LuX,
+  LuCircleX,
+  LuCheck,
+  LuCheckCheck,
+  LuMail,
+  LuMailOpen,
+  LuTrash2,
+  LuMousePointerClick,
+} from 'react-icons/lu';
+import { FaUserDoctor } from 'react-icons/fa6';
 
 export interface MessageItem {
   id: string;
   sender: 'PATIENT' | 'AI' | 'HUMAN' | 'SYSTEM';
   direction: 'INBOUND' | 'OUTBOUND';
   body: string;
+  status?: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+  toolCalls?: any;
   createdAt: string;
 }
 
@@ -48,6 +56,7 @@ export interface ConversationItem {
   escalationReason?: string | null;
   aiEnabled: boolean;
   messageCount: number;
+  unreadCount?: number;
   messages: MessageItem[];
 }
 
@@ -56,6 +65,70 @@ export interface ConversationsPortalDashboardProps {
   timezone?: string;
   initialConversations?: ConversationItem[];
   defaultSelectedId?: string;
+}
+
+/** Helper to parse button click reply strings like [Button Click: 🇬🇧 English | ID: select_language:en] */
+function parseButtonClick(body: string): { isButton: boolean; title: string; id?: string } {
+  if (!body) return { isButton: false, title: '' };
+  const match = body.match(/\[Button Click:\s*([\s\S]*?)\s*\|\s*(?:ID|Payload):\s*([\s\S]*?)\]/i);
+  if (match) {
+    return { isButton: true, title: match[1]?.trim() || 'Option', id: match[2]?.trim() };
+  }
+  const simpleMatch = body.match(/\[Button Click:\s*([\s\S]*?)\]/i);
+  if (simpleMatch) {
+    return { isButton: true, title: simpleMatch[1]?.trim() || 'Option' };
+  }
+  return { isButton: false, title: body };
+}
+
+/** Helper to extract or infer interactive quick-reply buttons on outbound messages */
+function getMessageButtons(msg: MessageItem): Array<{ id: string; title: string }> {
+  // 1. From database toolCalls payload
+  if (msg.toolCalls && typeof msg.toolCalls === 'object') {
+    const tc = msg.toolCalls as any;
+    if (Array.isArray(tc.buttons) && tc.buttons.length > 0) {
+      return tc.buttons;
+    }
+    if (tc.args && Array.isArray(tc.args.buttons) && tc.args.buttons.length > 0) {
+      return tc.args.buttons;
+    }
+  }
+
+  // 2. Infer buttons if standard prompt text is present
+  const body = msg.body || '';
+  if (
+    body.includes('يرجى اختيار لغتك المفضلة للمتابعة') ||
+    body.includes('Please select your preferred language to continue') ||
+    body.includes('select your preferred language')
+  ) {
+    return [
+      { id: 'select_language:en', title: '🇬🇧 English' },
+      { id: 'select_language:ar', title: '🇸🇦 العربية' },
+    ];
+  }
+
+  if (
+    body.includes('هل قمت بزيارتنا من قبل') ||
+    body.includes('Have you visited') ||
+    body.includes('هل زرت العيادة من قبل')
+  ) {
+    return [
+      { id: 'visited_before:yes', title: 'نعم، مريض سابق' },
+      { id: 'visited_before:no', title: 'لا، أول زيارة' },
+    ];
+  }
+
+  return [];
+}
+
+/** Format last message preview for the left list */
+function formatPreviewText(rawPreview?: string | null): string {
+  if (!rawPreview) return 'No messages yet';
+  const btn = parseButtonClick(rawPreview);
+  if (btn.isButton) {
+    return `🔘 ${btn.title}`;
+  }
+  return rawPreview;
 }
 
 export function ConversationsPortalDashboard({
@@ -94,6 +167,68 @@ export function ConversationsPortalDashboard({
   // Reply Composer State
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  // Mark conversation as read in DB and update local state
+  const markConversationAsRead = useCallback(async (convId: string) => {
+    try {
+      await fetch(`/api/conversations/${convId}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unread: false }),
+      });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c;
+          return {
+            ...c,
+            unreadCount: 0,
+            messages: c.messages.map((m) =>
+              m.direction === 'INBOUND' && m.status !== 'READ' ? { ...m, status: 'READ' } : m
+            ),
+          };
+        })
+      );
+
+      window.dispatchEvent(new CustomEvent('inbox-updated'));
+    } catch (err) {
+      console.error('Failed to mark conversation as read:', err);
+    }
+  }, []);
+
+  // Mark conversation as unread in DB and update local state
+  const markConversationAsUnread = useCallback(async (convId: string) => {
+    try {
+      await fetch(`/api/conversations/${convId}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unread: true }),
+      });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c;
+          return {
+            ...c,
+            unreadCount: Math.max(1, (c.unreadCount || 0) + 1),
+          };
+        })
+      );
+
+      window.dispatchEvent(new CustomEvent('inbox-updated'));
+    } catch (err) {
+      console.error('Failed to mark conversation as unread:', err);
+    }
+  }, []);
+
+  // Auto-mark conversation as read when selected
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    const current = conversations.find((c) => c.id === selectedConversationId);
+    if (current && (current.unreadCount ?? 0) > 0) {
+      markConversationAsRead(selectedConversationId);
+    }
+  }, [selectedConversationId, conversations, markConversationAsRead]);
 
   // Active Filters Count
   const activeFiltersCount =
@@ -199,6 +334,69 @@ export function ConversationsPortalDashboard({
     }
   };
 
+  // WhatsApp Seen / Delivery Status Tick Helper
+  const renderMessageStatusTick = (status?: MessageItem['status']) => {
+    switch (status) {
+      case 'READ':
+        return (
+          <LuCheckCheck
+            className="size-3.5 text-[#38bdf8] dark:text-[#38bdf8] shrink-0 inline stroke-[2.5]"
+            title="Seen / Read (Double Blue Check)"
+          />
+        );
+      case 'DELIVERED':
+        return (
+          <LuCheckCheck
+            className="size-3.5 text-slate-300 dark:text-slate-400 shrink-0 inline stroke-[2]"
+            title="Delivered (Double Grey Check)"
+          />
+        );
+      case 'SENT':
+        return (
+          <LuCheck
+            className="size-3 text-slate-300 dark:text-slate-400 shrink-0 inline stroke-[2]"
+            title="Sent (Single Grey Check)"
+          />
+        );
+      case 'PENDING':
+        return (
+          <LuClock
+            className="size-3 text-slate-300 dark:text-slate-400 shrink-0 inline"
+            title="Sending…"
+          />
+        );
+      case 'FAILED':
+        return (
+          <LuCircleAlert
+            className="size-3 text-rose-400 shrink-0 inline"
+            title="Failed to deliver"
+          />
+        );
+      default:
+        return (
+          <LuCheckCheck
+            className="size-3.5 text-[#38bdf8] dark:text-[#38bdf8] shrink-0 inline stroke-[2.5]"
+            title="Seen / Read"
+          />
+        );
+    }
+  };
+
+  /** Calculate effective status of an outbound message: If followed by patient response, it was seen (READ) */
+  const getEffectiveStatus = (msg: MessageItem, allMessages: MessageItem[]): MessageItem['status'] => {
+    if (msg.direction === 'INBOUND') return msg.status;
+    if (msg.status === 'READ') return 'READ';
+    if (msg.status === 'FAILED') return 'FAILED';
+    const msgIndex = allMessages.findIndex((m) => m.id === msg.id);
+    if (msgIndex !== -1) {
+      const hasLaterInbound = allMessages
+        .slice(msgIndex + 1)
+        .some((m) => m.direction === 'INBOUND' || m.sender === 'PATIENT');
+      if (hasLaterInbound) return 'READ';
+    }
+    return msg.status || 'SENT';
+  };
+
   // Instant Status Changer
   const handleUpdateStatus = async (id: string, newStatus: ConversationItem['status']) => {
     setConversations((prev) =>
@@ -246,6 +444,7 @@ export function ConversationsPortalDashboard({
       await fetch(`/api/conversations/${id}`, {
         method: 'DELETE',
       });
+      window.dispatchEvent(new CustomEvent('inbox-updated'));
     } catch (err) {
       console.error('Failed to delete conversation:', err);
     }
@@ -262,6 +461,7 @@ export function ConversationsPortalDashboard({
       sender: 'HUMAN',
       direction: 'OUTBOUND',
       body: messageContent,
+      status: 'SENT',
       createdAt: new Date().toISOString(),
     };
 
@@ -287,6 +487,7 @@ export function ConversationsPortalDashboard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageContent }),
       });
+      window.dispatchEvent(new CustomEvent('inbox-updated'));
     } catch (err) {
       console.error('Failed to send outbound reply:', err);
     } finally {
@@ -325,7 +526,8 @@ export function ConversationsPortalDashboard({
       {/* 1. TOP HEADER (FLUSH BORDER ATTACHED TO SIDEBAR) */}
       <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
         <div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <LuMessagesSquare className="size-5 text-[#0d8276]" />
             WhatsApp Conversations &amp; Patient Chat
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
@@ -335,7 +537,7 @@ export function ConversationsPortalDashboard({
         </div>
       </div>
 
-      {/* 2. STAT CARDS ROW (COMPACT, FLAT, NO ROUNDNESS, ATTACHED DIRECTLY TO SIDEBAR) */}
+      {/* 2. STAT CARDS ROW (COMPACT, FLAT, FLUSH WITH THEME) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         {/* Card 1: Total Conversations */}
         <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
@@ -347,13 +549,13 @@ export function ConversationsPortalDashboard({
               {totalConversationsCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-teal-50 dark:bg-teal-950/70 text-[#0d6157] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-teal-100 dark:border-teal-900/50 inline-block">
                 All patient threads
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
-            <MessagesSquare className="size-4" />
+          <div className="size-9 rounded-[8px] bg-teal-50/80 dark:bg-teal-950/60 text-[#0d8276] dark:text-teal-300 flex items-center justify-center shrink-0 border border-teal-100/70 dark:border-teal-900/50 shadow-2xs">
+            <LuMessagesSquare className="size-4" />
           </div>
         </div>
 
@@ -373,7 +575,7 @@ export function ConversationsPortalDashboard({
             </div>
           </div>
           <div className="size-9 rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
-            <MessageCircle className="size-4" />
+            <LuMessageCircle className="size-4" />
           </div>
         </div>
 
@@ -393,7 +595,7 @@ export function ConversationsPortalDashboard({
             </div>
           </div>
           <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
-            <AlertCircle className="size-4" />
+            <LuCircleAlert className="size-4" />
           </div>
         </div>
 
@@ -413,7 +615,7 @@ export function ConversationsPortalDashboard({
             </div>
           </div>
           <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
-            <CheckCircle2 className="size-4" />
+            <LuCircleCheck className="size-4" />
           </div>
         </div>
       </div>
@@ -425,13 +627,13 @@ export function ConversationsPortalDashboard({
           <div className="flex items-center gap-2.5">
             {/* Fixed-Width Stable Search */}
             <div className="relative w-72 sm:w-80 shrink-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+              <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search conversations, patients, messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] transition-all"
               />
             </div>
 
@@ -442,14 +644,14 @@ export function ConversationsPortalDashboard({
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
                   isFilterOpen || activeFiltersCount > 0
-                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-blue-600 dark:border-blue-600 shadow-2xs'
+                    ? 'bg-[#0d6157] text-white border-[#0d6157] shadow-2xs'
                     : 'bg-slate-50/90 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
-                <Filter className="size-3.5" />
+                <LuFilter className="size-3.5" />
                 <span>Filters</span>
                 {activeFiltersCount > 0 && (
-                  <span className="size-4.5 rounded-full bg-blue-500 text-white dark:bg-white dark:text-blue-600 text-[10px] font-bold flex items-center justify-center">
+                  <span className="size-4.5 rounded-full bg-white text-[#0d6157] text-[10px] font-bold flex items-center justify-center">
                     {activeFiltersCount}
                   </span>
                 )}
@@ -466,12 +668,12 @@ export function ConversationsPortalDashboard({
                   <div className="absolute left-0 top-full mt-2 z-40 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-2xl p-4.5 space-y-3 text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                       <div className="flex items-center gap-1.5">
-                        <Filter className="size-3.5 text-blue-600 dark:text-blue-400" />
+                        <LuFilter className="size-3.5 text-[#0d8276]" />
                         <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                           Filter Conversations
                         </h4>
                         {activeFiltersCount > 0 && (
-                          <span className="px-1.5 py-0.2 rounded-[8px] bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 text-[10px] font-bold">
+                          <span className="px-1.5 py-0.2 rounded-[8px] bg-teal-50 text-[#0d6157] dark:bg-teal-950/60 dark:text-teal-300 text-[10px] font-bold">
                             {activeFiltersCount} active
                           </span>
                         )}
@@ -481,7 +683,7 @@ export function ConversationsPortalDashboard({
                         onClick={() => setIsFilterOpen(false)}
                         className="p-1 rounded-[8px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       >
-                        <X className="size-3.5" />
+                        <LuX className="size-3.5" />
                       </button>
                     </div>
 
@@ -493,7 +695,7 @@ export function ConversationsPortalDashboard({
                       <select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 cursor-pointer"
                       >
                         <option value="ALL">All Statuses</option>
                         <option value="ACTIVE">Active</option>
@@ -510,7 +712,7 @@ export function ConversationsPortalDashboard({
                       <select
                         value={selectedAiFilter}
                         onChange={(e) => setSelectedAiFilter(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 cursor-pointer"
                       >
                         <option value="ALL">All Automation States</option>
                         <option value="AI_ON">AI Assistant Enabled</option>
@@ -530,7 +732,7 @@ export function ConversationsPortalDashboard({
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 cursor-pointer"
                           />
                         </div>
                         <div>
@@ -539,7 +741,7 @@ export function ConversationsPortalDashboard({
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 cursor-pointer"
                           />
                         </div>
                       </div>
@@ -556,13 +758,13 @@ export function ConversationsPortalDashboard({
                             : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
                         }`}
                       >
-                        <RotateCcw className="size-3" />
+                        <LuRotateCcw className="size-3" />
                         <span>Clear all</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsFilterOpen(false)}
-                        className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer"
+                        className="px-4 py-1.5 rounded-[8px] bg-[#0d6157] hover:bg-[#0d8276] text-white font-semibold text-xs shadow-xs cursor-pointer"
                       >
                         Apply Filters
                       </button>
@@ -584,7 +786,7 @@ export function ConversationsPortalDashboard({
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
               }`}
             >
-              <Columns className="size-3.5" />
+              <LuColumns2 className="size-3.5" />
               <span>Live Chat Stream</span>
             </button>
             <button
@@ -596,7 +798,7 @@ export function ConversationsPortalDashboard({
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
               }`}
             >
-              <List className="size-3.5" />
+              <LuList className="size-3.5" />
               <span>Table</span>
             </button>
           </div>
@@ -620,26 +822,31 @@ export function ConversationsPortalDashboard({
                 ) : (
                   filteredConversations.map((thread) => {
                     const isSelected = selectedConversation?.id === thread.id;
+                    const lastMsg = thread.messages.length > 0 ? thread.messages[thread.messages.length - 1] : null;
+                    const isLastMsgOutbound = lastMsg ? lastMsg.direction === 'OUTBOUND' || lastMsg.sender !== 'PATIENT' : false;
+                    const hasUnread = (thread.unreadCount ?? 0) > 0;
+                    const effectiveLastStatus = lastMsg ? getEffectiveStatus(lastMsg, thread.messages) : undefined;
+
                     return (
                       <div
                         key={thread.id}
                         onClick={() => setSelectedConversationId(thread.id)}
                         className={`p-3 transition-all cursor-pointer select-none flex items-start gap-3 ${
                           isSelected
-                            ? 'bg-white dark:bg-slate-800/90 border-l-3 border-l-blue-600 shadow-2xs'
+                            ? 'bg-white dark:bg-slate-800/90 border-l-3 border-l-[#0d8276] shadow-2xs'
                             : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
                         }`}
                       >
-                        <div className="size-8 rounded-[8px] bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center text-xs font-black shrink-0 mt-0.5">
+                        <div className="size-8 rounded-[8px] bg-teal-50 text-[#0d6157] dark:bg-teal-950/60 dark:text-teal-300 flex items-center justify-center text-xs font-black shrink-0 mt-0.5 border border-teal-100/60 dark:border-teal-900/40">
                           {thread.patientName ? thread.patientName.charAt(0).toUpperCase() : 'P'}
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                            <span className={`text-xs truncate ${hasUnread ? 'font-black text-slate-900 dark:text-white' : 'font-bold text-slate-800 dark:text-slate-200'}`}>
                               {thread.patientName || 'Guest Patient'}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                            <span className={`text-[10px] font-mono shrink-0 ${hasUnread ? 'text-[#0d8276] font-bold' : 'text-slate-400'}`}>
                               {formatFriendlyTime(thread.lastMessageAt)}
                             </span>
                           </div>
@@ -655,20 +862,29 @@ export function ConversationsPortalDashboard({
                             )}
                           </div>
 
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-1 font-normal">
-                            {thread.lastMessagePreview || 'No messages yet'}
-                          </p>
+                          <div className="flex items-center justify-between gap-1 mt-1">
+                            <p className={`text-[11px] line-clamp-1 font-normal flex items-center gap-1 ${hasUnread ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
+                              {isLastMsgOutbound && renderMessageStatusTick(effectiveLastStatus)}
+                              <span>{formatPreviewText(thread.lastMessagePreview)}</span>
+                            </p>
+
+                            {hasUnread && (
+                              <span className="px-1.5 py-0.2 min-w-[18px] h-[18px] rounded-full bg-[#0d8276] text-white font-bold text-[10px] flex items-center justify-center shadow-2xs shrink-0">
+                                {thread.unreadCount}
+                              </span>
+                            )}
+                          </div>
 
                           <div className="flex items-center justify-between gap-1 mt-2 pt-1 border-t border-slate-100/80 dark:border-slate-800/60">
                             {getStatusBadge(thread.status)}
                             <span className="text-[10px] flex items-center gap-1 text-slate-400">
                               {thread.aiEnabled ? (
-                                <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold">
-                                  <Bot className="size-3" /> AI Active
+                                <span className="flex items-center gap-1 text-[#0d8276] dark:text-teal-300 font-semibold">
+                                  <LuBot className="size-3" /> AI Active
                                 </span>
                               ) : (
                                 <span className="flex items-center gap-1 text-slate-400">
-                                  <User className="size-3" /> Human Staff
+                                  <LuUser className="size-3" /> Human Staff
                                 </span>
                               )}
                             </span>
@@ -688,7 +904,7 @@ export function ConversationsPortalDashboard({
                   {/* Chat Active Header */}
                   <div className="px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="size-8 rounded-[8px] bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center text-xs font-black shrink-0">
+                      <div className="size-8 rounded-[8px] bg-teal-50 text-[#0d6157] dark:bg-teal-950/60 dark:text-teal-300 flex items-center justify-center text-xs font-black shrink-0 border border-teal-100/60 dark:border-teal-900/40">
                         {selectedConversation.patientName
                           ? selectedConversation.patientName.charAt(0).toUpperCase()
                           : 'P'}
@@ -715,6 +931,33 @@ export function ConversationsPortalDashboard({
 
                     {/* Chat Control Actions */}
                     <div className="flex items-center gap-2 shrink-0">
+                      {/* Mark as Unread / Read Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const isCurrentlyUnread = (selectedConversation.unreadCount ?? 0) > 0;
+                          if (isCurrentlyUnread) {
+                            markConversationAsRead(selectedConversation.id);
+                          } else {
+                            markConversationAsUnread(selectedConversation.id);
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-[8px] text-[11px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Toggle seen/unseen status"
+                      >
+                        {(selectedConversation.unreadCount ?? 0) > 0 ? (
+                          <>
+                            <LuMailOpen className="size-3.5 text-[#0d8276]" />
+                            <span>Mark Read</span>
+                          </>
+                        ) : (
+                          <>
+                            <LuMail className="size-3.5 text-slate-500" />
+                            <span>Mark Unread</span>
+                          </>
+                        )}
+                      </button>
+
                       {/* AI Automation Toggle Button */}
                       <button
                         type="button"
@@ -723,12 +966,12 @@ export function ConversationsPortalDashboard({
                         }
                         className={`px-2.5 py-1 rounded-[8px] text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
                           selectedConversation.aiEnabled
-                            ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800'
+                            ? 'bg-teal-50 text-[#0d6157] border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800'
                             : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
                         }`}
                         title="Toggle AI automated replies"
                       >
-                        <Bot className="size-3.5" />
+                        <LuBot className="size-3.5" />
                         <span>{selectedConversation.aiEnabled ? 'AI Active' : 'AI Paused'}</span>
                       </button>
 
@@ -751,7 +994,7 @@ export function ConversationsPortalDashboard({
                   {selectedConversation.status === 'ESCALATED' && (
                     <div className="px-5 py-2 bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-900 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 shrink-0">
                       <div className="flex items-center gap-2">
-                        <AlertCircle className="size-4 text-amber-600 shrink-0" />
+                        <LuCircleAlert className="size-4 text-amber-600 shrink-0" />
                         <span className="font-semibold">
                           Human intervention requested: {selectedConversation.escalationReason || 'Patient requested to speak with clinic staff'}
                         </span>
@@ -770,7 +1013,7 @@ export function ConversationsPortalDashboard({
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
                     {selectedConversation.messages.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center p-8 text-center text-slate-400">
-                        <MessageCircle className="size-10 mb-2 text-slate-300 dark:text-slate-700" />
+                        <LuMessageCircle className="size-10 mb-2 text-slate-300 dark:text-slate-700" />
                         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                           No messages in this conversation yet
                         </p>
@@ -781,6 +1024,9 @@ export function ConversationsPortalDashboard({
                           msg.sender === 'PATIENT' || msg.direction === 'INBOUND';
                         const isAi = msg.sender === 'AI';
                         const isHumanStaff = msg.sender === 'HUMAN';
+                        const btnClickInfo = isPatient ? parseButtonClick(msg.body) : { isButton: false, title: msg.body };
+                        const outboundButtons = !isPatient ? getMessageButtons(msg) : [];
+                        const effectiveStatus = !isPatient ? getEffectiveStatus(msg, selectedConversation.messages) : undefined;
 
                         return (
                           <div
@@ -792,22 +1038,22 @@ export function ConversationsPortalDashboard({
                             <div className="flex items-center gap-1 text-[10px] text-slate-400 px-1">
                               {isPatient ? (
                                 <>
-                                  <User className="size-3 text-blue-500" />
+                                  <LuUser className="size-3 text-[#0d8276]" />
                                   <span className="font-semibold text-slate-600 dark:text-slate-400">
                                     {selectedConversation.patientName || 'Patient'}
                                   </span>
                                 </>
                               ) : isAi ? (
                                 <>
-                                  <Bot className="size-3 text-emerald-500" />
+                                  <LuBot className="size-3 text-emerald-500" />
                                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                     AI Assistant
                                   </span>
                                 </>
                               ) : (
                                 <>
-                                  <ShieldCheck className="size-3 text-purple-500" />
-                                  <span className="font-semibold text-purple-600 dark:text-purple-400">
+                                  <LuShieldCheck className="size-3 text-[#0d8276]" />
+                                  <span className="font-semibold text-[#0d6157] dark:text-teal-300">
                                     Clinic Staff
                                   </span>
                                 </>
@@ -821,11 +1067,55 @@ export function ConversationsPortalDashboard({
                                 isPatient
                                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700'
                                   : isHumanStaff
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-blue-600 text-white'
+                                  ? 'bg-[#0d6157] text-white'
+                                  : 'bg-[#0d8276] text-white'
                               }`}
                             >
-                              {msg.body}
+                              {isPatient ? (
+                                btnClickInfo.isButton ? (
+                                  /* Patient Interactive Quick Reply Button Click */
+                                  <div className="flex flex-col gap-1.5">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-slate-100 dark:bg-slate-700/70 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 font-bold text-xs shadow-2xs select-none">
+                                      <span className="p-1 rounded bg-[#0d8276]/15 text-[#0d8276] dark:text-teal-300 flex items-center justify-center">
+                                        <LuMousePointerClick className="size-3.5" />
+                                      </span>
+                                      <span>{btnClickInfo.title}</span>
+                                    </div>
+                                    <div className="text-[9px] text-slate-400 dark:text-slate-400 px-0.5 flex items-center gap-1 font-medium">
+                                      <span>Quick button response</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* Regular Inbound Message */
+                                  <div>{msg.body}</div>
+                                )
+                              ) : (
+                                /* Outbound Message Bubble (AI / Staff) with WhatsApp Interactive Buttons */
+                                <div className="flex flex-col gap-1.5">
+                                  <div className="leading-relaxed whitespace-pre-wrap">{msg.body}</div>
+
+                                  {/* Outbound Interactive Quick-Reply / Menu Buttons */}
+                                  {outboundButtons.length > 0 && (
+                                    <div className="mt-1 pt-2 border-t border-white/20 dark:border-white/10 flex flex-col gap-1.5">
+                                      {outboundButtons.map((btn, bIdx) => (
+                                        <div
+                                          key={bIdx}
+                                          className="w-full py-1.5 px-3 rounded-[8px] bg-white/15 dark:bg-white/10 hover:bg-white/25 transition-colors text-white font-semibold text-xs flex items-center justify-center gap-2 select-none border border-white/10 shadow-2xs"
+                                        >
+                                          <LuMousePointerClick className="size-3.5 opacity-80 shrink-0" />
+                                          <span>{btn.title}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Message Timestamp & Seen Status Tick */}
+                                  <div className="self-end flex items-center gap-1 text-[9px] text-teal-100/90 select-none mt-0.5">
+                                    <span>{formatFriendlyTime(msg.createdAt)}</span>
+                                    {renderMessageStatusTick(effectiveStatus)}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -843,21 +1133,21 @@ export function ConversationsPortalDashboard({
                       placeholder={`Reply directly to ${selectedConversation.patientName || 'patient'} on WhatsApp...`}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20"
                     />
                     <button
                       type="submit"
                       disabled={isSending || !replyText.trim()}
-                      className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-4 py-2 rounded-[8px] transition-all cursor-pointer disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 bg-[#0d6157] hover:bg-[#0d8276] text-white font-semibold text-xs px-4 py-2 rounded-[8px] transition-all cursor-pointer disabled:opacity-50"
                     >
-                      <Send className="size-3.5" />
+                      <LuSend className="size-3.5" />
                       <span>{isSending ? 'Sending…' : 'Send'}</span>
                     </button>
                   </form>
                 </>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center p-8 text-center text-slate-400">
-                  <MessagesSquare className="size-12 mb-3 text-slate-300 dark:text-slate-700" />
+                  <LuMessagesSquare className="size-12 mb-3 text-slate-300 dark:text-slate-700" />
                   <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
                     Select a conversation
                   </h4>
@@ -927,7 +1217,7 @@ export function ConversationsPortalDashboard({
                       {/* 2. PATIENT */}
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="size-7 rounded-[8px] bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center text-[11px] font-bold shrink-0">
+                          <div className="size-7 rounded-[8px] bg-teal-50 text-[#0d6157] dark:bg-teal-950/60 dark:text-teal-300 flex items-center justify-center text-[11px] font-bold shrink-0 border border-teal-100/60 dark:border-teal-900/40">
                             {row.patientName && row.patientName.length > 0
                               ? row.patientName.charAt(0).toUpperCase()
                               : 'P'}
@@ -952,12 +1242,12 @@ export function ConversationsPortalDashboard({
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         <span className="text-xs font-semibold flex items-center gap-1">
                           {row.aiEnabled ? (
-                            <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                              <Bot className="size-3.5" /> Enabled
+                            <span className="text-[#0d8276] dark:text-teal-300 flex items-center gap-1">
+                              <LuBot className="size-3.5" /> Enabled
                             </span>
                           ) : (
                             <span className="text-slate-400 flex items-center gap-1">
-                              <User className="size-3.5" /> Paused
+                              <LuUser className="size-3.5" /> Paused
                             </span>
                           )}
                         </span>
@@ -965,7 +1255,7 @@ export function ConversationsPortalDashboard({
 
                       {/* 6. LAST MESSAGE */}
                       <td className="py-2.5 px-4 text-xs text-slate-600 dark:text-slate-400 max-w-xs truncate">
-                        {row.lastMessagePreview || '—'}
+                        {formatPreviewText(row.lastMessagePreview) || '—'}
                       </td>
 
                       {/* 7. LAST ACTIVITY */}
@@ -982,7 +1272,7 @@ export function ConversationsPortalDashboard({
                           }
                           className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                         >
-                          <MoreHorizontal className="size-4" />
+                          <LuEllipsis className="size-4" />
                         </button>
 
                         {activeActionId === row.id && (
@@ -1038,7 +1328,7 @@ export function ConversationsPortalDashboard({
                                 }}
                                 className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
                               >
-                                <Bot className="size-3.5 text-blue-500" />
+                                <LuBot className="size-3.5 text-[#0d8276]" />
                                 <span>{row.aiEnabled ? 'Pause AI' : 'Enable AI'}</span>
                               </button>
 
@@ -1052,7 +1342,7 @@ export function ConversationsPortalDashboard({
                                 }}
                                 className="w-full px-3.5 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-semibold cursor-pointer"
                               >
-                                <XCircle className="size-3.5" />
+                                <LuTrash2 className="size-3.5" />
                                 <span>Delete Thread</span>
                               </button>
                             </div>

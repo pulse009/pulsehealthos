@@ -787,105 +787,106 @@ export function AppointmentsScheduleDashboard({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP COMPACT HEADER (FLUSH BORDER ATTACHED TO SIDEBAR) */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      {/* 1. TOP COMPACT HEADER (FLUSH BORDER ATTACHED TO SIDEBAR) */}
+      <div className="px-6 py-3 border-b border-[#0d8276]/10 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
         <div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+          <h1 className="text-lg font-semibold text-[#0d3d38] dark:text-white tracking-tight leading-tight">
             Appointments Schedule
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
             Manage daily appointments and doctor schedules for{' '}
-            <span className="font-semibold text-slate-800 dark:text-slate-200">{clinicName}</span> ({timezone}).
+            <span className="font-semibold text-[#0d5c56] dark:text-teal-300">{clinicName}</span> ({timezone}).
           </p>
         </div>
         <button
           type="button"
           onClick={handleOpenNewAppointmentModal}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-[0_4px_14px_rgba(13,97,87,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
         >
-          <Plus className="size-3.5" />
+          <Plus className="size-3.5 stroke-[2.5]" />
           <span>New Appointment</span>
         </button>
       </div>
 
       {/* 2. STAT CARDS ROW (COMPACT, FLAT, NO ROUNDNESS, ATTACHED DIRECTLY TO SIDEBAR) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800 border-b border-[#0d8276]/10 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         {/* Card 1: Total Appointments */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
+        <div className="px-5 py-3.5 flex items-center justify-between hover:bg-[#f8fcfa]/80 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase">
               Total Appointments
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-bold text-[#0d3d38] dark:text-white tracking-tight leading-none">
               {totalCountDisplay}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-[#0d8276]/20 inline-block">
                 All scheduled
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
-            <CalendarIcon className="size-4" />
+          <div className="size-9 rounded-xl bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d6157] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
+            <CalendarIcon className="size-4 stroke-[2]" />
           </div>
         </div>
 
         {/* Card 2: Booked Appointments */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
+        <div className="px-5 py-3.5 flex items-center justify-between hover:bg-[#f8fcfa]/80 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase">
               Booked Appointments
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-bold text-emerald-900 dark:text-white tracking-tight leading-none">
               {bookedCountDisplay}
             </div>
             <div className="pt-0.5">
-              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-emerald-100 dark:border-emerald-900/50 inline-block">
+              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-200/80 inline-block">
                 Confirmed &amp; Active
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
-            <CheckCircle2 className="size-4" />
+          <div className="size-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 shadow-2xs">
+            <CheckCircle2 className="size-4 stroke-[2]" />
           </div>
         </div>
 
         {/* Card 3: Pending Requests */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
+        <div className="px-5 py-3.5 flex items-center justify-between hover:bg-[#f8fcfa]/80 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase">
               Pending Requests
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-bold text-amber-900 dark:text-white tracking-tight leading-none">
               {pendingCountDisplay}
             </div>
             <div className="pt-0.5">
-              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-100 dark:border-amber-900/50 inline-block">
+              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-amber-200/80 inline-block">
                 Action required
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
-            <Clock className="size-4" />
+          <div className="size-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 shadow-2xs">
+            <Clock className="size-4 stroke-[2]" />
           </div>
         </div>
 
         {/* Card 4: Cancelled Appointments */}
-        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-          <div className="space-y-0.5">
+        <div className="px-5 py-3.5 flex items-center justify-between hover:bg-[#f8fcfa]/80 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="space-y-1">
             <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase">
               Cancelled Appointments
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-2xl font-bold text-rose-900 dark:text-white tracking-tight leading-none">
               {cancellationsCountDisplay}
             </div>
             <div className="pt-0.5">
-              <span className="bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-rose-100 dark:border-rose-900/50 inline-block">
+              <span className="bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-rose-200/80 inline-block">
                 Released slots
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-rose-50/80 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100/70 dark:border-rose-900/50 shadow-2xs">
-            <XCircle className="size-4" />
+          <div className="size-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 shadow-2xs">
+            <XCircle className="size-4 stroke-[2]" />
           </div>
         </div>
       </div>
@@ -893,7 +894,7 @@ export function AppointmentsScheduleDashboard({
       {/* 3. MAIN TABLE SECTION (FIXED HEIGHT, FLAT EDGES ATTACHED TO SIDEBAR, SCROLLER INSIDE) */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         {/* Top Toolbar: Fixed-Width Search, Filter Dropdown Modal, & View Switcher */}
-        <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+        <div className="px-6 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
           <div className="flex items-center gap-2.5">
             {/* Stable Search Input with fixed width to prevent any layout fluctuation */}
             <div className="relative w-72 sm:w-80 shrink-0">
@@ -903,7 +904,7 @@ export function AppointmentsScheduleDashboard({
                 placeholder="Search appointments, patients, doctors..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700 rounded-xl pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] transition-all"
               />
             </div>
 
@@ -912,16 +913,16 @@ export function AppointmentsScheduleDashboard({
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`px-3 py-1.5 rounded-[8px] text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
                   isFilterOpen || activeFiltersCount > 0
-                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-blue-600 dark:border-blue-600 shadow-2xs'
-                    : 'bg-slate-50/90 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-[#0d6157] text-white border-[#0d6157] shadow-xs'
+                    : 'bg-slate-50/90 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d6157] hover:border-[#0d8276]/30'
                 }`}
               >
                 <Filter className="size-3.5" />
                 <span>Filters</span>
                 {activeFiltersCount > 0 && (
-                  <span className="size-4.5 rounded-full bg-blue-500 text-white dark:bg-white dark:text-blue-600 text-[10px] font-bold flex items-center justify-center">
+                  <span className="size-4.5 rounded-full bg-white text-[#0d6157] text-[10px] font-bold flex items-center justify-center">
                     {activeFiltersCount}
                   </span>
                 )}
@@ -1077,10 +1078,10 @@ export function AppointmentsScheduleDashboard({
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'list'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium'
+                  ? 'bg-white dark:bg-slate-700 text-[#0d5c56] dark:text-white shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-[#0d6157] font-medium'
               }`}
             >
               <List className="size-3.5" />
@@ -1089,10 +1090,10 @@ export function AppointmentsScheduleDashboard({
             <button
               type="button"
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'calendar'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium'
+                  ? 'bg-white dark:bg-slate-700 text-[#0d5c56] dark:text-white shadow-2xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-[#0d6157] font-medium'
               }`}
             >
               <CalendarDays className="size-3.5" />
@@ -1104,8 +1105,8 @@ export function AppointmentsScheduleDashboard({
         {/* Render View Mode */}
         {viewMode === 'calendar' ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500 overflow-y-auto">
-            <CalendarIcon className="size-10 mb-2.5 text-slate-300 dark:text-slate-700" />
-            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            <CalendarIcon className="size-10 mb-2.5 text-[#0d8276]/30 dark:text-slate-700" />
+            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               Calendar View
             </h4>
             <p className="text-xs text-slate-400 max-w-xs mt-1">
@@ -1116,32 +1117,32 @@ export function AppointmentsScheduleDashboard({
           /* TABLE VIEW WITH COMPACT ROW HEIGHT & DIFFERENTIATING BORDER LINES */
           <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 z-10 border-b-2 border-slate-200 dark:border-slate-700 shadow-2xs">
-                <tr className="divide-x divide-slate-200 dark:divide-slate-700/60">
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">
+              <thead className="sticky top-0 bg-[#f8fcfa] dark:bg-slate-800 z-10 border-b border-slate-200 dark:border-slate-700 shadow-2xs">
+                <tr className="divide-x divide-slate-200/70 dark:divide-slate-700/60">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">
                     FILE NO
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">
                     APPOINTMENT NO
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider">
                     PATIENT
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider">
                     DEPARTMENT
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider">
                     DOCTOR
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider">
                     STATUS
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider text-right">
+                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider text-right">
                     ACTION
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800 text-xs">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                 {filteredAppointments.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-slate-400 font-medium text-xs">
@@ -1152,13 +1153,13 @@ export function AppointmentsScheduleDashboard({
                   filteredAppointments.map((row) => (
                     <tr
                       key={row.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60"
+                      className="hover:bg-[#f4fcfa]/80 dark:hover:bg-slate-800/50 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60"
                     >
                       {/* 1. FILE NO */}
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         {typeof row.fileNumber === 'number' ? (
                           <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800"
+                            className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800 shadow-2xs"
                             title="Medical File Number"
                           >
                             FR-{String(row.fileNumber).padStart(3, '0')}
@@ -1172,7 +1173,7 @@ export function AppointmentsScheduleDashboard({
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         {typeof row.appointmentNumber === 'number' ? (
                           <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[11px] font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800"
+                            className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-[#e6f6f3] text-[#0d6157] dark:bg-teal-950/60 dark:text-teal-300 border border-[#0d8276]/30 dark:border-teal-800 shadow-2xs"
                             title="Appointment Number"
                           >
                             AP-{String(row.appointmentNumber).padStart(3, '0')}
@@ -1185,11 +1186,11 @@ export function AppointmentsScheduleDashboard({
                       {/* 3. PATIENT */}
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="size-7 rounded-[8px] bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center text-[11px] font-bold shrink-0">
+                          <div className="size-7 rounded-lg bg-[#e6f6f3] text-[#0d6157] dark:bg-teal-900/40 dark:text-teal-300 flex items-center justify-center text-[11px] font-bold shrink-0 border border-[#0d8276]/20">
                             {row.patientName[0]}
                           </div>
                           <div className="min-w-0">
-                            <span className="block font-bold text-slate-900 dark:text-white truncate text-xs leading-tight">
+                            <span className="block font-semibold text-slate-900 dark:text-white truncate text-xs leading-tight">
                               {row.patientName}
                             </span>
                             <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono leading-tight mt-0.5">
@@ -1310,33 +1311,33 @@ export function AppointmentsScheduleDashboard({
       </div>      {/* 4. MODAL FOR NEW APPOINTMENT (EXISTING / NEW PATIENT FLOWS) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-lg w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100 max-h-[90vh] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative text-xs animate-in fade-in zoom-in-95 duration-100 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <CalendarIcon className="size-4 text-blue-600" />
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <h3 className="text-sm font-bold text-[#0d3d38] dark:text-white flex items-center gap-2">
+                <CalendarIcon className="size-4 text-[#0d8276]" />
                 <span>Create Appointment</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
             {/* Segmented Tab: Existing Patient vs New Patient */}
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-[9px] mt-3 shrink-0">
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl mt-3 shrink-0">
               <button
                 type="button"
                 onClick={() => {
                   setPatientTab('NEW');
                   setFormError(null);
                 }}
-                className={`py-1.5 px-3 rounded-[7px] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   patientTab === 'NEW'
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    ? 'bg-white dark:bg-slate-900 text-[#0d6157] dark:text-teal-400 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -1349,9 +1350,9 @@ export function AppointmentsScheduleDashboard({
                   setPatientTab('EXISTING');
                   setFormError(null);
                 }}
-                className={`py-1.5 px-3 rounded-[7px] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   patientTab === 'EXISTING'
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                    ? 'bg-white dark:bg-slate-900 text-[#0d6157] dark:text-teal-400 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -1362,7 +1363,7 @@ export function AppointmentsScheduleDashboard({
 
             <form onSubmit={handleAddAppointment} className="space-y-3 pt-3 overflow-y-auto flex-1 pr-0.5 min-h-0">
               {formError && (
-                <div className="p-2.5 rounded-[8px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                   <AlertCircle className="size-3.5 shrink-0" />
                   <span>{formError}</span>
                 </div>
@@ -1370,8 +1371,8 @@ export function AppointmentsScheduleDashboard({
 
               {/* TAB 1: EXISTING PATIENT ID SEARCH */}
               {patientTab === 'EXISTING' && (
-                <div className="space-y-2.5 bg-blue-50/50 dark:bg-slate-800/40 p-3 rounded-[10px] border border-blue-100 dark:border-slate-700/80">
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                <div className="space-y-2.5 bg-[#e6f6f3]/60 dark:bg-slate-800/40 p-3.5 rounded-xl border border-[#0d8276]/20 dark:border-slate-700/80">
+                  <label className="block text-[11px] font-bold text-[#0d3d38] dark:text-slate-300 uppercase tracking-wider">
                     Search Patient by Patient ID *
                   </label>
                   <div className="flex gap-2">
@@ -1388,14 +1389,14 @@ export function AppointmentsScheduleDashboard({
                             handleSearchPatient();
                           }
                         }}
-                        className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleSearchPatient}
                       disabled={isSearchingPatient || !searchFileNumber.trim()}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[8px] font-bold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-60"
+                      className="px-3.5 py-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-lg font-semibold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-60 transition-all shadow-xs"
                     >
                       {isSearchingPatient ? (
                         <span>Searching...</span>
@@ -1697,7 +1698,7 @@ export function AppointmentsScheduleDashboard({
                 <button
                   type="submit"
                   disabled={isSubmitting || isLoadingSlots || !selectedSlotStartsAt || (patientTab === 'EXISTING' && !foundPatient)}
-                  className="px-4 py-1.5 rounded-[8px] bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs shadow-xs cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-[0_4px_14px_rgba(13,97,87,0.22)] cursor-pointer disabled:opacity-60 flex items-center gap-1.5 transition-all hover:scale-[1.01] active:scale-[0.99]"
                 >
                   {isSubmitting ? (
                     'Booking...'

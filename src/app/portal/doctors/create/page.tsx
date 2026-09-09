@@ -34,6 +34,8 @@ export default async function CreateDoctorPortalPage() {
     }),
   ]);
 
+  const isPulseNow = Boolean(user.pulseNow) || !Boolean(user.pulseHealthOS);
+
   return (
     <DoctorCreatePortalView
       clinicName={clinic?.name || 'Clinic'}
@@ -41,6 +43,7 @@ export default async function CreateDoctorPortalPage() {
       availableServices={services}
       availableStaff={staff}
       backHref="/portal/doctors"
+      isPulseNow={isPulseNow}
     />
   );
 }

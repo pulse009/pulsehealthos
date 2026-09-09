@@ -129,6 +129,18 @@ export async function recordInboundMessage(
       select: { id: true },
     });
 
+    // When patient sends an inbound message / clicks button, all prior outbound messages in this thread are seen (READ)
+    await db.message.updateMany({
+      where: {
+        conversationId: input.conversationId,
+        direction: 'OUTBOUND',
+        status: { not: 'READ' },
+      },
+      data: {
+        status: 'READ',
+      },
+    });
+
     await db.conversation.update({
       where: { id: input.conversationId },
       data: { lastMessageAt: new Date(), lastMessagePreview: input.body.slice(0, 160) },
@@ -187,6 +199,10 @@ export async function sendAndRecordOutbound(
   }
 
   console.log('🟣 [SEND] Creating PENDING outbound message in DB...');
+  const toolCallsPayload =
+    (input.toolCalls as PrismaTypes.InputJsonValue) ??
+    (input.buttons && input.buttons.length > 0 ? { buttons: input.buttons } : undefined);
+
   const message = await db.message.create({
     data: {
       clinicId: input.clinicId,
@@ -196,7 +212,7 @@ export async function sendAndRecordOutbound(
       sentByUserId: input.sentByUserId ?? null,
       body: input.body,
       status: 'PENDING',
-      toolCalls: (input.toolCalls as PrismaTypes.InputJsonValue) ?? undefined,
+      toolCalls: toolCallsPayload,
     },
     select: { id: true },
   });

@@ -4,33 +4,33 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
-  LayoutDashboard,
-  LayoutGrid,
-  Building2,
-  Users,
-  Calendar,
-  CalendarDays,
-  MessagesSquare,
-  Stethoscope,
-  ClipboardList,
-  Bot,
-  MessageCircle,
-  BellRing,
-  BarChart2,
-  BarChart3,
-  UserCog,
-  UserCheck,
-  ScrollText,
-  Menu,
-  X,
-  LogOut,
-  Home,
-  Users2,
-  Shield,
-  TrendingUp,
-  Boxes,
-  Wallet,
-} from 'lucide-react';
+  LuLayoutDashboard as LayoutDashboard,
+  LuLayoutGrid as LayoutGrid,
+  LuBuilding2 as Building2,
+  LuUsers as Users,
+  LuCalendar as Calendar,
+  LuCalendarDays as CalendarDays,
+  LuMessagesSquare as MessagesSquare,
+  LuClipboardList as ClipboardList,
+  LuBot as Bot,
+  LuMessageCircle as MessageCircle,
+  LuBellRing as BellRing,
+  LuChartColumn as BarChart2,
+  LuChartBar as BarChart3,
+  LuUserCog as UserCog,
+  LuUserCheck as UserCheck,
+  LuScrollText as ScrollText,
+  LuMenu as Menu,
+  LuX as X,
+  LuLogOut as LogOut,
+  LuHouse as Home,
+  LuUsers as Users2,
+  LuShield as Shield,
+  LuTrendingUp as TrendingUp,
+  LuBoxes as Boxes,
+  LuWallet as Wallet,
+} from 'react-icons/lu';
+import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
 
 export interface NavItem {
@@ -108,12 +108,49 @@ export function ClinicPortalSidebarNav({
   const isReceptionist = userRole === 'RECEPTIONIST';
   const isOwnerOrAdmin = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN';
 
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchUnread() {
+      try {
+        const res = await fetch('/api/conversations/unread-count', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && typeof data.unreadCount === 'number') {
+            setUnreadCount(data.unreadCount);
+          }
+        }
+      } catch {}
+    }
+
+    fetchUnread();
+
+    const interval = setInterval(fetchUnread, 6000);
+    const handleUpdate = () => {
+      fetchUnread();
+    };
+
+    window.addEventListener('inbox-updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener('inbox-updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+    };
+  }, []);
+
+  const inboxBadge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined;
+
   const clinicItems = isReceptionist
     ? [
         { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
         ...(!isPulseNow ? [{ href: '/portal/accounts/invoices', label: 'Billing', icon: Wallet }] : []),
         { href: '/portal/patients', label: 'Patients', icon: Users },
-        { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+        { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
       ]
     : isDoctor
       ? [
@@ -122,7 +159,7 @@ export function ClinicPortalSidebarNav({
           ...(!isPulseNow ? [{ href: '/portal/accounts/doctor-payouts', label: 'My Payouts', icon: Wallet }] : []),
           ...(!isPulseNow ? [{ href: '/portal/inventory/requests', label: 'Item Requests', icon: Boxes }] : []),
           { href: '/portal/patients', label: 'Patients', icon: Users },
-          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
         ]
       : [
           { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
@@ -133,16 +170,16 @@ export function ClinicPortalSidebarNav({
           ...(isOwnerOrAdmin && !isPulseNow ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
           { href: '/portal/patients', label: 'Patients', icon: Users },
           { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: '21' },
+          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
         ];
 
   const bottomItems = isOwnerOrAdmin
     ? [
-        { href: '/portal/organization', label: 'Security', icon: Shield },
+        { href: '/portal/security', label: 'Security', icon: Shield },
         { href: '/portal/subscription', label: 'Upgrade', icon: TrendingUp },
       ]
     : [
-        { href: '/portal/organization', label: 'Security', icon: Shield },
+        { href: '/portal/security', label: 'Security', icon: Shield },
       ];
 
   // Proactively prefetch all portal routes in background on mount
@@ -162,17 +199,25 @@ export function ClinicPortalSidebarNav({
   const currentActivePath = optimisticPath || pathname;
 
   return (
-    <nav className="w-full h-full flex flex-col justify-between items-center py-2 select-none overflow-hidden" aria-label="Clinic Portal Navigation">
+    <nav className="w-full h-full flex flex-col justify-between items-center py-3 select-none overflow-hidden" aria-label="Clinic Portal Navigation">
       {/* 1. Top Logo */}
-      <div className="w-full flex flex-col items-center shrink-0 mb-1.5">
+      <div className="w-full flex flex-col items-center shrink-0 mb-2">
         <Link
           href="/portal"
           onMouseEnter={() => router.prefetch('/portal')}
-          className="size-8 rounded-full bg-[#0e1626] text-white flex items-center justify-center shadow-xs transition-transform hover:scale-105 shrink-0 cursor-pointer"
-          title="PulseHealth"
+          className="size-9 rounded-xl bg-gradient-to-tr from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center shadow-xs transition-transform hover:scale-105 shrink-0 cursor-pointer"
+          title="Pulseware"
         >
-          <svg className="size-4.5 text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          <svg viewBox="0 0 24 24" className="size-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="3.5" />
+            <circle cx="12" cy="3" r="1.5" />
+            <circle cx="12" cy="21" r="1.5" />
+            <circle cx="3" cy="12" r="1.5" />
+            <circle cx="21" cy="12" r="1.5" />
+            <circle cx="5.636" cy="5.636" r="1.5" />
+            <circle cx="18.364" cy="18.364" r="1.5" />
+            <circle cx="5.636" cy="18.364" r="1.5" />
+            <circle cx="18.364" cy="5.636" r="1.5" />
           </svg>
         </Link>
       </div>
@@ -200,17 +245,17 @@ export function ClinicPortalSidebarNav({
               {/* Compact Icon Container */}
               <div
                 className={cn(
-                  'relative size-8.5 rounded-xl flex items-center justify-center transition-all',
+                  'relative size-9 rounded-xl flex items-center justify-center transition-all',
                   active
-                    ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white shadow-2xs border border-slate-300/70 dark:border-slate-700'
-                    : 'text-slate-600 dark:text-slate-400 group-hover:bg-slate-200/50 dark:group-hover:bg-slate-800/50 group-hover:text-slate-900 dark:group-hover:text-white',
+                    ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/25 text-[#0d6157] dark:text-teal-300 shadow-2xs border border-[#0d8276]/30 dark:border-teal-500/40 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 group-hover:bg-[#f0f9f7] dark:group-hover:bg-slate-800/50 group-hover:text-[#0d6157] dark:group-hover:text-white',
                 )}
               >
-                <Icon className="size-4.5 stroke-[1.8] shrink-0" />
+                <Icon className="size-4.5 stroke-[2] shrink-0" />
 
                 {/* Badge if available */}
                 {item.badge && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[8px] min-w-[15px] h-[15px] px-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-xs">
+                  <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-bold text-[8px] min-w-[15px] h-[15px] px-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-xs">
                     {item.badge}
                   </span>
                 )}
@@ -221,8 +266,8 @@ export function ClinicPortalSidebarNav({
                 className={cn(
                   'text-[9px] tracking-tight font-medium mt-0.5 leading-none text-center truncate max-w-[66px]',
                   active
-                    ? 'font-bold text-slate-900 dark:text-white'
-                    : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200',
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300'
+                    : 'text-slate-500 dark:text-slate-400 group-hover:text-[#0d6157] dark:group-hover:text-slate-200',
                 )}
               >
                 {item.label}
@@ -233,7 +278,7 @@ export function ClinicPortalSidebarNav({
       </div>
 
       {/* 3. Bottom Stack: Security & Upgrade */}
-      <div className="w-full flex flex-col items-center gap-1.5 pt-1.5 border-t border-slate-200/80 dark:border-slate-800 shrink-0">
+      <div className="w-full flex flex-col items-center gap-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-800 shrink-0">
         {bottomItems.map((item) => {
           const Icon = item.icon;
           const active = isPathActive(currentActivePath, item.href);
@@ -253,10 +298,10 @@ export function ClinicPortalSidebarNav({
             >
               <div
                 className={cn(
-                  'relative size-8 rounded-xl flex items-center justify-center transition-all',
+                  'relative size-8.5 rounded-xl flex items-center justify-center transition-all',
                   active
-                    ? 'bg-slate-200/90 dark:bg-slate-800 text-slate-950 dark:text-white shadow-2xs'
-                    : 'text-slate-500 dark:text-slate-400 group-hover:bg-slate-200/50 group-hover:text-slate-900',
+                    ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/25 text-[#0d6157] dark:text-teal-300 shadow-2xs border border-[#0d8276]/30'
+                    : 'text-slate-500 dark:text-slate-400 group-hover:bg-[#f0f9f7] group-hover:text-[#0d6157]',
                 )}
               >
                 <Icon className="size-4 stroke-[1.8] shrink-0" />

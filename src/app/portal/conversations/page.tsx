@@ -46,6 +46,8 @@ export default async function PortalConversationsPage() {
             sender: true,
             direction: true,
             body: true,
+            status: true,
+            toolCalls: true,
             createdAt: true,
           },
         },
@@ -56,27 +58,36 @@ export default async function PortalConversationsPage() {
 
   const timezone = clinic?.timezone ?? 'Asia/Riyadh';
 
-  const initialConversations: ConversationItem[] = rawConversations.map((c) => ({
-    id: c.id,
-    patientId: c.patientId,
-    patientName: c.patient.name || 'Guest Patient',
-    phone: c.patient.phone,
-    email: c.patient.email,
-    fileNumber: c.patient.fileNumber,
-    status: c.status,
-    lastMessageAt: c.lastMessageAt.toISOString(),
-    lastMessagePreview: c.lastMessagePreview,
-    escalationReason: c.escalationReason,
-    aiEnabled: c.aiEnabled,
-    messageCount: c._count.messages,
-    messages: c.messages.map((m) => ({
-      id: m.id,
-      sender: m.sender,
-      direction: m.direction,
-      body: m.body,
-      createdAt: m.createdAt.toISOString(),
-    })),
-  }));
+  const initialConversations: ConversationItem[] = rawConversations.map((c) => {
+    const unreadMessagesCount = c.messages.filter(
+      (m) => m.direction === 'INBOUND' && m.status !== 'READ'
+    ).length;
+
+    return {
+      id: c.id,
+      patientId: c.patientId,
+      patientName: c.patient.name || 'Guest Patient',
+      phone: c.patient.phone,
+      email: c.patient.email,
+      fileNumber: c.patient.fileNumber,
+      status: c.status,
+      lastMessageAt: c.lastMessageAt.toISOString(),
+      lastMessagePreview: c.lastMessagePreview,
+      escalationReason: c.escalationReason,
+      aiEnabled: c.aiEnabled,
+      messageCount: c._count.messages,
+      unreadCount: unreadMessagesCount,
+      messages: c.messages.map((m) => ({
+        id: m.id,
+        sender: m.sender,
+        direction: m.direction,
+        body: m.body,
+        status: m.status,
+        toolCalls: m.toolCalls,
+        createdAt: m.createdAt.toISOString(),
+      })),
+    };
+  });
 
   return (
     <ConversationsPortalDashboard

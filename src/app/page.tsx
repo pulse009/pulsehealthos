@@ -124,12 +124,20 @@ export default async function HomePage() {
                     Go to Portal
                   </Link>
                 ) : (
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white text-slate-900 text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md border border-slate-200/80 transition-all hover:scale-105 active:scale-95"
-                  >
-                    Request Demo
-                  </Link>
+                  <>
+                    <Link
+                      href="/login"
+                      className="hidden sm:inline-flex px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      Log In
+                    </Link>
+                    <Link
+                      href="/contact"
+                      className="inline-flex items-center px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white text-slate-900 text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md border border-slate-200/80 transition-all hover:scale-105 active:scale-95"
+                    >
+                      Request Demo
+                    </Link>
+                  </>
                 )}
               </div>
             </div>

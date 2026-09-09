@@ -20,6 +20,8 @@ export default async function PortalLayout({ children }: { children: React.React
   if (user.role === 'SUPER_ADMIN') redirect('/admin');
   if (!user.clinicId) redirect('/login');
 
+  const isPulseNow = Boolean(user.pulseNow) || !Boolean(user.pulseHealthOS);
+
   return (
     <AppShell
       navItems={PORTAL_NAV}
@@ -28,7 +30,7 @@ export default async function PortalLayout({ children }: { children: React.React
       userName={user.name}
       userEmail={user.email}
       userRole={user.role}
-      isPulseNow={Boolean(user.pulseNow)}
+      isPulseNow={isPulseNow}
       homeHref="/portal"
     >
       {children}

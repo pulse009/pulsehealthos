@@ -62,9 +62,11 @@ export default async function PortalDoctorDetailPage({
       }),
     ]);
 
+    const isPulseNow = Boolean(user.pulseNow) || !Boolean(user.pulseHealthOS);
+
     const doctor = {
       ...rawDoctor,
-      paymentStructure: user.role === 'DOCTOR' ? null : rawDoctor.paymentStructure,
+      paymentStructure: (user.role === 'DOCTOR' || isPulseNow) ? null : rawDoctor.paymentStructure,
       appointments: rawDoctor.appointments.map((a) => ({
         id: a.id,
         appointmentNumber: a.appointmentNumber,
@@ -78,7 +80,8 @@ export default async function PortalDoctorDetailPage({
 
     const sanitizedStaff = availableStaff.map((s) => ({
       ...s,
-      salary: user.role === 'DOCTOR' ? null : s.salary,
+      salary: (user.role === 'DOCTOR' || isPulseNow) ? null : s.salary,
+      commissionPercent: isPulseNow ? null : s.commissionPercent,
     }));
 
     return (
@@ -88,6 +91,7 @@ export default async function PortalDoctorDetailPage({
         availableStaff={sanitizedStaff}
         backHref="/portal/doctors"
         userRole={user.role}
+        isPulseNow={isPulseNow}
       />
     );
   } catch (error) {

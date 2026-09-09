@@ -643,7 +643,7 @@ async function handleShowDoctorsForService(
     .join('\n');
 
   const reply = `${dict.step2_title}\n\n• *${dict.service_label}:* ${serviceName}\n${dict.step2_subtitle}\n\n${list}${
-    hasMore ? `\n\n_Tap *${dict.btn_more_doctors}* to see more doctors._` : ''
+    hasMore ? `\n\n${dict.more_doctors_hint(dict.btn_more_doctors)}` : ''
   }`;
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router presented doctor selection', {
@@ -1694,7 +1694,7 @@ async function handleDoctors(
     .join('\n');
 
   const reply = `${dict.doctors_title}\n\n${list}${
-    hasMore ? `\n\n_Tap *${dict.btn_more_doctors}* to view more doctors._` : ''
+    hasMore ? `\n\n${dict.more_doctors_hint(dict.btn_more_doctors)}` : ''
   }`;
 
   logger.info(Events.ROUTER_COMPLETED, 'Fast router handled doctors', {

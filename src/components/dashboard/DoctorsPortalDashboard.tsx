@@ -3,28 +3,28 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Stethoscope,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Search,
-  Filter,
-  RotateCcw,
-  LayoutGrid,
-  List,
-  ChevronRight,
-  ShieldCheck,
-  Building2,
-  Tag,
-  Power,
-  Users,
-  Plus,
-  UserCheck,
-  Trash2,
-  X,
-  AlertTriangle,
-} from 'lucide-react';
+  LuCalendar as Calendar,
+  LuClock as Clock,
+  LuCircleCheck as CheckCircle2,
+  LuCircleX as XCircle,
+  LuSearch as Search,
+  LuFilter as Filter,
+  LuRotateCcw as RotateCcw,
+  LuLayoutGrid as LayoutGrid,
+  LuList as List,
+  LuChevronRight as ChevronRight,
+  LuShieldCheck as ShieldCheck,
+  LuBuilding2 as Building2,
+  LuTag as Tag,
+  LuPower as Power,
+  LuUsers as Users,
+  LuPlus as Plus,
+  LuUserCheck as UserCheck,
+  LuTrash2 as Trash2,
+  LuX as X,
+  LuTriangleAlert as AlertTriangle,
+} from 'react-icons/lu';
+import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 
 export interface DoctorCardItem {
   id: string;
@@ -189,7 +189,7 @@ export function DoctorsPortalDashboard({
         <div className="flex items-center gap-2.5">
           <Link
             href="/portal/doctors/create"
-            className="inline-flex items-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-xs transition-all cursor-pointer"
           >
             <Plus className="size-3.5" />
             <span>Add Doctor</span>
@@ -208,12 +208,12 @@ export function DoctorsPortalDashboard({
               {totalDoctorsCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-[#0d8276]/20 inline-block">
                 Assigned to clinic
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
+          <div className="size-9 rounded-lg bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <Stethoscope className="size-4" />
           </div>
         </div>
@@ -227,12 +227,12 @@ export function DoctorsPortalDashboard({
               {activeDoctorsCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-emerald-100 dark:border-emerald-900/50 inline-block">
+              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900/50 inline-block">
                 Accepting bookings
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
+          <div className="size-9 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
             <CheckCircle2 className="size-4" />
           </div>
         </div>
@@ -246,12 +246,12 @@ export function DoctorsPortalDashboard({
               {totalUpcomingAppointments}
             </div>
             <div className="pt-0.5">
-              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-100 dark:border-amber-900/50 inline-block">
+              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-amber-100 dark:border-amber-900/50 inline-block">
                 Across all doctors
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
+          <div className="size-9 rounded-lg bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
             <Calendar className="size-4" />
           </div>
         </div>
@@ -265,12 +265,12 @@ export function DoctorsPortalDashboard({
               {totalServicesCovered}
             </div>
             <div className="pt-0.5">
-              <span className="bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-purple-100 dark:border-purple-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-[#0d8276]/20 inline-block">
                 Clinical services
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-purple-50/80 dark:bg-purple-950/60 text-purple-500 flex items-center justify-center shrink-0 border border-purple-100/70 dark:border-purple-900/50 shadow-2xs">
+          <div className="size-9 rounded-lg bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <Tag className="size-4" />
           </div>
         </div>
@@ -288,14 +288,14 @@ export function DoctorsPortalDashboard({
                 placeholder="Search doctors, specialty, services..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] transition-all"
               />
             </div>
 
             <select
               value={selectedSpecialty}
               onChange={(e) => setSelectedSpecialty(e.target.value)}
-              className="bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
             >
               <option value="ALL">All Specialties</option>
               {availableSpecialties.map((spec) => (
@@ -308,7 +308,7 @@ export function DoctorsPortalDashboard({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] cursor-pointer"
             >
               <option value="ALL">All Statuses</option>
               <option value="ACTIVE">Active</option>
@@ -319,7 +319,7 @@ export function DoctorsPortalDashboard({
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-[8px] flex items-center gap-1 font-semibold cursor-pointer"
+                className="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md flex items-center gap-1 font-semibold cursor-pointer"
               >
                 <RotateCcw className="size-3" />
                 <span>Reset</span>
@@ -327,13 +327,13 @@ export function DoctorsPortalDashboard({
             )}
           </div>
 
-          <div className="bg-slate-100/90 dark:bg-slate-800 p-0.5 rounded-[8px] flex items-center gap-0.5 shrink-0">
+          <div className="bg-slate-100/90 dark:bg-slate-800 p-0.5 rounded-lg flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              className={`px-3 py-1 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  ? 'bg-[#0d6157] text-white shadow-2xs'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
               }`}
             >
@@ -343,9 +343,9 @@ export function DoctorsPortalDashboard({
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1 rounded-[8px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                  ? 'bg-[#0d6157] text-white shadow-2xs'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
               }`}
             >
@@ -372,7 +372,7 @@ export function DoctorsPortalDashboard({
                   return (
                     <div
                       key={doc.id}
-                      className="bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 rounded-[8px] p-4 shadow-xs hover:border-blue-400 dark:hover:border-blue-500 transition-all flex flex-col justify-between"
+                      className="bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 shadow-xs hover:border-[#0d8276]/60 dark:hover:border-teal-500 transition-all flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-3">
@@ -381,10 +381,10 @@ export function DoctorsPortalDashboard({
                               <img
                                 src={doc.imageUrl}
                                 alt={doc.name}
-                                className="size-11 rounded-[8px] object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                                className="size-11 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                               />
                             ) : (
-                              <div className="size-11 rounded-[8px] bg-blue-100/80 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 flex items-center justify-center text-sm font-black shrink-0 border border-blue-200/60 dark:border-blue-800">
+                              <div className="size-11 rounded-lg bg-gradient-to-br from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center text-sm font-black shrink-0 shadow-2xs">
                                 {doc.name ? doc.name.replace('Dr. ', '').charAt(0).toUpperCase() : 'D'}
                               </div>
                             )}
@@ -393,12 +393,12 @@ export function DoctorsPortalDashboard({
                               <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate">
                                 {doc.name}
                               </h3>
-                              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                              <p className="text-[11px] text-[#0d5c56] dark:text-teal-400 font-medium truncate mt-0.5">
                                 {doc.specialty || 'General Practitioner'}
                               </p>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 {doc.user?.username && (
-                                  <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
+                                  <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20">
                                     @{doc.user.username}
                                   </span>
                                 )}
@@ -415,7 +415,7 @@ export function DoctorsPortalDashboard({
                           <button
                             type="button"
                             onClick={(e) => handleToggleStatus(doc.id, doc.isActive, e)}
-                            className={`px-2 py-0.5 rounded-[8px] text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
                               doc.isActive
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                                 : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
@@ -441,9 +441,9 @@ export function DoctorsPortalDashboard({
                                 return (
                                   <span
                                     key={w}
-                                    className={`size-5 rounded-[4px] text-[9px] font-bold flex items-center justify-center ${
+                                    className={`size-5 rounded text-[9px] font-bold flex items-center justify-center ${
                                       isWorking
-                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800'
+                                        ? 'bg-[#0d6157] text-white shadow-2xs'
                                         : 'bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600'
                                     }`}
                                   >
@@ -472,14 +472,14 @@ export function DoctorsPortalDashboard({
                                 doc.services.slice(0, 3).map((srv) => (
                                   <span
                                     key={srv.id}
-                                    className="px-1.5 py-0.2 rounded-[6px] text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                    className="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium"
                                   >
                                     {srv.name}
                                   </span>
                                 ))
                               )}
                               {doc.services.length > 3 && (
-                                <span className="px-1.5 py-0.2 rounded-[6px] text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500">
                                   +{doc.services.length - 3} more
                                 </span>
                               )}
@@ -491,7 +491,7 @@ export function DoctorsPortalDashboard({
                       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                         <Link
                           href={`/portal/doctors/${doc.id}`}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs py-1.5 rounded-[8px] shadow-2xs transition-all"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs py-1.5 rounded-lg shadow-2xs transition-all"
                         >
                           <span>Manage Profile &amp; Schedule</span>
                           <ChevronRight className="size-3.5" />
@@ -564,17 +564,17 @@ export function DoctorsPortalDashboard({
                             <img
                               src={row.imageUrl}
                               alt={row.name}
-                              className="size-7 rounded-[8px] object-cover border border-slate-200 shrink-0"
+                              className="size-7 rounded-lg object-cover border border-slate-200 shrink-0"
                             />
                           ) : (
-                            <div className="size-7 rounded-[8px] bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center text-[11px] font-bold shrink-0">
+                            <div className="size-7 rounded-lg bg-gradient-to-br from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                               {row.name ? row.name.replace('Dr. ', '').charAt(0).toUpperCase() : 'D'}
                             </div>
                           )}
                           <div>
                             <Link
                               href={`/portal/doctors/${row.id}`}
-                              className="font-bold text-slate-900 dark:text-white hover:text-blue-600 hover:underline truncate block"
+                              className="font-bold text-slate-900 dark:text-white hover:text-[#0d6157] hover:underline truncate block"
                             >
                               {row.name}
                             </Link>
@@ -590,7 +590,7 @@ export function DoctorsPortalDashboard({
                       <td className="py-2.5 px-4 font-mono">
                         {row.user?.username ? (
                           <div className="space-y-0.5">
-                            <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800">
+                            <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20">
                               @{row.user.username}
                             </span>
                             <span className="block text-[10px] text-slate-400 font-sans truncate max-w-[140px]">
@@ -610,7 +610,7 @@ export function DoctorsPortalDashboard({
                         <button
                           type="button"
                           onClick={(e) => handleToggleStatus(row.id, row.isActive, e)}
-                          className={`px-2 py-0.5 rounded-[8px] text-[11px] font-bold border transition-all cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all cursor-pointer ${
                             row.isActive
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                               : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
@@ -630,7 +630,7 @@ export function DoctorsPortalDashboard({
                         </span>
                       </td>
 
-                      <td className="py-2.5 px-4 font-semibold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                      <td className="py-2.5 px-4 font-semibold text-[#0d5c56] dark:text-teal-400 whitespace-nowrap">
                         {row.upcomingAppointmentsCount} Bookings
                       </td>
 
@@ -638,7 +638,7 @@ export function DoctorsPortalDashboard({
                         <div className="inline-flex items-center gap-2 justify-end">
                           <Link
                             href={`/portal/doctors/${row.id}`}
-                            className="inline-flex items-center gap-1 text-slate-700 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 font-bold text-xs"
+                            className="inline-flex items-center gap-1 text-slate-700 hover:text-[#0d6157] dark:text-slate-300 dark:hover:text-teal-400 font-bold text-xs"
                           >
                             <span>Manage</span>
                             <ChevronRight className="size-3.5" />

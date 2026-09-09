@@ -144,7 +144,7 @@ export default function PricingPage() {
               >
                 <span>Annual Billing</span>
                 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
-                  Save 20%
+                  Save up to 20%
                 </span>
               </button>
             </div>
@@ -166,11 +166,11 @@ export default function PricingPage() {
                     AI Chatbot &amp; WhatsApp Patient Booking
                   </p>
 
-                  <div className="mt-6 flex items-baseline gap-1">
+                  <div className="mt-6 flex items-baseline gap-1.5">
                     <span className="text-4xl sm:text-5xl font-semibold tracking-tight text-slate-900">
-                      {billingCycle === 'monthly' ? '$99' : '$79'}
+                      {billingCycle === 'monthly' ? '499' : '399'}
                     </span>
-                    <span className="text-sm text-slate-500 font-normal">/month</span>
+                    <span className="text-sm text-slate-500 font-normal">SAR/month</span>
                   </div>
 
                   {/* Feature Checklist */}
@@ -239,11 +239,11 @@ export default function PricingPage() {
                     Complete PMS &amp; Hospital Operations
                   </p>
 
-                  <div className="mt-6 flex items-baseline gap-1">
+                  <div className="mt-6 flex items-baseline gap-1.5">
                     <span className="text-4xl sm:text-5xl font-semibold tracking-tight text-white">
-                      {billingCycle === 'monthly' ? '$549' : '$439'}
+                      {billingCycle === 'monthly' ? '1,099' : '999'}
                     </span>
-                    <span className="text-sm text-teal-200/80 font-normal">/month</span>
+                    <span className="text-sm text-teal-200/80 font-normal">SAR/month</span>
                   </div>
 
                   {/* Feature Checklist */}

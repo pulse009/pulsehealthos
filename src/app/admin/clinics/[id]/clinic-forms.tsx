@@ -13,6 +13,7 @@ import {
   addHolidayAction,
   upsertFaqAction,
 } from '@/app/admin/clinics/actions';
+import { LuSparkles as Sparkles } from 'react-icons/lu';
 
 /**
  * Configuration forms.
@@ -432,6 +433,90 @@ export function AiForm({ clinicId, config }: { clinicId: string; config: AiConfi
     <ActionForm action={updateAiAction.bind(null, clinicId)}>
       {(state) => (
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* ── WhatsApp & AI Chatbot Interaction Mode (Master Admin Setting) ── */}
+          <div className="sm:col-span-2 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-[#0d6157] dark:text-teal-400" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  WhatsApp &amp; AI Chatbot Interaction Mode
+                </span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/25">
+                Master Admin Controlled
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Configure how this clinic tenant handles patient WhatsApp conversations and appointment scheduling.
+            </p>
+
+            <div className="grid gap-2.5">
+              {/* Option 1: After-Hours AI */}
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-[#0d8276]/40 transition-colors cursor-pointer">
+                <input
+                  type="radio"
+                  name="interactionMode"
+                  value="AFTER_HOURS"
+                  defaultChecked={true}
+                  className="mt-0.5 text-[#0d6157] focus:ring-[#0d8276] size-4"
+                />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">🌙 After Working Hours Only (Recommended)</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                      Hybrid Workflow
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    Human staff manages all patient discussions during clinic working hours. AI Chatbot automatically takes over outside working hours to respond to inquiries and book appointments 24/7.
+                  </p>
+                </div>
+              </label>
+
+              {/* Option 2: Human Only */}
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-[#0d8276]/40 transition-colors cursor-pointer">
+                <input
+                  type="radio"
+                  name="interactionMode"
+                  value="HUMAN_ONLY"
+                  className="mt-0.5 text-[#0d6157] focus:ring-[#0d8276] size-4"
+                />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">👤 Human Managed Only (No AI Chatbot)</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      Manual Staff
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    All WhatsApp discussions and appointment bookings are handled 100% directly by clinic human coordinators. AI chatbot is completely disabled.
+                  </p>
+                </div>
+              </label>
+
+              {/* Option 3: 24/7 AI */}
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-[#0d8276]/40 transition-colors cursor-pointer">
+                <input
+                  type="radio"
+                  name="interactionMode"
+                  value="ALWAYS_AI"
+                  className="mt-0.5 text-[#0d6157] focus:ring-[#0d8276] size-4"
+                />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">🤖 24/7 Full AI Assistant</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                      Automated
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                    AI assistant manages inquiries and automated bookings around the clock, with manual handover available for staff at any time.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <Field label="Assistant name" htmlFor="assistantName" error={err(state, 'assistantName')}>
             <Input id="assistantName" name="assistantName" defaultValue={config.assistantName} />
           </Field>
