@@ -5,12 +5,10 @@ import Link from 'next/link';
 import {
   Activity,
   Search,
-  Filter,
   ArrowDownRight,
   ArrowUpRight,
   RefreshCw,
   Package,
-  Calendar,
 } from 'lucide-react';
 
 export interface MovementRow {
@@ -75,10 +73,10 @@ export function InventoryMovementsView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP HEADER */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
         <div>
           <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
-            <Activity className="size-5 text-blue-600 dark:text-blue-400" />
+            <Activity className="size-5 text-[#0d6157] dark:text-teal-400" />
             <span>Stock Movements Ledger</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
@@ -99,12 +97,12 @@ export function InventoryMovementsView({
               {movements.length}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 All transactions
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <Activity className="size-4" />
           </div>
         </div>
@@ -130,19 +128,19 @@ export function InventoryMovementsView({
 
         <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            <span className="block text-[10px] font-bold text-[#0d6157] dark:text-teal-400 uppercase tracking-wider">
               Stock Outbound (Issued)
             </span>
             <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
               {issuedCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/25 inline-block">
                 Released item requests
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d6157] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/25 shadow-2xs">
             <ArrowUpRight className="size-4" />
           </div>
         </div>
@@ -168,12 +166,12 @@ export function InventoryMovementsView({
       </div>
 
       {/* 3. TOOLBAR */}
-      <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-2">
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+            className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:border-[#0d8276] focus:ring-2 focus:ring-[#0d8276]/10 cursor-pointer shadow-2xs"
           >
             <option value="ALL">All Movement Types</option>
             <option value="STOCK_RECEIVED">Stock Received (Inbound)</option>
@@ -190,7 +188,7 @@ export function InventoryMovementsView({
             placeholder="Search movements, item, ref #, user..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276] transition-all shadow-2xs"
           />
         </div>
       </div>
@@ -199,7 +197,7 @@ export function InventoryMovementsView({
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 bg-slate-50/90 dark:bg-slate-850 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
                 <th className="py-2.5 px-6">Date &amp; Time</th>
                 <th className="py-2.5 px-4">Item Name</th>
@@ -214,7 +212,7 @@ export function InventoryMovementsView({
               {filteredMovements.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-slate-400">
-                    <Activity className="size-8 mx-auto mb-2 opacity-40" />
+                    <Activity className="size-8 mx-auto mb-2 opacity-40 text-slate-400" />
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                       No stock movements found.
                     </p>
@@ -229,7 +227,7 @@ export function InventoryMovementsView({
                   return (
                     <tr
                       key={m.id}
-                      className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                      className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
                       <td className="py-3 px-6 text-slate-500 font-mono text-[11px]">
                         {new Date(m.createdAt).toLocaleString()}
@@ -237,7 +235,7 @@ export function InventoryMovementsView({
                       <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">
                         <Link
                           href={`/portal/inventory/items/${m.item.id}`}
-                          className="font-bold hover:text-blue-600 transition-colors"
+                          className="font-bold hover:text-[#0d6157] dark:hover:text-teal-300 transition-colors"
                         >
                           {m.item.name}
                         </Link>
@@ -249,11 +247,11 @@ export function InventoryMovementsView({
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold ${
+                          className={`px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold ${
                             m.type === 'STOCK_RECEIVED'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800'
+                              ? 'bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20'
                               : m.type === 'STOCK_ISSUED'
-                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800'
+                                ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                                 : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800'
                           }`}
                         >
@@ -264,7 +262,7 @@ export function InventoryMovementsView({
                         <span
                           className={
                             isPositive
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-[#0d6157] dark:text-teal-300'
                               : 'text-rose-600 dark:text-rose-400'
                           }
                         >
@@ -279,7 +277,7 @@ export function InventoryMovementsView({
                       </td>
                       <td className="py-3 px-6 text-slate-600 dark:text-slate-400 text-xs">
                         {m.referenceId && (
-                          <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 mr-1.5">
+                          <span className="font-mono font-semibold text-[#0d5c56] dark:text-teal-400 mr-1.5">
                             #{m.referenceId}
                           </span>
                         )}

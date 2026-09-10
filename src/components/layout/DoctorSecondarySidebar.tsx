@@ -743,19 +743,6 @@ export function DoctorSecondarySidebar({
                   <span>Roles &amp; Staff</span>
                 </Link>
               )}
-              {!isCoordinator && !isPulseNow && (
-                <Link
-                  href="/portal/inventory"
-                  className={cn(
-                    'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                    pathname.startsWith('/portal/inventory')
-                      ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                  )}
-                >
-                  <span>Inventory &amp; Stock</span>
-                </Link>
-              )}
               <Link
                 href="/portal/organization"
                 className={cn(

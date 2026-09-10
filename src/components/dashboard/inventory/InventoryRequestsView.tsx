@@ -7,18 +7,12 @@ import {
   ClipboardList,
   Plus,
   Search,
-  Filter,
   CheckCircle2,
   XCircle,
   Clock,
   Send,
-  Check,
   X,
   AlertCircle,
-  Package,
-  ArrowRight,
-  User,
-  Layers,
 } from 'lucide-react';
 
 export interface ItemRequestRow {
@@ -259,9 +253,10 @@ export function InventoryRequestsView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP HEADER */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
         <div>
           <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <ClipboardList className="size-5 text-[#0d6157] dark:text-teal-400" />
             <span>Item Requests &amp; Dispatches</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
@@ -275,7 +270,7 @@ export function InventoryRequestsView({
             setErrorMsg(null);
             setIsNewRequestModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0 hover:scale-[1.01] active:scale-[0.99]"
         >
           <Plus className="size-3.5" />
           <span>New Request</span>
@@ -309,12 +304,12 @@ export function InventoryRequestsView({
               {requests.length}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 All-time requisitions
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <ClipboardList className="size-4" />
           </div>
         </div>
@@ -340,19 +335,19 @@ export function InventoryRequestsView({
 
         <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+            <span className="block text-[10px] font-bold text-[#0d6157] dark:text-teal-400 uppercase tracking-wider">
               Approved (Awaiting Dispatch)
             </span>
             <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
               {approvedCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/25 inline-block">
                 Ready to release
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d6157] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/25 shadow-2xs">
             <Send className="size-4" />
           </div>
         </div>
@@ -378,12 +373,12 @@ export function InventoryRequestsView({
       </div>
 
       {/* 3. TOOLBAR */}
-      <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-2">
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+            className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:border-[#0d8276] focus:ring-2 focus:ring-[#0d8276]/10 cursor-pointer shadow-2xs"
           >
             <option value="ALL">All Request Statuses</option>
             <option value="PENDING">Pending Approval</option>
@@ -400,7 +395,7 @@ export function InventoryRequestsView({
             placeholder="Search request #, user, item, reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276] transition-all shadow-2xs"
           />
         </div>
       </div>
@@ -409,7 +404,7 @@ export function InventoryRequestsView({
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 bg-slate-50/90 dark:bg-slate-850 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
                 <th className="py-2.5 px-6">Req. Number</th>
                 <th className="py-2.5 px-4">Requested By</th>
@@ -424,7 +419,7 @@ export function InventoryRequestsView({
               {filteredRequests.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-slate-400">
-                    <ClipboardList className="size-8 mx-auto mb-2 opacity-40" />
+                    <ClipboardList className="size-8 mx-auto mb-2 opacity-40 text-slate-400" />
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                       No item requests found.
                     </p>
@@ -438,7 +433,7 @@ export function InventoryRequestsView({
                   return (
                     <tr
                       key={r.id}
-                      className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                      className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
                       <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
                         #{r.requestNumber}
@@ -458,7 +453,7 @@ export function InventoryRequestsView({
                           {r.items.map((i) => (
                             <div key={i.id} className="text-xs text-slate-700 dark:text-slate-300">
                               <span className="font-semibold">{i.item.name}:</span>{' '}
-                              <strong className="font-mono text-blue-600 dark:text-blue-400">
+                              <strong className="font-mono text-[#0d5c56] dark:text-teal-400">
                                 {i.quantity} {i.item.unit}
                               </strong>
                             </div>
@@ -481,19 +476,19 @@ export function InventoryRequestsView({
 
                       <td className="py-3 px-4">
                         {r.status === 'PENDING' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
                             Pending
                           </span>
                         ) : r.status === 'APPROVED' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20">
                             Approved
                           </span>
                         ) : r.status === 'RELEASED' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
                             Released
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800">
                             Rejected
                           </span>
                         )}
@@ -507,7 +502,7 @@ export function InventoryRequestsView({
                                 type="button"
                                 disabled={isSubmitting}
                                 onClick={() => handleApprove(r.id)}
-                                className="px-2 py-1 text-[10px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:hover:bg-blue-900 dark:text-blue-300 rounded-[6px] transition-colors cursor-pointer"
+                                className="px-2.5 py-1 text-[10px] font-semibold bg-[#e6f6f3] hover:bg-[#d6f0ea] text-[#0d5c56] dark:bg-[#0d6157]/25 dark:hover:bg-[#0d6157]/40 dark:text-teal-300 rounded-[8px] border border-[#0d8276]/20 transition-colors cursor-pointer shadow-2xs"
                               >
                                 Approve
                               </button>
@@ -515,7 +510,7 @@ export function InventoryRequestsView({
                                 type="button"
                                 disabled={isSubmitting}
                                 onClick={() => handleOpenReject(r)}
-                                className="px-2 py-1 text-[10px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900 dark:text-rose-300 rounded-[6px] transition-colors cursor-pointer"
+                                className="px-2.5 py-1 text-[10px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900 dark:text-rose-300 rounded-[8px] border border-rose-200/80 transition-colors cursor-pointer shadow-2xs"
                               >
                                 Reject
                               </button>
@@ -527,7 +522,7 @@ export function InventoryRequestsView({
                               type="button"
                               disabled={isSubmitting}
                               onClick={() => handleRelease(r.id)}
-                              className="px-2.5 py-1 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] transition-colors cursor-pointer shadow-2xs"
+                              className="px-3 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all cursor-pointer shadow-xs"
                             >
                               Release Stock
                             </button>
@@ -539,7 +534,7 @@ export function InventoryRequestsView({
                               setSelectedRequest(r);
                               setIsDetailModalOpen(true);
                             }}
-                            className="px-2 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[6px] transition-colors cursor-pointer"
+                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer shadow-2xs"
                           >
                             Details
                           </button>
@@ -557,10 +552,10 @@ export function InventoryRequestsView({
       {/* MODAL 1: NEW ITEM REQUEST */}
       {isNewRequestModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-lg w-full p-5 relative text-xs max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-5 relative text-xs max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-blue-50 dark:bg-blue-950 text-blue-600">
+                <div className="p-1.5 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d6157] dark:text-teal-300">
                   <ClipboardList className="size-4" />
                 </div>
                 <div>
@@ -571,7 +566,7 @@ export function InventoryRequestsView({
               <button
                 type="button"
                 onClick={() => setIsNewRequestModalOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -595,7 +590,7 @@ export function InventoryRequestsView({
                     placeholder="e.g. Laser Room 2, Dental Unit 1"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276]"
                   />
                 </div>
 
@@ -608,7 +603,7 @@ export function InventoryRequestsView({
                     placeholder="e.g. Skin rejuvenation sessions"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276]"
                   />
                 </div>
               </div>
@@ -622,14 +617,14 @@ export function InventoryRequestsView({
                   <button
                     type="button"
                     onClick={handleAddItemRow}
-                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    className="text-[10px] font-bold text-[#0d6157] dark:text-teal-400 hover:underline flex items-center gap-1"
                   >
                     <Plus className="size-3" />
                     <span>Add Item</span>
                   </button>
                 </div>
 
-                <div className="space-y-2 border border-slate-100 dark:border-slate-800 p-2.5 rounded-[8px] bg-slate-50/50 dark:bg-slate-850">
+                <div className="space-y-2 border border-slate-200/80 dark:border-slate-800 p-2.5 rounded-[8px] bg-slate-50/50 dark:bg-slate-850">
                   {requestItems.map((row, idx) => {
                     const selItem = availableItems.find((i) => i.id === row.itemId);
                     return (
@@ -637,7 +632,7 @@ export function InventoryRequestsView({
                         <select
                           value={row.itemId}
                           onChange={(e) => handleItemChange(idx, e.target.value)}
-                          className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white"
+                          className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276]"
                         >
                           {availableItems.map((item) => (
                             <option key={item.id} value={item.id}>
@@ -652,7 +647,7 @@ export function InventoryRequestsView({
                             min="1"
                             value={row.quantity}
                             onChange={(e) => handleQuantityChange(idx, parseInt(e.target.value, 10) || 1)}
-                            className="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[6px] px-2 py-1.5 text-xs text-slate-900 dark:text-white text-center font-bold"
+                            className="w-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2 py-1.5 text-xs text-slate-900 dark:text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276]"
                           />
                           <span className="text-[10px] font-mono text-slate-400 truncate">
                             {selItem?.unit || 'Units'}
@@ -685,7 +680,7 @@ export function InventoryRequestsView({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-[8px] shadow-xs transition-colors disabled:opacity-50"
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] shadow-xs transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>
@@ -698,10 +693,10 @@ export function InventoryRequestsView({
       {/* MODAL 2: REJECT REASON */}
       {isRejectModalOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-md w-full p-5 relative text-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-5 relative text-xs">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-red-50 dark:bg-red-950 text-red-600">
+                <div className="p-1.5 rounded-[8px] bg-red-50 dark:bg-red-950 text-red-600">
                   <XCircle className="size-4" />
                 </div>
                 <div>
@@ -712,7 +707,7 @@ export function InventoryRequestsView({
               <button
                 type="button"
                 onClick={() => setIsRejectModalOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -729,7 +724,7 @@ export function InventoryRequestsView({
                   placeholder="Explain why this request is being rejected..."
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276]"
                 />
               </div>
 
@@ -757,10 +752,10 @@ export function InventoryRequestsView({
       {/* MODAL 3: REQUEST DETAIL */}
       {isDetailModalOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-lg w-full p-5 relative text-xs max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-5 relative text-xs max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-blue-50 dark:bg-blue-950 text-blue-600">
+                <div className="p-1.5 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d6157] dark:text-teal-300">
                   <ClipboardList className="size-4" />
                 </div>
                 <div>
@@ -775,14 +770,14 @@ export function InventoryRequestsView({
               <button
                 type="button"
                 onClick={() => setIsDetailModalOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-[8px]">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-[8px] border border-slate-200/60 dark:border-slate-700/60">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-bold block">Requested By</span>
                   <span className="font-bold text-slate-800 dark:text-white">{selectedRequest.requestedBy.name}</span>
@@ -799,23 +794,23 @@ export function InventoryRequestsView({
 
               <div>
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Requested Items</h4>
-                <div className="border border-slate-200 dark:border-slate-800 rounded-[8px] overflow-hidden">
+                <div className="border border-slate-200/80 dark:border-slate-800 rounded-[8px] overflow-hidden">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 text-[10px] uppercase font-bold">
                       <tr>
-                        <th className="p-2">Item</th>
-                        <th className="p-2 text-center">Requested</th>
-                        <th className="p-2 text-center">Released</th>
-                        <th className="p-2 text-center">Available in Stock</th>
+                        <th className="p-2.5">Item</th>
+                        <th className="p-2.5 text-center">Requested</th>
+                        <th className="p-2.5 text-center">Released</th>
+                        <th className="p-2.5 text-center">Available in Stock</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {selectedRequest.items.map((i) => (
                         <tr key={i.id}>
-                          <td className="p-2 font-medium text-slate-800 dark:text-white">{i.item.name}</td>
-                          <td className="p-2 text-center font-bold text-blue-600">{i.quantity} {i.item.unit}</td>
-                          <td className="p-2 text-center font-bold text-emerald-600">{i.releasedQuantity} {i.item.unit}</td>
-                          <td className="p-2 text-center text-slate-500">{i.item.currentStock} {i.item.unit}</td>
+                          <td className="p-2.5 font-medium text-slate-800 dark:text-white">{i.item.name}</td>
+                          <td className="p-2.5 text-center font-bold text-[#0d5c56] dark:text-teal-400">{i.quantity} {i.item.unit}</td>
+                          <td className="p-2.5 text-center font-bold text-emerald-600 dark:text-emerald-400">{i.releasedQuantity} {i.item.unit}</td>
+                          <td className="p-2.5 text-center text-slate-500 font-mono">{i.item.currentStock} {i.item.unit}</td>
                         </tr>
                       ))}
                     </tbody>
