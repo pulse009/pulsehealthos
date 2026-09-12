@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   LuHouse as Home,
@@ -34,6 +33,7 @@ import {
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
+import { FastLink } from '@/components/ui/FastLink';
 import {
   useDoctorActiveTab,
   setDoctorActiveTab,
@@ -77,6 +77,75 @@ export function DoctorSecondarySidebar({
   // Instant shared synchronous activeTab state
   const [currentTab, setActiveTab] = useDoctorActiveTab(urlTab);
 
+  // Optimistic navigation states for 0ms visual latency
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
+  const [optimisticTab, setOptimisticTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOptimisticPath(null);
+    setOptimisticTab(null);
+  }, [pathname, urlTab]);
+
+  const activePath = optimisticPath || pathname;
+  const activeTabParam = optimisticTab !== null ? optimisticTab : urlTab;
+
+  const handleNavigate = (targetHref: string) => {
+    const parts = targetHref.split('?');
+    const pathPart = parts[0] || null;
+    const queryPart = parts[1];
+    setOptimisticPath(pathPart);
+    if (queryPart) {
+      const sp = new URLSearchParams(queryPart);
+      const tab = sp.get('tab') || sp.get('status') || null;
+      setOptimisticTab(tab);
+    } else {
+      setOptimisticTab(null);
+    }
+  };
+
+  // Proactively warm up all primary portal routes in the background
+  useEffect(() => {
+    const warmList = [
+      '/portal',
+      '/portal/nurse',
+      '/portal/manager',
+      '/portal/doctors',
+      '/portal/services',
+      '/portal/patients',
+      '/portal/appointments',
+      '/portal/conversations',
+      '/portal/roles',
+      '/portal/pharmacy',
+      '/portal/laboratory',
+      '/portal/accounts',
+      '/portal/accounts/closing',
+      '/portal/accounts/invoices',
+      '/portal/accounts/doctor-payouts',
+      '/portal/inventory',
+      '/portal/inventory/requests',
+      '/portal/inventory/purchase-orders',
+      '/portal/inventory/items',
+      '/portal/inventory/low-stock',
+      '/portal/security',
+      '/portal/subscription',
+      '/portal/organization',
+    ];
+    if (typeof window !== 'undefined') {
+      const runWarm = () => {
+        warmList.forEach((route) => {
+          try {
+            router.prefetch(route);
+          } catch {}
+        });
+      };
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(runWarm);
+      } else {
+        setTimeout(runWarm, 80);
+      }
+    }
+  }, [router]);
+
   // If user is DOCTOR, do not initialize from an admin DOCTORS_CACHE with multiple doctors
   const [doctors, setDoctors] = useState<DoctorSummary[]>(() => {
     if (isDoctor && DOCTORS_CACHE && DOCTORS_CACHE.length > 1) return [];
@@ -96,6 +165,14 @@ export function DoctorSecondarySidebar({
       setIsLoading(false);
     };
     listeners.add(updateListener);
+
+    // If cache is already present, avoid unnecessary duplicate network request
+    if (DOCTORS_CACHE && DOCTORS_CACHE.length > 0) {
+      setIsLoading(false);
+      return () => {
+        listeners.delete(updateListener);
+      };
+    }
 
     fetch('/api/doctors')
       .then((res) => res.json())
@@ -131,18 +208,18 @@ export function DoctorSecondarySidebar({
     setActiveTab(tabKey);
   };
 
-  const isAppointmentsPage = pathname.startsWith('/portal/appointments');
-  const isRolesPage = pathname.startsWith('/portal/roles');
-  const isManagerPage = pathname.startsWith('/portal/manager');
-  const isNursePage = pathname.startsWith('/portal/nurse');
-  const isPharmacyPage = pathname.startsWith('/portal/pharmacy');
-  const isOrganizationPage = pathname.startsWith('/portal/organization') || pathname.startsWith('/portal/profile');
-  const isSecurityPage = pathname.startsWith('/portal/security');
-  const isSubscriptionPage = pathname.startsWith('/portal/subscription') || pathname.startsWith('/portal/upgrade');
-  const roleTab = searchParams.get('tab') || 'all';
+  const isAppointmentsPage = activePath.startsWith('/portal/appointments');
+  const isRolesPage = activePath.startsWith('/portal/roles');
+  const isManagerPage = activePath.startsWith('/portal/manager');
+  const isNursePage = activePath.startsWith('/portal/nurse');
+  const isPharmacyPage = activePath.startsWith('/portal/pharmacy');
+  const isOrganizationPage = activePath.startsWith('/portal/organization') || activePath.startsWith('/portal/profile');
+  const isSecurityPage = activePath.startsWith('/portal/security');
+  const isSubscriptionPage = activePath.startsWith('/portal/subscription') || activePath.startsWith('/portal/upgrade');
+  const roleTab = activeTabParam || searchParams.get('tab') || 'all';
 
-  const isInventoryPage = pathname.startsWith('/portal/inventory');
-  const isAccountsPage = pathname.startsWith('/portal/accounts');
+  const isInventoryPage = activePath.startsWith('/portal/inventory');
+  const isAccountsPage = activePath.startsWith('/portal/accounts');
 
   if (isNurse) {
     return (
@@ -178,20 +255,19 @@ export function DoctorSecondarySidebar({
         {/* Nurse Navigation Menu */}
         <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4 min-h-0">
           {/* Top Station Banner */}
-          <Link
+          <FastLink
             href="/portal/nurse"
-            className={cn(
-              'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
-              pathname === '/portal/nurse' && (!urlTab || urlTab === 'triage')
-                ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
-            )}
+            onNavigate={handleNavigate}
+            active={activePath === '/portal/nurse' && (!activeTabParam || activeTabParam === 'triage')}
+            activeClassName="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold"
+            inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium"
+            className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <HeartPulse className="size-4 text-[#0d6157] dark:text-teal-400" />
               <span>Nurse Station</span>
             </div>
-          </Link>
+          </FastLink>
 
           {/* Section: Clinical Nursing & Flow */}
           <div className="space-y-1">
@@ -200,44 +276,41 @@ export function DoctorSecondarySidebar({
               <span>Clinical Nursing &amp; Flow</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/nurse?tab=triage"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/nurse' && (urlTab === 'triage' || !urlTab)
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/nurse' && (activeTabParam === 'triage' || !activeTabParam)}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <HeartPulse className="size-3.5" />
                   <span>Triage &amp; Vitals</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/nurse?tab=queue"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/nurse' && urlTab === 'queue'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/nurse' && activeTabParam === 'queue'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Users className="size-3.5" />
                   <span>Waiting Room Queue</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/appointments"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/appointments')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/appointments')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <CalendarDays className="size-3.5" />
@@ -246,52 +319,49 @@ export function DoctorSecondarySidebar({
                 <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
                   Limited
                 </span>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/patients"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/patients')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/patients')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Users className="size-3.5" />
                   <span>Patient Directory</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/nurse?tab=history"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/nurse' && urlTab === 'history'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/nurse' && activeTabParam === 'history'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <FileText className="size-3.5" />
                   <span>Basic Patient Clinical History</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/inventory/requests"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/inventory')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Boxes className="size-3.5" />
                   <span>Medical Supplies Request</span>
                 </div>
-              </Link>
+              </FastLink>
             </div>
           </div>
 
@@ -302,35 +372,33 @@ export function DoctorSecondarySidebar({
               <span>Inbox &amp; Security</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/conversations"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/conversations')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/conversations')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <FileText className="size-3.5" />
                   <span>Inbox/Internal Communication</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/security"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/security')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/security')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Shield className="size-3.5" />
                   <span>My Profile / Personal Security</span>
                 </div>
-              </Link>
+              </FastLink>
             </div>
           </div>
         </div>
@@ -372,20 +440,19 @@ export function DoctorSecondarySidebar({
         {/* Manager Navigation Menu */}
         <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4 min-h-0">
           {/* Top Ops Hub Banner */}
-          <Link
+          <FastLink
             href="/portal/manager"
-            className={cn(
-              'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
-              pathname === '/portal/manager'
-                ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
-            )}
+            onNavigate={handleNavigate}
+            active={activePath === '/portal/manager'}
+            activeClassName="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold"
+            inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium"
+            className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Building2 className="size-4 text-[#0d6157] dark:text-teal-400" />
               <span>Operations Hub</span>
             </div>
-          </Link>
+          </FastLink>
 
           {/* Section: Operations & Clinical Governance */}
           <div className="space-y-1">
@@ -394,209 +461,191 @@ export function DoctorSecondarySidebar({
               <span>Operations & Governance</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/manager"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/manager'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/manager'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Activity className="size-3.5" />
                   <span>Overview &amp; Roster</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/doctors"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/doctors')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/doctors')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Stethoscope className="size-3.5" />
                   <span>Doctors Management</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
-                href="/portal/roles"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/roles')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <Users className="size-3.5" />
-                  <span>Staff Roles &amp; Directory</span>
-                </div>
-              </Link>
-
-              <Link
+              <FastLink
                 href="/portal/accounts/closing"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/accounts/closing')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/accounts/closing')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Clock className="size-3.5" />
                   <span>Cash Register Z-Reports</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/inventory/purchase-orders"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/inventory/purchase-orders')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory/purchase-orders')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
-                  <Boxes className="size-3.5" />
-                  <span>Procurement &amp; POs</span>
+                  <Package className="size-3.5" />
+                  <span>Procurement &amp; PO Approvals</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/accounts"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/accounts' || (pathname.startsWith('/portal/accounts') && !pathname.includes('closing'))
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/accounts'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
-                  <FileText className="size-3.5" />
+                  <Wallet className="size-3.5" />
                   <span>Financial Ledger</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/inventory"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/inventory') && !pathname.includes('purchase-orders')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/inventory'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Boxes className="size-3.5" />
                   <span>Medical Inventory</span>
                 </div>
-              </Link>
+              </FastLink>
             </div>
           </div>
 
-          {/* Section: Practice Utilities & Front Desk */}
+          {/* Section: Clinical Schedules & Patients */}
           <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              <Wrench className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
-              <span>Practice Utilities</span>
+              <CalendarDays className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Schedules &amp; Patients</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/appointments"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/appointments')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/appointments')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <CalendarDays className="size-3.5" />
                   <span>Appointments Schedule</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/services"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/services')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/services')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
-                  <FileText className="size-3.5" />
+                  <ClipboardList className="size-3.5" />
                   <span>Clinical Services</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/patients"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/patients')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/patients')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Users className="size-3.5" />
                   <span>Patients Directory</span>
                 </div>
-              </Link>
+              </FastLink>
+            </div>
+          </div>
 
-              <Link
+          {/* Section: Communication & Security */}
+          <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <Wrench className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Communication &amp; Settings</span>
+            </div>
+            <div className="space-y-0.5">
+              <FastLink
                 href="/portal/conversations"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/conversations')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/conversations')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <FileText className="size-3.5" />
                   <span>Internal Communications</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/organization"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/organization') || pathname.startsWith('/portal/profile')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={isOrganizationPage}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <Building2 className="size-3.5" />
                   <span>Clinic Profile</span>
                 </div>
-              </Link>
+              </FastLink>
 
-              <Link
+              <FastLink
                 href="/portal/security"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/security')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/security')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="size-3.5" />
                   <span>Security &amp; 2FA</span>
                 </div>
-              </Link>
+              </FastLink>
             </div>
           </div>
         </div>
@@ -643,8 +692,9 @@ export function DoctorSecondarySidebar({
               </div>
             </div>
           ) : currentDoctorId ? (
-            <Link
+            <FastLink
               href="/portal/doctors"
+              onNavigate={handleNavigate}
               className="flex items-center gap-1.5 w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-50 hover:bg-[#e6f6f3] dark:bg-slate-800 dark:hover:bg-[#0d6157]/20 text-slate-700 hover:text-[#0d5c56] dark:text-slate-300 dark:hover:text-teal-300 border border-slate-200/80 dark:border-slate-700 hover:border-[#0d8276]/25 transition-all shadow-2xs whitespace-nowrap overflow-hidden cursor-pointer"
             >
               <span className="shrink-0">← All Doctors</span>
@@ -653,61 +703,62 @@ export function DoctorSecondarySidebar({
                   ({activeDoctor.name})
                 </span>
               )}
-            </Link>
+            </FastLink>
           ) : isManagerPage ? (
-            <Link
+            <FastLink
               href="/portal/manager"
+              onNavigate={handleNavigate}
               className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold shadow-2xs cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <Building2 className="size-4 text-[#0d6157]" />
                 <span>Operations Hub</span>
               </div>
-            </Link>
+            </FastLink>
           ) : isNursePage ? (
-            <Link
+            <FastLink
               href="/portal/nurse"
+              onNavigate={handleNavigate}
               className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold shadow-2xs cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <HeartPulse className="size-4 text-[#0d6157]" />
                 <span>Nurse Station</span>
               </div>
-            </Link>
+            </FastLink>
           ) : isPharmacyPage ? (
-            <Link
+            <FastLink
               href="/portal/pharmacy"
+              onNavigate={handleNavigate}
               className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold shadow-2xs cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <Pill className="size-4 text-[#0d6157]" />
                 <span>Pharmacy Station</span>
               </div>
-            </Link>
+            </FastLink>
           ) : isRolesPage ? (
-            <Link
+            <FastLink
               href="/portal/roles"
-              className={cn(
-                'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
-                roleTab === 'all' || !roleTab || pathname === '/portal/roles'
-                  ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
-              )}
+              onNavigate={handleNavigate}
+              active={roleTab === 'all' || !roleTab || activePath === '/portal/roles'}
+              activeClassName="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold"
+              inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer"
             >
               <span>All Roles</span>
-            </Link>
+            </FastLink>
           ) : (
-            <Link
+            <FastLink
               href="/portal/doctors"
-              className={cn(
-                'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
-                pathname === '/portal/doctors' || pathname === '/portal/doctors/create' || pathname === '/portal'
-                  ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
-                  : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
-              )}
+              onNavigate={handleNavigate}
+              active={activePath === '/portal/doctors' || activePath === '/portal/doctors/create' || activePath === '/portal'}
+              activeClassName="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold"
+              inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer"
             >
               <span>All Doctors</span>
-            </Link>
+            </FastLink>
           )}
         </div>
 
@@ -719,41 +770,46 @@ export function DoctorSecondarySidebar({
               <span>Operations & Management</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/manager"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/manager'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/manager'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Overview &amp; Roster</span>
-              </Link>
-              <Link
-                href="/portal/roles"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
-              >
-                <span>Staff Roles &amp; Directory</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/accounts/closing"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/accounts/closing')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Cash Register Z-Reports</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/inventory/purchase-orders"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory/purchase-orders')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Procurement &amp; PO Approvals</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/accounts"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/accounts'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Financial Ledger</span>
-              </Link>
+              </FastLink>
             </div>
           </div>
         ) : isNursePage ? (
@@ -763,35 +819,46 @@ export function DoctorSecondarySidebar({
               <span>Clinical Nursing Station</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/nurse"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/nurse'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/nurse'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Triage &amp; Vitals Intake</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/appointments"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/appointments')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Waiting Room Queue</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/patients"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/patients')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Patient Directory</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/inventory/requests"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Medical Supplies Request</span>
-              </Link>
+              </FastLink>
             </div>
           </div>
         ) : isPharmacyPage ? (
@@ -801,35 +868,46 @@ export function DoctorSecondarySidebar({
               <span>Pharmacy &amp; Dispensing</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/pharmacy"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/pharmacy'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/pharmacy'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Prescription Queue</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/inventory/items"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory/items')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Drug Catalog &amp; Stock</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/inventory/low-stock"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory/low-stock')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Low Stock Alerts</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/inventory/suppliers"
-                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory/suppliers')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Pharma Suppliers</span>
-              </Link>
+              </FastLink>
             </div>
           </div>
         ) : isAccountsPage ? (
@@ -847,120 +925,110 @@ export function DoctorSecondarySidebar({
                   </div>
                   {/* Children Tabs under My Payouts */}
                   <div className="pl-3 space-y-0.5 border-l-2 border-[#0d8276]/20 dark:border-slate-800 ml-3">
-                    <Link
+                    <FastLink
                       href="/portal/accounts/doctor-payouts"
-                      className={cn(
-                        'flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all',
-                        pathname === '/portal/accounts/doctor-payouts' && (!searchParams.get('status') || searchParams.get('status') === 'ALL')
-                          ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                      )}
+                      onNavigate={handleNavigate}
+                      active={activePath === '/portal/accounts/doctor-payouts' && (!searchParams.get('status') || searchParams.get('status') === 'ALL')}
+                      activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                      inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                      className="flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all"
                     >
                       <span>All Payouts</span>
-                    </Link>
-                    <Link
+                    </FastLink>
+                    <FastLink
                       href="/portal/accounts/doctor-payouts?status=PENDING"
-                      className={cn(
-                        'flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all',
-                        pathname === '/portal/accounts/doctor-payouts' && searchParams.get('status') === 'PENDING'
-                          ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                      )}
+                      onNavigate={handleNavigate}
+                      active={activePath === '/portal/accounts/doctor-payouts' && (activeTabParam === 'PENDING' || searchParams.get('status') === 'PENDING')}
+                      activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                      inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                      className="flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all"
                     >
                       <span>Pending</span>
-                    </Link>
-                    <Link
+                    </FastLink>
+                    <FastLink
                       href="/portal/accounts/doctor-payouts?status=PAID"
-                      className={cn(
-                        'flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all',
-                        pathname === '/portal/accounts/doctor-payouts' && searchParams.get('status') === 'PAID'
-                          ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                      )}
+                      onNavigate={handleNavigate}
+                      active={activePath === '/portal/accounts/doctor-payouts' && (activeTabParam === 'PAID' || searchParams.get('status') === 'PAID')}
+                      activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                      inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                      className="flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all"
                     >
                       <span>Paid</span>
-                    </Link>
+                    </FastLink>
                   </div>
                 </div>
               ) : (
                 <>
-                  <Link
+                  <FastLink
                     href="/portal/accounts"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname === '/portal/accounts'
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath === '/portal/accounts'}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Financial Overview</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/accounts/invoices"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/accounts/invoices')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/accounts/invoices')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Invoices &amp; Billing</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/accounts/doctor-payouts"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/accounts/doctor-payouts')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/accounts/doctor-payouts')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Doctor Payouts</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/accounts/bills"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/accounts/bills')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/accounts/bills')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Supplier Bills</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/accounts/expenses"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/accounts/expenses')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/accounts/expenses')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Operating Expenses</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/accounts/closing"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/accounts/closing')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/accounts/closing')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Day-End Closing</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/accounts/reports"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/accounts/reports')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/accounts/reports')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Reports &amp; P&amp;L</span>
-                  </Link>
+                  </FastLink>
                 </>
               )}
             </div>
@@ -974,98 +1042,90 @@ export function DoctorSecondarySidebar({
             <div className="space-y-0.5">
               {userRole !== 'DOCTOR' && (
                 <>
-                  <Link
+                  <FastLink
                     href="/portal/inventory"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname === '/portal/inventory'
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath === '/portal/inventory'}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Overview Dashboard</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/inventory/items"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/inventory/items')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/inventory/items')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Items &amp; Stock</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/inventory/categories"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/inventory/categories')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/inventory/categories')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Categories</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/inventory/movements"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/inventory/movements')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/inventory/movements')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Stock Movements</span>
-                  </Link>
+                  </FastLink>
                 </>
               )}
-              <Link
+              <FastLink
                 href="/portal/inventory/requests"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname.startsWith('/portal/inventory/requests')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/inventory/requests')}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>{userRole === 'DOCTOR' ? 'My Item Requests' : 'Item Requests'}</span>
-              </Link>
+              </FastLink>
               {userRole !== 'DOCTOR' && (
                 <>
-                  <Link
+                  <FastLink
                     href="/portal/inventory/suppliers"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/inventory/suppliers')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/inventory/suppliers')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Suppliers &amp; Vendors</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/inventory/purchase-orders"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/inventory/purchase-orders')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/inventory/purchase-orders')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Purchase Orders</span>
-                  </Link>
-                  <Link
+                  </FastLink>
+                  <FastLink
                     href="/portal/inventory/low-stock"
-                    className={cn(
-                      'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                      pathname.startsWith('/portal/inventory/low-stock')
-                        ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                    )}
+                    onNavigate={handleNavigate}
+                    active={activePath.startsWith('/portal/inventory/low-stock')}
+                    activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                    inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                    className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
                   >
                     <span>Low Stock Alerts</span>
-                  </Link>
+                  </FastLink>
                 </>
               )}
             </div>
@@ -1077,29 +1137,26 @@ export function DoctorSecondarySidebar({
               <span>Staff Roles</span>
             </div>
             <div className="space-y-0.5">
-           
-              <Link
+              <FastLink
                 href="/portal/roles?tab=coordinators"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  roleTab === 'coordinators'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={roleTab === 'coordinators'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Medical Coordinators</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/roles?tab=receptionists"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  roleTab === 'receptionists'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={roleTab === 'receptionists'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Receptionists</span>
-              </Link>
+              </FastLink>
             </div>
           </div>
         ) : isAppointmentsPage ? (
@@ -1109,61 +1166,56 @@ export function DoctorSecondarySidebar({
               <span>{isDoctor ? 'My Schedule Views' : 'Schedule Views'}</span>
             </div>
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/appointments"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  pathname === '/portal/appointments' && !searchParams.get('status')
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/appointments' && !searchParams.get('status') && !activeTabParam}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>All Appointments</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/appointments?status=CONFIRMED"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  searchParams.get('status') === 'CONFIRMED'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activeTabParam === 'CONFIRMED' || searchParams.get('status') === 'CONFIRMED'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Confirmed &amp; Active</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/appointments?status=PENDING"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  searchParams.get('status') === 'PENDING'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activeTabParam === 'PENDING' || searchParams.get('status') === 'PENDING'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Pending Requests</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/appointments?status=COMPLETED"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  searchParams.get('status') === 'COMPLETED'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activeTabParam === 'COMPLETED' || searchParams.get('status') === 'COMPLETED'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Completed Treatments</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/appointments?status=CANCELLED"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  searchParams.get('status') === 'CANCELLED'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
+                onNavigate={handleNavigate}
+                active={activeTabParam === 'CANCELLED' || searchParams.get('status') === 'CANCELLED'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all"
               >
                 <span>Cancelled Slots</span>
-              </Link>
+              </FastLink>
             </div>
           </div>
         ) : (
@@ -1292,14 +1344,15 @@ export function DoctorSecondarySidebar({
                 </div>
               ) : (
                 doctors.map((doc) => (
-                  <Link
+                  <FastLink
                     key={doc.id}
                     href={`/portal/doctors/${doc.id}`}
+                    onNavigate={handleNavigate}
                     className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-colors group"
                   >
                     <span className="truncate">{doc.name}</span>
                     <ChevronRight className="size-3.5 text-slate-400 group-hover:text-[#0d6157] dark:group-hover:text-teal-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                  </Link>
+                  </FastLink>
                 ))
               )}
             </div>
@@ -1316,74 +1369,68 @@ export function DoctorSecondarySidebar({
             </div>
 
             <div className="space-y-0.5">
-              <Link
+              <FastLink
                 href="/portal/appointments"
-                className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                  pathname.startsWith('/portal/appointments')
-                    ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                    : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/appointments')}
+                activeClassName="bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20"
+                inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
               >
                 <span>Appointments Schedule</span>
-              </Link>
+              </FastLink>
               {!isCoordinator && (
-                <Link
+                <FastLink
                   href="/portal/services"
-                  className={cn(
-                    'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                    pathname.startsWith('/portal/services')
-                      ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                  )}
+                  onNavigate={handleNavigate}
+                  active={activePath.startsWith('/portal/services')}
+                  activeClassName="bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20"
+                  inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
                 >
                   <span>Clinical Services</span>
-                </Link>
+                </FastLink>
               )}
-              <Link
+              <FastLink
                 href="/portal/patients"
-                className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                  pathname.startsWith('/portal/patients')
-                    ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                    : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                )}
+                onNavigate={handleNavigate}
+                active={activePath.startsWith('/portal/patients')}
+                activeClassName="bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20"
+                inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
               >
                 <span>Patients Directory</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/organization"
-                className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                  isOrganizationPage
-                    ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                    : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                )}
+                onNavigate={handleNavigate}
+                active={isOrganizationPage}
+                activeClassName="bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20"
+                inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
               >
                 <span>Clinic Profile</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/security"
-                className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                  isSecurityPage
-                    ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                    : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                )}
+                onNavigate={handleNavigate}
+                active={isSecurityPage}
+                activeClassName="bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20"
+                inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
               >
                 <span>Security &amp; 2FA</span>
-              </Link>
-              <Link
+              </FastLink>
+              <FastLink
                 href="/portal/subscription"
-                className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                  isSubscriptionPage
-                    ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                    : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                )}
+                onNavigate={handleNavigate}
+                active={isSubscriptionPage}
+                activeClassName="bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20"
+                inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
               >
                 <span>Upgrade &amp; Plans</span>
-              </Link>
+              </FastLink>
             </div>
           </div>
         )}
@@ -1398,14 +1445,15 @@ export function DoctorSecondarySidebar({
               {doctors
                 .filter((d) => d.id !== currentDoctorId)
                 .map((d) => (
-                  <Link
+                  <FastLink
                     key={d.id}
                     href={`/portal/doctors/${d.id}?tab=${currentTab}`}
+                    onNavigate={handleNavigate}
                     className="flex items-center justify-between px-3 py-1.5 rounded-xl text-xs text-slate-600 dark:text-slate-400 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-[#0d6157]/20 dark:hover:text-teal-300 transition-colors"
                   >
                     <span className="truncate font-medium">{d.name}</span>
                     <ChevronRight className="size-3 text-[#0d6157]/60 dark:text-teal-400/60 shrink-0" />
-                  </Link>
+                  </FastLink>
                 ))}
             </div>
           </div>

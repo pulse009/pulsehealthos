@@ -17,6 +17,9 @@ export default async function RolesPage() {
     if (user.role === 'RECEPTIONIST') {
       redirect('/portal/appointments');
     }
+    if (user.role === 'MANAGER') {
+      redirect('/portal/manager');
+    }
     redirect('/portal');
   }
 

@@ -3,6 +3,7 @@
 import React, { type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { FastLink } from '@/components/ui/FastLink';
 import {
   MobileNavToggle,
   SidebarNav,
@@ -94,7 +95,7 @@ export function AppShell({
         {/* Brand Header (Admin Portal Only) */}
         {workspaceKind === 'Admin' ? (
           <div className="h-[52px] flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 shrink-0">
-            <Link href={homeHref} className="flex items-center gap-2 group min-w-0">
+            <FastLink href={homeHref} className="flex items-center gap-2 group min-w-0">
               <div className="size-7.5 rounded-lg bg-gradient-to-tr from-[#0d6157] via-[#0d8276] to-teal-400 p-0.5 shadow-xs flex items-center justify-center shrink-0">
                 <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
                   <span className="text-[10px] font-black text-teal-300">PW</span>
@@ -108,7 +109,7 @@ export function AppShell({
                   Admin
                 </Badge>
               </div>
-            </Link>
+            </FastLink>
           </div>
         ) : null}
 
@@ -181,14 +182,14 @@ export function AppShell({
           {/* Right Section: Notification Icon Circle + Profile Dropdown */}
           <div className="flex items-center gap-2.5 shrink-0">
             {/* Notification Bell Button */}
-            <Link
+            <FastLink
               href={workspaceKind === 'Clinic' ? '/portal/notifications' : '/admin/reminders'}
               className="size-8 rounded-full bg-slate-50/80 dark:bg-slate-800 border border-[#0d8276]/15 dark:border-slate-700 hover:bg-[#e6f6f3] hover:border-[#0d8276]/30 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center relative transition-colors shadow-2xs"
               aria-label="Notifications"
             >
               <Bell className="size-3.5 text-[#0d5c56] dark:text-slate-300" />
               <span className="size-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 absolute top-1.5 right-1.5" />
-            </Link>
+            </FastLink>
 
             {/* Profile Dropdown with Clinic Profile & Log Out */}
             <UserProfileDropdown

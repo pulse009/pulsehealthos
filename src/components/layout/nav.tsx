@@ -134,7 +134,11 @@ export function ClinicPortalSidebarNav({
 
     fetchUnread();
 
-    const interval = setInterval(fetchUnread, 6000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchUnread();
+      }
+    }, 15000);
     const handleUpdate = () => {
       fetchUnread();
     };
@@ -175,7 +179,6 @@ export function ClinicPortalSidebarNav({
         : isManager
           ? [
               { href: '/portal/manager', label: 'Manager Hub', icon: Building2 },
-              { href: '/portal/roles', label: 'Staff Roles', icon: UserCog },
               { href: '/portal/laboratory', label: 'Laboratory', icon: FlaskConical },
               ...(!isPulseNow ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
               ...(!isPulseNow ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
@@ -312,6 +315,8 @@ export function ClinicPortalSidebarNav({
               href={item.href}
               prefetch={true}
               onMouseEnter={() => router.prefetch(item.href)}
+              onPointerDown={() => router.prefetch(item.href)}
+              onTouchStart={() => router.prefetch(item.href)}
               onClick={() => {
                 if (pathname !== item.href) {
                   setOptimisticPath(item.href);

@@ -3,6 +3,14 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  compress: true,
+  experimental: {
+    staleTimes: {
+      dynamic: 180, // Cache dynamic routes in client router cache for 3 minutes (instant back/forward navigation)
+      static: 300,  // Cache static routes for 5 minutes
+    },
+    optimizePackageImports: ['react-icons/lu', 'react-icons/fa6', 'lucide-react', 'date-fns'],
+  },
   serverExternalPackages: ['@prisma/client', 'bcryptjs'],
   eslint: {
     // Lint is run explicitly in CI via `npm run lint`; don't duplicate during build.

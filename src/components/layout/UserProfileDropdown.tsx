@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   LuBuilding2 as Building2,
@@ -9,6 +8,7 @@ import {
   LuShield as Shield,
   LuTrendingUp as TrendingUp,
 } from 'react-icons/lu';
+import { FastLink } from '@/components/ui/FastLink';
 import { Badge, cn } from '@/components/ui/primitives';
 
 export function UserProfileDropdown({
@@ -86,6 +86,10 @@ export function UserProfileDropdown({
       ? 'Medical Coordinator'
       : userRole === 'RECEPTIONIST'
       ? 'Receptionist'
+      : userRole === 'MANAGER'
+      ? 'Clinic Manager'
+      : userRole === 'NURSE'
+      ? 'Nurse'
       : userRole || 'Member';
 
   const isNurse = userRole === 'NURSE';
@@ -139,7 +143,7 @@ export function UserProfileDropdown({
           <div className="p-1 space-y-0.5">
             {/* Clinic Profile Option (Hidden for Nurse) */}
             {!isNurse && (
-              <Link
+              <FastLink
                 href={profileHref}
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
@@ -152,11 +156,11 @@ export function UserProfileDropdown({
                     View clinic details (read-only)
                   </span>
                 </div>
-              </Link>
+              </FastLink>
             )}
 
             {/* Security & 2FA Option */}
-            <Link
+            <FastLink
               href="/portal/security"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
@@ -169,11 +173,11 @@ export function UserProfileDropdown({
                   Password, 2FA &amp; sessions
                 </span>
               </div>
-            </Link>
+            </FastLink>
 
             {/* Upgrade & Plans Option (Hidden for Nurse) */}
             {!isNurse && (
-              <Link
+              <FastLink
                 href="/portal/subscription"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
@@ -186,7 +190,7 @@ export function UserProfileDropdown({
                     Pricing, tiers &amp; AI quota
                   </span>
                 </div>
-              </Link>
+              </FastLink>
             )}
 
             {/* Log Out Option */}

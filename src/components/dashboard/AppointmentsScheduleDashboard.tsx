@@ -36,6 +36,7 @@ import {
 import { FaWhatsapp } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
 import { AppointmentsCalendarView } from './AppointmentsCalendarView';
+import { fetchWithCache } from '@/lib/cache/clientCache';
 
 export interface AppointmentItem {
   id: string;
@@ -174,13 +175,14 @@ export function AppointmentsScheduleDashboard({
     }
   }, [initialAppointmentTypes]);
 
-  // Fetch live appointment types for this clinic on mount
+  // Fetch live appointment types for this clinic on mount with client-side cache
   useEffect(() => {
     if (clinicId) {
-      fetch(`/api/appointment-types?clinicId=${clinicId}`)
-        .then((res) => res.json())
+      fetchWithCache<{ ok?: boolean; appointmentTypes?: typeof initialAppointmentTypes }>(
+        `/api/appointment-types?clinicId=${clinicId}`
+      )
         .then((data) => {
-          if (data.ok && Array.isArray(data.appointmentTypes)) {
+          if (data && data.ok && Array.isArray(data.appointmentTypes)) {
             setAppointmentTypesList(data.appointmentTypes);
           }
         })
