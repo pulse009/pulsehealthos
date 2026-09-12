@@ -218,51 +218,77 @@ export const POST = withErrorHandling(async (request: Request) => {
 });
 
 /**
- * Permanently deletes a patient and cascades all associated appointments, conversations, messages, reminders, leads, and accounts.
+ * Permanently deletes one or multiple patients and cascades all associated appointments, records, and user accounts.
  */
 export const DELETE = withErrorHandling(async (request: Request) => {
   limitByIp(request, 'api-write', RateLimits.API_WRITE);
-  const { scope } = await requireScope();
+  const { user, scope } = await requireScope();
 
   if (scope.kind !== 'CLINIC') {
     return NextResponse.json({ error: 'Clinic scope required' }, { status: 403 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const patientId = searchParams.get('id') || searchParams.get('patientId');
-
-  if (!patientId) {
-    throw badRequest('Patient ID is required for deletion.');
+  if (user.role === 'NURSE') {
+    return NextResponse.json({ error: 'Nurses are not authorized to delete patients' }, { status: 403 });
   }
 
-  const patient = await prisma.patient.findFirst({
+  const { searchParams } = new URL(request.url);
+  const singlePatientId = searchParams.get('id') || searchParams.get('patientId');
+
+  let patientIds: string[] = [];
+
+  if (singlePatientId) {
+    patientIds = [singlePatientId];
+  } else {
+    try {
+      const body = await request.json();
+      if (Array.isArray(body?.ids) && body.ids.length > 0) {
+        patientIds = body.ids.filter((id: any) => typeof id === 'string' && id.trim().length > 0);
+      } else if (body?.id && typeof body.id === 'string') {
+        patientIds = [body.id];
+      }
+    } catch {
+      // no JSON body
+    }
+  }
+
+  if (patientIds.length === 0) {
+    throw badRequest('Patient ID or IDs array required for deletion.');
+  }
+
+  const patients = await prisma.patient.findMany({
     where: {
-      id: patientId,
+      id: { in: patientIds },
       clinicId: scope.clinicId,
     },
+    select: { id: true, userId: true },
   });
 
-  if (!patient) {
-    throw notFound('Patient not found in this clinic.');
+  if (patients.length === 0) {
+    throw notFound('No matching patients found in this clinic.');
   }
+
+  const foundIds = patients.map((p) => p.id);
+  const userIds = patients.map((p) => p.userId).filter((uid): uid is string => Boolean(uid));
 
   // Cascade delete all data in a single transaction
   await prisma.$transaction(async (tx) => {
-    // Delete user account if attached
-    if (patient.userId) {
+    // Delete attached user accounts
+    if (userIds.length > 0) {
       await tx.user.deleteMany({
-        where: { id: patient.userId },
+        where: { id: { in: userIds } },
       });
     }
 
-    // Delete patient record (Prisma will automatically cascade appointments, conversations, messages, leads, reminders)
-    await tx.patient.delete({
-      where: { id: patient.id },
+    // Delete patient records (DB foreign keys will cascade appointments, encounters, etc.)
+    await tx.patient.deleteMany({
+      where: { id: { in: foundIds }, clinicId: scope.clinicId },
     });
   });
 
   return NextResponse.json({
     ok: true,
-    message: 'Patient and all associated records permanently deleted.',
+    count: foundIds.length,
+    message: `${foundIds.length} patient${foundIds.length === 1 ? '' : 's'} and all associated records permanently deleted.`,
   });
 });

@@ -17,6 +17,15 @@ export default async function PortalDashboard() {
   if (user.role === 'RECEPTIONIST' || user.role === 'DOCTOR') {
     redirect('/portal/appointments');
   }
+  if (user.role === 'NURSE') {
+    redirect('/portal/nurse');
+  }
+  if (user.role === 'PHARMACIST') {
+    redirect('/portal/pharmacy');
+  }
+  if (user.role === 'MANAGER') {
+    redirect('/portal/manager');
+  }
 
   const timezone = 'Asia/Riyadh';
   const now = new Date();
@@ -34,13 +43,25 @@ export default async function PortalDashboard() {
     rawAppointments,
     rawServices,
     rawDoctors,
+    rawAppointmentTypes,
     todaysAppointmentsCount,
     pendingConfirmationsCount,
     cancellationsTodayCount,
   ] = await Promise.all([
     prisma.clinic.findUnique({
       where: { id: clinicId! },
-      select: { name: true, timezone: true },
+      select: {
+        name: true,
+        timezone: true,
+        whatsappNumber: true,
+        whatsapp: {
+          select: {
+            isActive: true,
+            displayPhoneNumber: true,
+            phoneNumberId: true,
+          },
+        },
+      },
     }),
     prisma.appointment.findMany({
       where: { clinicId: clinicId!, ...coordinatorAppointmentFilter },
@@ -82,6 +103,21 @@ export default async function PortalDashboard() {
           },
         },
       },
+    }),
+    prisma.appointmentType.findMany({
+      where: { clinicId: clinicId!, isActive: true },
+      select: {
+        id: true,
+        serviceId: true,
+        doctorId: true,
+        name: true,
+        durationMinutes: true,
+        priceMinor: true,
+        currency: true,
+        description: true,
+        isActive: true,
+      },
+      orderBy: { name: 'asc' },
     }),
     prisma.appointment.count({
       where: {
@@ -155,6 +191,7 @@ export default async function PortalDashboard() {
       clinicName={clinic?.name ?? 'Clinic'}
       timezone={effectiveTimezone}
       initialAppointments={initialAppointments}
+      initialAppointmentTypes={rawAppointmentTypes}
       departments={
         departmentNames.length > 0
           ? departmentNames
@@ -182,6 +219,11 @@ export default async function PortalDashboard() {
         cancellationsCount: cancellationsTodayCount,
       }}
       userRole={user.role}
+      whatsappInfo={{
+        isConnected: Boolean(clinic?.whatsapp?.isActive || (clinic?.whatsapp?.phoneNumberId && clinic?.whatsapp?.isActive)),
+        displayPhoneNumber: clinic?.whatsapp?.displayPhoneNumber || clinic?.whatsappNumber || null,
+      }}
+      showWhatsAppButton={true}
     />
   );
 }

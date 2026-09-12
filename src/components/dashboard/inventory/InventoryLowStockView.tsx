@@ -146,15 +146,15 @@ export function InventoryLowStockView({
       <div className="p-6">
         {activeTab === 'low-stock' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[750px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="py-2.5 px-6">Item Name</th>
-                  <th className="py-2.5 px-4">Category</th>
-                  <th className="py-2.5 px-4">Current Stock</th>
-                  <th className="py-2.5 px-4">Min. Threshold</th>
-                  <th className="py-2.5 px-4">Deficit</th>
-                  <th className="py-2.5 px-6 text-right">Actions</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">Item Name</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Category</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Current Stock</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Min. Threshold</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Deficit</th>
+                  <th className="py-2.5 px-6 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -180,7 +180,7 @@ export function InventoryLowStockView({
                         key={item.id}
                         className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                       >
-                        <td className="py-3 px-6 font-bold text-slate-900 dark:text-white">
+                        <td className="py-3 px-6 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           <Link
                             href={`/portal/inventory/items/${item.id}`}
                             className="hover:text-[#0d6157] dark:hover:text-teal-400 transition-colors"
@@ -188,17 +188,17 @@ export function InventoryLowStockView({
                             {item.name}
                           </Link>
                           {item.sku && (
-                            <span className="block text-[10px] text-slate-400 font-mono">
-                              SKU: {item.sku}
+                            <span className="text-[10px] text-slate-400 font-mono ml-2 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-[4px]">
+                              {item.sku}
                             </span>
                           )}
                         </td>
 
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                        <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                           {item.category?.name || '—'}
                         </td>
 
-                        <td className="py-3 px-4 font-black">
+                        <td className="py-3 px-4 font-black whitespace-nowrap">
                           <span
                             className={
                               isZero
@@ -210,19 +210,19 @@ export function InventoryLowStockView({
                           </span>
                         </td>
 
-                        <td className="py-3 px-4 text-slate-500 font-medium">
+                        <td className="py-3 px-4 text-slate-500 font-medium whitespace-nowrap">
                           {item.minimumStock} {item.unit}
                         </td>
 
-                        <td className="py-3 px-4 font-mono font-bold text-rose-600">
+                        <td className="py-3 px-4 font-mono font-bold text-rose-600 whitespace-nowrap">
                           -{deficit > 0 ? deficit : 0} {item.unit}
                         </td>
 
-                        <td className="py-3 px-6 text-right">
+                        <td className="py-3 px-6 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               href="/portal/inventory/purchase-orders"
-                              className="px-3 py-1.5 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all shadow-xs"
+                              className="px-3 py-1.5 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all shadow-xs whitespace-nowrap"
                             >
                               Reorder
                             </Link>
@@ -239,14 +239,14 @@ export function InventoryLowStockView({
 
         {activeTab === 'expiring' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[750px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="py-2.5 px-6">Item Name</th>
-                  <th className="py-2.5 px-4">Batch / Lot #</th>
-                  <th className="py-2.5 px-4">Batch Quantity</th>
-                  <th className="py-2.5 px-4">Expiry Date</th>
-                  <th className="py-2.5 px-4">Status</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">Item Name</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Batch / Lot #</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Batch Quantity</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Expiry Date</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -272,7 +272,7 @@ export function InventoryLowStockView({
                         key={b.id}
                         className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                       >
-                        <td className="py-3 px-6 font-bold text-slate-900 dark:text-white">
+                        <td className="py-3 px-6 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           <Link
                             href={`/portal/inventory/items/${b.item.id}`}
                             className="hover:text-[#0d6157] dark:hover:text-teal-400 transition-colors"
@@ -281,25 +281,29 @@ export function InventoryLowStockView({
                           </Link>
                         </td>
 
-                        <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
+                        <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                           {b.batchNumber}
                         </td>
 
-                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           {b.quantity} {b.item.unit}
                         </td>
 
-                        <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300">
-                          {expiryDate ? expiryDate.toLocaleDateString() : 'N/A'}
+                        <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                          {expiryDate ? expiryDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          }) : 'N/A'}
                         </td>
 
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 whitespace-nowrap">
                           {isExpired ? (
-                            <span className="px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                            <span className="px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800 whitespace-nowrap">
                               Expired
                             </span>
                           ) : (
-                            <span className="px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            <span className="px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
                               Expiring Soon
                             </span>
                           )}

@@ -13,6 +13,7 @@ import type { AppointmentStatus } from '@prisma/client';
 export const BLOCKING_APPOINTMENT_STATUSES = [
   'PENDING',
   'CONFIRMED',
+  'CHECKED_IN',
   'COMPLETED',
   'NO_SHOW',
 ] as const satisfies readonly AppointmentStatus[];

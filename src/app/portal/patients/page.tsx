@@ -65,6 +65,7 @@ export default async function PortalPatientsPage() {
     <PatientsPortalView
       clinicName={clinic?.name || 'Clinic'}
       initialPatients={patients}
+      userRole={user.role}
     />
   );
 }

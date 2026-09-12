@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getSessionUser } from '@/lib/auth/session';
 import {
   Activity,
@@ -75,23 +76,15 @@ export default async function HomePage() {
             <div className="w-full max-w-7xl mx-auto rounded-full bg-white shadow-[0_2px_12px_rgba(13,92,86,0.05)] px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between">
               
               {/* Brand Logo */}
-              <Link href="/" className="flex items-center gap-2 group shrink-0">
-                <div className="relative size-6 sm:size-7 flex items-center justify-center text-[#0d8276]">
-                  <svg viewBox="0 0 24 24" className="size-6 sm:size-7 fill-current" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="3.5" />
-                    <circle cx="12" cy="3" r="1.5" />
-                    <circle cx="12" cy="21" r="1.5" />
-                    <circle cx="3" cy="12" r="1.5" />
-                    <circle cx="21" cy="12" r="1.5" />
-                    <circle cx="5.636" cy="5.636" r="1.5" />
-                    <circle cx="18.364" cy="18.364" r="1.5" />
-                    <circle cx="5.636" cy="18.364" r="1.5" />
-                    <circle cx="18.364" cy="5.636" r="1.5" />
-                  </svg>
-                </div>
-                <span className="text-base sm:text-lg font-semibold tracking-tight text-slate-900">
-                  Pulseware
-                </span>
+              <Link href="/" className="flex items-center group shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Pulseware"
+                  width={140}
+                  height={35}
+                  className="h-7 sm:h-8 w-auto object-contain"
+                  priority
+                />
               </Link>
 
               {/* Center Navigation Links */}
@@ -562,14 +555,15 @@ export default async function HomePage() {
               {/* Brand col */}
               <div className="col-span-2 md:col-span-2 space-y-4 pr-6">
                 {/* Logo */}
-                <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-xl bg-gradient-to-tr from-[#0d6157] to-[#0d8276] flex items-center justify-center text-white shadow-md">
-                    <HeartPulse className="size-4" />
-                  </div>
-                  <span className="text-base font-semibold text-[#0d5c56] tracking-tight">
-                    Pulse<span className="text-[#0d8276]">ware</span>
-                  </span>
-                </div>
+                <Link href="/" className="inline-block">
+                  <Image
+                    src="/logo.png"
+                    alt="Pulseware"
+                    width={140}
+                    height={35}
+                    className="h-7 sm:h-8 w-auto object-contain"
+                  />
+                </Link>
                 <p className="text-[13px] text-[#0d6157]/70 leading-relaxed max-w-[280px]">
                   The complete Healthcare Operating System for modern clinics — AI-powered, WhatsApp-native, and built for scale.
                 </p>

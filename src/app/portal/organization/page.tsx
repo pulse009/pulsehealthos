@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireClientUser } from '@/lib/auth/guards';
 import { prisma } from '@/lib/db/prisma';
 import {
@@ -24,7 +25,11 @@ export const metadata: Metadata = { title: 'Clinic Profile' };
 export const dynamic = 'force-dynamic';
 
 export default async function OrganizationPage() {
-  const { clinicId } = await requireClientUser();
+  const { user, clinicId } = await requireClientUser();
+
+  if (user.role === 'NURSE') {
+    redirect('/portal/nurse');
+  }
 
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId! },

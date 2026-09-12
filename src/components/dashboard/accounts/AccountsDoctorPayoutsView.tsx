@@ -219,19 +219,20 @@ export function AccountsDoctorPayoutsView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP COMPACT HEADER (FLUSH BORDER ATTACHED TO SIDEBAR) */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 sticky top-0 z-10">
         <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-400 mb-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-0.5">
             <span>{clinicName}</span>
             <span>•</span>
-            <span className="text-teal-600 dark:text-teal-400 font-semibold">Accounts &amp; Finance</span>
+            <span className="text-[#0d6157] dark:text-teal-400 font-semibold">Accounts &amp; Finance</span>
             <span>•</span>
             <span className="font-semibold text-slate-700 dark:text-slate-200">
               {isDoctor ? 'My Payouts' : 'Doctor Payouts'}
             </span>
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-            {isDoctor ? 'My Payouts' : 'Doctor & Staff Payouts'}
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <Users className="size-5 text-[#0d6157] dark:text-teal-400" />
+            <span>{isDoctor ? 'My Payouts' : 'Doctor & Staff Payouts'}</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
             {isDoctor
@@ -246,7 +247,7 @@ export function AccountsDoctorPayoutsView({
               setIsGenerateOpen(true);
               setErrorMsg(null);
             }}
-            className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0 hover:scale-[1.01] active:scale-[0.99]"
           >
             <Plus className="size-3.5" />
             <span>Generate Payout</span>
@@ -266,12 +267,12 @@ export function AccountsDoctorPayoutsView({
               {formatSAR(totalNet)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-blue-100 dark:border-blue-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 {payouts.length} total vouchers
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-blue-50/80 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100/70 dark:border-blue-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <Wallet className="size-4" />
           </div>
         </div>
@@ -279,19 +280,19 @@ export function AccountsDoctorPayoutsView({
         {/* Card 2: Pending Disbursement */}
         <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 tracking-wider uppercase">
+            <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-wider uppercase">
               Pending Disbursement
             </span>
             <div className="text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none font-mono">
               {formatSAR(pendingNet)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-100 dark:border-amber-900/50 inline-block">
+              <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-200/80 dark:border-amber-900/50 inline-block">
                 {pendingCount} vouchers pending
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-amber-50/90 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200/80 dark:border-amber-900/50 shadow-2xs">
             <Clock className="size-4" />
           </div>
         </div>
@@ -306,12 +307,12 @@ export function AccountsDoctorPayoutsView({
               {formatSAR(paidNet)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-emerald-100 dark:border-emerald-900/50 inline-block">
+              <span className="bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-emerald-200/80 dark:border-emerald-900/50 inline-block">
                 {paidCount} vouchers paid
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-900/50 shadow-2xs">
             <CheckCircle2 className="size-4" />
           </div>
         </div>
@@ -326,12 +327,12 @@ export function AccountsDoctorPayoutsView({
               {formatSAR(totalRevenue)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-indigo-100 dark:border-indigo-900/50 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Completed procedures
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100/70 dark:border-indigo-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <TrendingUp className="size-4" />
           </div>
         </div>
@@ -340,7 +341,7 @@ export function AccountsDoctorPayoutsView({
       {/* 3. MAIN TABLE SECTION (ATTACHED BORDERS, SCROLLER INSIDE) */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         {/* Top Toolbar attached with border-b */}
-        <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+        <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
           <div className="relative w-72 sm:w-80 shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
             <input
@@ -348,7 +349,7 @@ export function AccountsDoctorPayoutsView({
               placeholder={isDoctor ? 'Search by voucher #, notes...' : 'Search by payout #, doctor name...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
             />
           </div>
 
@@ -374,21 +375,21 @@ export function AccountsDoctorPayoutsView({
 
         {/* Scrollable Table with flush attached borders and sticky header */}
         <div className="flex-1 min-h-0 overflow-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800">
-              <tr className="text-slate-500 font-semibold">
-                <th className="py-2.5 px-6 font-semibold">Payout Voucher #</th>
-                {!isDoctor && <th className="py-2.5 px-4 font-semibold">Doctor</th>}
-                <th className="py-2.5 px-4 font-semibold">Period</th>
-                <th className="py-2.5 px-4 text-right font-semibold">Treatment Revenue</th>
-                <th className="py-2.5 px-4 text-right font-semibold">Base Salary</th>
-                <th className="py-2.5 px-4 text-right font-semibold">Commission</th>
-                <th className="py-2.5 px-4 text-right font-semibold">Net Payout</th>
-                <th className="py-2.5 px-4 text-center font-semibold">Status</th>
-                <th className="py-2.5 px-6 text-right font-semibold">Actions</th>
+          <table className="w-full min-w-[900px] text-left text-xs border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800 text-slate-500 text-[10px] uppercase font-bold whitespace-nowrap">
+              <tr>
+                <th className="py-3 px-6">Payout Voucher #</th>
+                {!isDoctor && <th className="py-3 px-4">Doctor</th>}
+                <th className="py-3 px-4">Period</th>
+                <th className="py-3 px-4 text-right">Treatment Revenue</th>
+                <th className="py-3 px-4 text-right">Base Salary</th>
+                <th className="py-3 px-4 text-right">Commission</th>
+                <th className="py-3 px-4 text-right">Net Payout</th>
+                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 whitespace-nowrap">
               {filteredPayouts.length === 0 ? (
                 <tr>
                   <td colSpan={isDoctor ? 8 : 9} className="text-center py-16 text-slate-400 text-xs">
@@ -398,17 +399,17 @@ export function AccountsDoctorPayoutsView({
               ) : (
                 filteredPayouts.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-6 font-mono font-bold text-slate-950 dark:text-white">
+                    <td className="py-3 px-6 font-mono font-bold text-[#0d6157] dark:text-teal-400">
                       {p.payoutNumber}
                     </td>
                     {!isDoctor && (
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900 dark:text-white">{p.doctor.name}</div>
+                        <div className="font-semibold text-slate-900 dark:text-white">Dr. {p.doctor.name}</div>
                         <div className="text-[11px] text-slate-400">{p.doctor.specialty || 'General Practitioner'}</div>
                       </td>
                     )}
-                    <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                      {new Date(p.periodStart).toLocaleDateString()} – {new Date(p.periodEnd).toLocaleDateString()}
+                    <td className="py-3 px-4 text-slate-500 font-medium text-[11px]">
+                      {new Date(p.periodStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date(p.periodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-300">
                       {formatSAR(p.totalRevenue)}
@@ -419,7 +420,7 @@ export function AccountsDoctorPayoutsView({
                     <td className="py-3 px-4 text-right font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
                       +{formatSAR(p.commissionAmount)}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-blue-600 dark:text-blue-400">
+                    <td className="py-3 px-4 text-right font-mono font-bold text-[#0d6157] dark:text-teal-400">
                       {formatSAR(p.netPayoutAmount)}
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -443,14 +444,14 @@ export function AccountsDoctorPayoutsView({
                             setIsDisburseOpen(true);
                             setErrorMsg(null);
                           }}
-                          className="px-2.5 py-1 rounded-[8px] text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white transition-all cursor-pointer shadow-2xs"
                         >
                           Disburse
                         </button>
                       )}
                       {p.status === 'PAID' && (
-                        <span className="text-[11px] text-slate-400">
-                          {p.paidAt ? new Date(p.paidAt).toLocaleDateString() : 'Paid'}
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Paid'}
                         </span>
                       )}
                     </td>
@@ -468,17 +469,17 @@ export function AccountsDoctorPayoutsView({
           <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden my-8">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users className="size-5 text-blue-600" />
+                <Users className="size-5 text-[#0d6157] dark:text-teal-400" />
                 <h3 className="text-base font-bold text-slate-950 dark:text-white">Calculate &amp; Generate Payout</h3>
               </div>
-              <button onClick={() => setIsGenerateOpen(false)} className="text-slate-400 p-1">
+              <button onClick={() => setIsGenerateOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-[8px] cursor-pointer">
                 <X className="size-4" />
               </button>
             </div>
 
             <form onSubmit={handleCreatePayout} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 text-xs">
+                <div className="p-3 rounded-[8px] bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 text-xs">
                   {errorMsg}
                 </div>
               )}
@@ -494,7 +495,7 @@ export function AccountsDoctorPayoutsView({
                     setCalculation(null);
                   }}
                   required
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 >
                   <option value="">-- Choose Doctor --</option>
                   {doctors.map((d) => (
@@ -518,7 +519,7 @@ export function AccountsDoctorPayoutsView({
                       setPeriodStart(e.target.value);
                       setCalculation(null);
                     }}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
                 <div>
@@ -533,7 +534,7 @@ export function AccountsDoctorPayoutsView({
                       setPeriodEnd(e.target.value);
                       setCalculation(null);
                     }}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
               </div>
@@ -542,14 +543,14 @@ export function AccountsDoctorPayoutsView({
                 type="button"
                 onClick={handleCalculate}
                 disabled={isCalculating || !selectedDoctorId || !periodStart || !periodEnd}
-                className="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-all"
+                className="w-full py-2 px-3 rounded-[8px] text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <RefreshCw className={`size-3.5 ${isCalculating ? 'animate-spin' : ''}`} />
                 <span>{isCalculating ? 'Calculating from Payment Structure...' : 'Auto-Calculate Earnings'}</span>
               </button>
 
               {calculation && (
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-2 text-xs">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-[8px] border border-slate-200/80 dark:border-slate-700 space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Completed Appointments:</span>
                     <span className="font-bold">{calculation.totalAppointments}</span>
@@ -568,7 +569,7 @@ export function AccountsDoctorPayoutsView({
                   </div>
                   <div className="flex justify-between font-bold pt-1 border-t border-slate-200 dark:border-slate-700">
                     <span>Total Calculated Commission:</span>
-                    <span className="font-mono text-blue-600">{formatSAR(calculation.totalCommission)}</span>
+                    <span className="font-mono text-[#0d6157] dark:text-teal-400">{formatSAR(calculation.totalCommission)}</span>
                   </div>
                 </div>
               )}
@@ -584,7 +585,7 @@ export function AccountsDoctorPayoutsView({
                     min="0"
                     value={baseSalary}
                     onChange={(e) => setBaseSalary(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
                 <div>
@@ -597,7 +598,7 @@ export function AccountsDoctorPayoutsView({
                     min="0"
                     value={deductions}
                     onChange={(e) => setDeductions(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
               </div>
@@ -611,7 +612,7 @@ export function AccountsDoctorPayoutsView({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional bonus or adjustment details..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 />
               </div>
 
@@ -619,14 +620,14 @@ export function AccountsDoctorPayoutsView({
                 <button
                   type="button"
                   onClick={() => setIsGenerateOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  className="px-4 py-2 rounded-[8px] text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white shadow-xs cursor-pointer"
                 >
                   {isSubmitting ? 'Generating...' : 'Issue Payout Voucher'}
                 </button>
@@ -642,22 +643,22 @@ export function AccountsDoctorPayoutsView({
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="size-5 text-emerald-600" />
+                <CheckCircle2 className="size-5 text-[#0d6157] dark:text-teal-400" />
                 <h3 className="text-base font-bold text-slate-950 dark:text-white">Disburse Payout Voucher</h3>
               </div>
-              <button onClick={() => setIsDisburseOpen(false)} className="text-slate-400 p-1">
+              <button onClick={() => setIsDisburseOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-[8px] cursor-pointer">
                 <X className="size-4" />
               </button>
             </div>
 
             <form onSubmit={handleDisburse} className="p-6 space-y-4">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs">
+                <div className="p-3 rounded-[8px] bg-rose-50 text-rose-700 border border-rose-200 text-xs">
                   {errorMsg}
                 </div>
               )}
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-1 text-xs">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-[8px] border border-slate-200/80 dark:border-slate-700 space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Voucher:</span>
                   <span className="font-bold">{selectedPayout.payoutNumber}</span>
@@ -668,7 +669,7 @@ export function AccountsDoctorPayoutsView({
                 </div>
                 <div className="flex justify-between text-sm font-bold pt-1 border-t border-slate-200 dark:border-slate-700">
                   <span>Net Amount to Disburse:</span>
-                  <span className="text-emerald-600">{formatSAR(selectedPayout.netPayoutAmount)}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-mono">{formatSAR(selectedPayout.netPayoutAmount)}</span>
                 </div>
               </div>
 
@@ -679,7 +680,7 @@ export function AccountsDoctorPayoutsView({
                 <select
                   value={disburseMethod}
                   onChange={(e) => setDisburseMethod(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
                 >
                   <option value="BANK_TRANSFER">🏦 Bank Wire / Direct Deposit</option>
                   <option value="CHEQUE">📜 Bank Cheque</option>
@@ -696,7 +697,7 @@ export function AccountsDoctorPayoutsView({
                   value={disburseNotes}
                   onChange={(e) => setDisburseNotes(e.target.value)}
                   placeholder="e.g. Wire Transfer Ref #TRX-9012"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 />
               </div>
 
@@ -704,14 +705,14 @@ export function AccountsDoctorPayoutsView({
                 <button
                   type="button"
                   onClick={() => setIsDisburseOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700"
+                  className="px-4 py-2 rounded-[8px] text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white shadow-xs cursor-pointer"
                 >
                   {isSubmitting ? 'Processing...' : 'Confirm Disbursement'}
                 </button>

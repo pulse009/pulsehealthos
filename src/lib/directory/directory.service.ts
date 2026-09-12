@@ -921,7 +921,7 @@ export async function listClinicStaff(scope: TenantScope, clinicId: string) {
     where: {
       clinicId: id,
       isActive: true,
-      role: { in: ['COORDINATOR', 'RECEPTIONIST'] },
+      role: { in: ['COORDINATOR', 'RECEPTIONIST', 'NURSE', 'MANAGER', 'PHARMACIST'] },
     },
     select: {
       id: true,
@@ -962,7 +962,16 @@ export async function createClinicStaff(
       .replace(/[^a-z0-9]+/g, '.')
       .replace(/^\.+|\.+$/g, '');
     if (!base || base.length < 2) {
-      base = role === 'RECEPTIONIST' ? 'reception' : 'coordinator';
+      base =
+        role === 'RECEPTIONIST'
+          ? 'reception'
+          : role === 'NURSE'
+            ? 'nurse'
+            : role === 'MANAGER'
+              ? 'manager'
+              : role === 'PHARMACIST'
+                ? 'pharmacy'
+                : 'coordinator';
     }
     candidateUsername = base;
   }

@@ -285,16 +285,16 @@ export function InventorySuppliersView({
       {/* 4. TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[850px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
-                <th className="py-2.5 px-6">Supplier Name</th>
-                <th className="py-2.5 px-4">Contact Person</th>
-                <th className="py-2.5 px-4">Phone &amp; Email</th>
-                <th className="py-2.5 px-4">Location</th>
-                <th className="py-2.5 px-4">Payment Terms</th>
-                <th className="py-2.5 px-4">Items</th>
-                <th className="py-2.5 px-6 text-right">Actions</th>
+                <th className="py-2.5 px-6 whitespace-nowrap">Supplier Name</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Contact Person</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Phone &amp; Email</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Location</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Payment Terms</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Items</th>
+                <th className="py-2.5 px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -316,7 +316,7 @@ export function InventorySuppliersView({
                     key={s.id}
                     className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                   >
-                    <td className="py-3 px-6 font-bold text-slate-900 dark:text-white">
+                    <td className="py-3 px-6 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       {s.name}
                       {s.taxNumber && (
                         <span className="block text-[10px] text-slate-400 font-mono">
@@ -325,11 +325,11 @@ export function InventorySuppliersView({
                       )}
                     </td>
 
-                    <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
+                    <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                       {s.contactPerson || '—'}
                     </td>
 
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                       {s.phone && (
                         <div className="flex items-center gap-1.5 text-xs text-slate-800 dark:text-slate-200">
                           <Phone className="size-3 text-slate-400" />
@@ -345,27 +345,27 @@ export function InventorySuppliersView({
                       {!s.phone && !s.email && <span>—</span>}
                     </td>
 
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-400 text-[11px]">
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-400 text-[11px] whitespace-nowrap">
                       {s.city ? `${s.city}${s.country ? ', ' + s.country : ''}` : '—'}
                     </td>
 
-                    <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
-                      <span className="bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20 px-2 py-0.5 rounded-[8px] text-[10px] font-semibold">
+                    <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      <span className="bg-[#e6f6f3]/80 dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20 px-2 py-0.5 rounded-[8px] text-[10px] font-semibold whitespace-nowrap">
                         {s.paymentTerms || 'Standard'}
                       </span>
                     </td>
 
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap">
                       <span className="font-bold text-[#0d6157] dark:text-teal-400">
                         {s._count?.items ?? 0} items
                       </span>
                     </td>
 
-                    <td className="py-3 px-6 text-right">
+                    <td className="py-3 px-6 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href="/portal/inventory/purchase-orders"
-                          className="px-2.5 py-1 text-[10px] font-semibold bg-[#e6f6f3] hover:bg-[#d0f0eb] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20 rounded-[8px] transition-colors"
+                          className="px-2.5 py-1 text-[10px] font-semibold bg-[#e6f6f3] hover:bg-[#d0f0eb] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20 rounded-[8px] transition-colors whitespace-nowrap"
                         >
                           New PO
                         </Link>

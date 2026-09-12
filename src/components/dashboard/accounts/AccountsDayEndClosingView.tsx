@@ -140,15 +140,16 @@ export function AccountsDayEndClosingView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP HEADER TOOLBAR (Attached Border to Border) */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 sticky top-0 z-10">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
             <span>{clinicName}</span>
             <span>•</span>
-            <span className="text-blue-600 dark:text-blue-400">Cash Drawer &amp; Reconciliation</span>
+            <span className="text-[#0d6157] dark:text-teal-400 font-semibold">Cash Drawer &amp; Reconciliation</span>
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-            Day-End Cash Shift Closing (Z-Report)
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <CalendarCheck className="size-5 text-[#0d6157] dark:text-teal-400" />
+            <span>Day-End Cash Shift Closing (Z-Report)</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
             Receptionist daily shift cash reconciliation: match physical cash in drawer and POS card slips against collected receipts.
@@ -161,7 +162,7 @@ export function AccountsDayEndClosingView({
             setIsOpen(true);
             setErrorMsg(null);
           }}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0 hover:scale-[1.01] active:scale-[0.99]"
         >
           <Plus className="size-3.5" />
           <span>Perform Day-End Closing</span>
@@ -171,81 +172,81 @@ export function AccountsDayEndClosingView({
       {/* 2. STATS ROW (Flush Border Attached with Border) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         {/* Card 1: Total Closings */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Total Closings
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {closings.length}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 All-time Z-Reports
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <CalendarCheck className="size-4" />
           </div>
         </div>
 
         {/* Card 2: Verified */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
               Verified &amp; Signed
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {verifiedCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-emerald-100 dark:border-emerald-900/50 inline-block">
+              <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-emerald-200/80 dark:border-emerald-900/50 inline-block">
                 Manager Audited
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100/70 dark:border-emerald-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-900/50 shadow-2xs">
             <CheckCircle2 className="size-4" />
           </div>
         </div>
 
         {/* Card 3: Pending Verification */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
               Pending Sign-Off
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {pendingCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-amber-100 dark:border-amber-900/50 inline-block">
+              <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-200/80 dark:border-amber-900/50 inline-block">
                 Awaiting Sign-Off
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-amber-50/90 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200/80 dark:border-amber-900/50 shadow-2xs">
             <Clock className="size-4" />
           </div>
         </div>
 
         {/* Card 4: Net Shift Revenue */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="block text-[10px] font-bold text-[#0d6157] dark:text-teal-400 uppercase tracking-wider">
               Total Shift Revenue
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {formatSAR(totalRevenue)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Reconciled Cash &amp; Card
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <DollarSign className="size-4" />
           </div>
         </div>
@@ -254,8 +255,8 @@ export function AccountsDayEndClosingView({
       {/* 3. ATTACHED BORDER TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-[10px] uppercase font-bold sticky top-0 z-10 backdrop-blur-xs">
+          <table className="w-full min-w-[900px] text-left text-xs border-collapse">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-[10px] uppercase font-bold sticky top-0 z-10 backdrop-blur-xs whitespace-nowrap">
               <tr>
                 <th className="py-3 px-6">Closing #</th>
                 <th className="py-3 px-4">Shift Date</th>
@@ -269,7 +270,7 @@ export function AccountsDayEndClosingView({
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 whitespace-nowrap">
               {closings.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="text-center py-16 text-slate-400">
@@ -285,7 +286,7 @@ export function AccountsDayEndClosingView({
               ) : (
                 closings.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
+                    <td className="py-3 px-6 font-mono font-bold text-[#0d6157] dark:text-teal-400">
                       {c.closingNumber}
                     </td>
                     <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white font-mono text-[11px]">
@@ -312,7 +313,7 @@ export function AccountsDayEndClosingView({
                         <span className="text-rose-600 dark:text-rose-400">{formatSAR(c.cashDifference)} (Short)</span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-blue-600 dark:text-blue-400">
+                    <td className="py-3 px-4 text-right font-mono font-bold text-[#0d6157] dark:text-teal-400">
                       {formatSAR(c.totalRevenue)}
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -321,7 +322,7 @@ export function AccountsDayEndClosingView({
                           <CheckCircle2 className="size-3" /> Verified by Owner
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20">
                           <Clock className="size-3" /> Submitted
                         </span>
                       )}
@@ -336,7 +337,7 @@ export function AccountsDayEndClosingView({
                             setIsVerifyOpen(true);
                             setErrorMsg(null);
                           }}
-                          className="px-2.5 py-1 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] transition-colors cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs"
                         >
                           Sign-Off / Verify
                         </button>
@@ -353,10 +354,10 @@ export function AccountsDayEndClosingView({
       {/* 4. MODAL: PERFORM DAY-END CLOSING */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-lg w-full p-5 relative text-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-2xl max-w-lg w-full p-5 relative text-xs">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-blue-50 dark:bg-blue-950 text-blue-600">
+                <div className="p-1 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300">
                   <CalendarCheck className="size-4" />
                 </div>
                 <div>
@@ -369,7 +370,7 @@ export function AccountsDayEndClosingView({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -392,7 +393,7 @@ export function AccountsDayEndClosingView({
                   required
                   value={closingDate}
                   onChange={(e) => setClosingDate(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-medium"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                 />
               </div>
 
@@ -408,7 +409,7 @@ export function AccountsDayEndClosingView({
                     required
                     value={openingCash}
                     onChange={(e) => setOpeningCash(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-bold focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">Cash in drawer at start of shift</p>
                 </div>
@@ -424,7 +425,7 @@ export function AccountsDayEndClosingView({
                     required
                     value={countedCash}
                     onChange={(e) => setCountedCash(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">Physical notes/coins counted</p>
                 </div>
@@ -439,7 +440,7 @@ export function AccountsDayEndClosingView({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional shift handover or register discrepancy explanation..."
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                 />
               </div>
 
@@ -447,14 +448,14 @@ export function AccountsDayEndClosingView({
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[8px]"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[8px] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-[8px] shadow-xs transition-colors disabled:opacity-50"
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Z-Report Closing'}
                 </button>
@@ -467,10 +468,10 @@ export function AccountsDayEndClosingView({
       {/* 5. MODAL: VERIFY CLOSING */}
       {isVerifyOpen && selectedClosing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-md w-full p-5 relative text-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-2xl max-w-md w-full p-5 relative text-xs">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
+                <div className="p-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
                   <CheckCircle2 className="size-4" />
                 </div>
                 <div>
@@ -481,7 +482,7 @@ export function AccountsDayEndClosingView({
               <button
                 type="button"
                 onClick={() => setIsVerifyOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -522,7 +523,7 @@ export function AccountsDayEndClosingView({
                   value={verifyNotes}
                   onChange={(e) => setVerifyNotes(e.target.value)}
                   placeholder="e.g. Verified by Dr. Clinic Owner - Drawer balanced"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                 />
               </div>
 
@@ -530,14 +531,14 @@ export function AccountsDayEndClosingView({
                 <button
                   type="button"
                   onClick={() => setIsVerifyOpen(false)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[8px]"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[8px] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[8px] shadow-xs transition-colors"
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[8px] shadow-xs transition-colors cursor-pointer"
                 >
                   {isSubmitting ? 'Signing...' : 'Sign-off & Verify'}
                 </button>

@@ -112,6 +112,7 @@ export interface CreateAppointmentInput {
   doctorId: string;
   serviceId: string;
   patientId: string;
+  appointmentTypeId?: string | null;
   /** Exact UTC instant of the appointment start. */
   startsAt: Date;
   notes?: string | null;
@@ -243,7 +244,8 @@ export async function createAppointment(
   if (startsAt.getTime() <= now.getTime()) {
     return fail('IN_THE_PAST', 'That time is in the past.');
   }
-  if (startsAt.getTime() < minStart.getTime()) {
+  const isStaffBooking = input.source === 'ADMIN' || input.source === 'IMPORT';
+  if (!isStaffBooking && startsAt.getTime() < minStart.getTime()) {
     return fail(
       'TOO_SOON',
       `Appointments need at least ${config.settings.minAdvanceBookingMinutes} minutes' notice.`,
@@ -328,6 +330,7 @@ export async function createAppointment(
           appointmentNumber: nextAppointmentNumber,
           doctorId: doctor.id,
           serviceId: service.id,
+          appointmentTypeId: input.appointmentTypeId ?? null,
           patientId: patient.id,
           leadId: patient.lead?.id ?? null,
           startsAt,

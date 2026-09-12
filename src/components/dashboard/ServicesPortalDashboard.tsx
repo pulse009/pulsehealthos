@@ -20,6 +20,7 @@ import {
   LuChevronDown as ChevronDown,
   LuSparkles as Sparkles,
   LuLayers as Layers,
+  LuDollarSign as DollarSign,
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
@@ -78,6 +79,7 @@ export function ServicesPortalDashboard({
   const [description, setDescription] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [bufferMinutes, setBufferMinutes] = useState(0);
+  const [price, setPrice] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>([]);
   const [isDoctorsDropdownOpen, setIsDoctorsDropdownOpen] = useState(false);
@@ -130,6 +132,7 @@ export function ServicesPortalDashboard({
     setDescription('');
     setDurationMinutes(30);
     setBufferMinutes(0);
+    setPrice('');
     setIsActive(true);
     setSelectedDoctorIds([]);
     setIsDoctorsDropdownOpen(false);
@@ -143,6 +146,7 @@ export function ServicesPortalDashboard({
     setDescription(srv.description || '');
     setDurationMinutes(srv.durationMinutes);
     setBufferMinutes(srv.bufferMinutes || 0);
+    setPrice(srv.priceMinor !== undefined && srv.priceMinor !== null ? (srv.priceMinor / 100).toString() : '');
     setIsActive(srv.isActive);
     setSelectedDoctorIds(srv.doctors.map((d) => d.doctor.id));
     setIsDoctorsDropdownOpen(false);
@@ -169,9 +173,7 @@ export function ServicesPortalDashboard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: srv.name,
-          description: srv.description,
           durationMinutes: srv.durationMinutes,
-          bufferMinutes: srv.bufferMinutes,
           isActive: newStatus,
           doctorIds: srv.doctors.map((d) => d.doctor.id),
         }),
@@ -192,6 +194,7 @@ export function ServicesPortalDashboard({
       description: description.trim() || undefined,
       durationMinutes: Number(durationMinutes),
       bufferMinutes: Number(bufferMinutes),
+      price: price.trim() !== '' ? Number(price) : null,
       isActive,
       doctorIds: selectedDoctorIds,
     };
@@ -215,6 +218,8 @@ export function ServicesPortalDashboard({
                     description: data.service.description,
                     durationMinutes: data.service.durationMinutes,
                     bufferMinutes: data.service.bufferMinutes,
+                    priceMinor: data.service.priceMinor,
+                    currency: data.service.currency,
                     isActive: data.service.isActive,
                     doctors: availableDoctors
                       .filter((d) => selectedDoctorIds.includes(d.id))
@@ -513,6 +518,18 @@ export function ServicesPortalDashboard({
 
                         <div className="flex items-center justify-between">
                           <span className="text-slate-400 text-xs flex items-center gap-1.5">
+                            <DollarSign className="size-3.5 text-slate-400" />
+                            <span>Price:</span>
+                          </span>
+                          <span className="font-bold text-slate-900 dark:text-white font-mono">
+                            {srv.priceMinor !== undefined && srv.priceMinor !== null
+                              ? `${(srv.priceMinor / 100).toFixed(0)} ${srv.currency || 'SAR'}`
+                              : 'Free / Included'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400 text-xs flex items-center gap-1.5">
                             <Stethoscope className="size-3.5 text-slate-400" />
                             <span>Assigned Doctors:</span>
                           </span>
@@ -575,6 +592,9 @@ export function ServicesPortalDashboard({
                   <th className="py-3 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
                     DURATION
                   </th>
+                  <th className="py-3 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    PRICE
+                  </th>
                   <th className="py-3 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     ASSIGNED DOCTORS
                   </th>
@@ -586,7 +606,7 @@ export function ServicesPortalDashboard({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                 {filteredServices.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400 font-medium text-xs">
+                    <td colSpan={6} className="py-12 text-center text-slate-400 font-medium text-xs">
                       No services found matching filters.
                     </td>
                   </tr>
@@ -624,6 +644,12 @@ export function ServicesPortalDashboard({
 
                       <td className="py-3.5 px-4 font-mono font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {srv.durationMinutes} mins
+                      </td>
+
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                        {srv.priceMinor !== undefined && srv.priceMinor !== null
+                          ? `${(srv.priceMinor / 100).toFixed(0)} ${srv.currency || 'SAR'}`
+                          : 'Free'}
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -745,6 +771,24 @@ export function ServicesPortalDashboard({
                       <option value={10}>10 minutes</option>
                       <option value={15}>15 minutes</option>
                     </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                    Price (SAR)
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="e.g. 150 (Leave blank for free / included)"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8 pr-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] font-medium"
+                    />
                   </div>
                 </div>
 

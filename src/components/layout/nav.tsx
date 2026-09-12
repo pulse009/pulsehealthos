@@ -29,6 +29,9 @@ import {
   LuTrendingUp as TrendingUp,
   LuBoxes as Boxes,
   LuWallet as Wallet,
+  LuHeartPulse as HeartPulse,
+  LuPill as Pill,
+  LuFlaskConical as FlaskConical,
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
@@ -106,6 +109,10 @@ export function ClinicPortalSidebarNav({
   const isDoctor = userRole === 'DOCTOR';
   const isCoordinator = userRole === 'COORDINATOR';
   const isReceptionist = userRole === 'RECEPTIONIST';
+  const isNurse = userRole === 'NURSE';
+  const isPharmacist = userRole === 'PHARMACIST';
+  const isLabTech = userRole === 'LAB_TECHNICIAN' || userRole === 'PATHOLOGIST';
+  const isManager = userRole === 'MANAGER';
   const isOwnerOrAdmin = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN';
 
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -145,33 +152,71 @@ export function ClinicPortalSidebarNav({
 
   const inboxBadge = unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined;
 
-  const clinicItems = isReceptionist
+  const clinicItems = isNurse
     ? [
+        { href: '/portal/nurse', label: 'Nurse Stn', icon: HeartPulse },
         { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-        ...(!isPulseNow ? [{ href: '/portal/accounts/invoices', label: 'Billing', icon: Wallet }] : []),
         { href: '/portal/patients', label: 'Patients', icon: Users },
         { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
       ]
-    : isDoctor
+    : isPharmacist
       ? [
-          { href: '/portal/doctors', label: 'My Profile', icon: Stethoscope },
-          { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-          ...(!isPulseNow ? [{ href: '/portal/accounts/doctor-payouts', label: 'My Payouts', icon: Wallet }] : []),
-          ...(!isPulseNow ? [{ href: '/portal/inventory/requests', label: 'Item Requests', icon: Boxes }] : []),
+          { href: '/portal/pharmacy', label: 'Pharmacy', icon: Pill },
+          ...(!isPulseNow ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
           { href: '/portal/patients', label: 'Patients', icon: Users },
           { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
         ]
-      : [
-          { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
-          { href: '/portal/doctors', label: 'Doctors', icon: Stethoscope },
-          ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
-          ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
-          ...(!isCoordinator && !isPulseNow ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
-          ...(isOwnerOrAdmin && !isPulseNow ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
-          { href: '/portal/patients', label: 'Patients', icon: Users },
-          { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
-          { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
-        ];
+      : isLabTech
+        ? [
+            { href: '/portal/laboratory', label: 'Laboratory', icon: FlaskConical },
+            { href: '/portal/patients', label: 'Patients', icon: Users },
+            { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
+          ]
+        : isManager
+          ? [
+              { href: '/portal/manager', label: 'Manager Hub', icon: Building2 },
+              { href: '/portal/roles', label: 'Staff Roles', icon: UserCog },
+              { href: '/portal/laboratory', label: 'Laboratory', icon: FlaskConical },
+              ...(!isPulseNow ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
+              ...(!isPulseNow ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
+              { href: '/portal/patients', label: 'Patients', icon: Users },
+              { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+              { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
+            ]
+          : isReceptionist
+            ? [
+                { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+                ...(!isPulseNow ? [{ href: '/portal/accounts/invoices', label: 'Billing', icon: Wallet }] : []),
+                { href: '/portal/patients', label: 'Patients', icon: Users },
+                { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
+              ]
+            : isDoctor
+              ? [
+                  { href: '/portal/consultations', label: 'Consult Desk', icon: Stethoscope },
+                  { href: '/portal/laboratory', label: 'Laboratory', icon: FlaskConical },
+                  { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+                  { href: '/portal/doctors', label: 'My Profile', icon: UserCog },
+                  ...(!isPulseNow ? [{ href: '/portal/accounts/doctor-payouts', label: 'My Payouts', icon: Wallet }] : []),
+                  ...(!isPulseNow ? [{ href: '/portal/inventory/requests', label: 'Item Requests', icon: Boxes }] : []),
+                  { href: '/portal/patients', label: 'Patients', icon: Users },
+                  { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
+                ]
+              : [
+                  { href: '/portal', label: 'Dashboard', icon: LayoutGrid },
+                  { href: '/portal/consultations', label: 'Consult Desk', icon: Stethoscope },
+                  { href: '/portal/doctors', label: 'Doctors', icon: Users2 },
+                  ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
+                  ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
+                  ...(isOwnerOrAdmin ? [{ href: '/portal/nurse', label: 'Nurse Stn', icon: HeartPulse }] : []),
+                  ...(isOwnerOrAdmin ? [{ href: '/portal/laboratory', label: 'Laboratory', icon: FlaskConical }] : []),
+                  ...(isOwnerOrAdmin ? [{ href: '/portal/pharmacy', label: 'Pharmacy', icon: Pill }] : []),
+                  ...(isOwnerOrAdmin ? [{ href: '/portal/manager', label: 'Operations', icon: Building2 }] : []),
+                  ...(!isCoordinator && !isPulseNow ? [{ href: '/portal/inventory', label: 'Inventory', icon: Boxes }] : []),
+                  ...(isOwnerOrAdmin && !isPulseNow ? [{ href: '/portal/accounts', label: 'Accounts', icon: Wallet }] : []),
+                  { href: '/portal/patients', label: 'Patients', icon: Users },
+                  { href: '/portal/appointments', label: 'Appointments', icon: CalendarDays },
+                  { href: '/portal/conversations', label: 'Inbox', icon: MessagesSquare, badge: inboxBadge },
+                ];
 
   const bottomItems = isOwnerOrAdmin
     ? [
@@ -200,29 +245,7 @@ export function ClinicPortalSidebarNav({
 
   return (
     <nav className="w-full h-full flex flex-col justify-between items-center py-3 select-none overflow-hidden" aria-label="Clinic Portal Navigation">
-      {/* 1. Top Logo */}
-      <div className="w-full flex flex-col items-center shrink-0 mb-2">
-        <Link
-          href="/portal"
-          onMouseEnter={() => router.prefetch('/portal')}
-          className="size-9 rounded-xl bg-gradient-to-tr from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center shadow-xs transition-transform hover:scale-105 shrink-0 cursor-pointer"
-          title="Pulseware"
-        >
-          <svg viewBox="0 0 24 24" className="size-5 fill-current" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="3.5" />
-            <circle cx="12" cy="3" r="1.5" />
-            <circle cx="12" cy="21" r="1.5" />
-            <circle cx="3" cy="12" r="1.5" />
-            <circle cx="21" cy="12" r="1.5" />
-            <circle cx="5.636" cy="5.636" r="1.5" />
-            <circle cx="18.364" cy="18.364" r="1.5" />
-            <circle cx="5.636" cy="18.364" r="1.5" />
-            <circle cx="18.364" cy="5.636" r="1.5" />
-          </svg>
-        </Link>
-      </div>
-
-      {/* 2. Middle Scrollable Main Navigation Modules */}
+      {/* Scrollable Main Navigation Modules */}
       <div className="flex-1 w-full overflow-y-auto flex flex-col items-center gap-1.5 min-h-0 py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {clinicItems.map((item) => {
           const Icon = item.icon;
@@ -245,17 +268,17 @@ export function ClinicPortalSidebarNav({
               {/* Compact Icon Container */}
               <div
                 className={cn(
-                  'relative size-9 rounded-xl flex items-center justify-center transition-all',
+                  'relative size-8 rounded-[8px] flex items-center justify-center transition-all',
                   active
                     ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/25 text-[#0d6157] dark:text-teal-300 shadow-2xs border border-[#0d8276]/30 dark:border-teal-500/40 font-bold'
                     : 'text-slate-600 dark:text-slate-400 group-hover:bg-[#f0f9f7] dark:group-hover:bg-slate-800/50 group-hover:text-[#0d6157] dark:group-hover:text-white',
                 )}
               >
-                <Icon className="size-4.5 stroke-[2] shrink-0" />
+                <Icon className="size-3.5 stroke-[1.9] shrink-0" />
 
                 {/* Badge if available */}
                 {item.badge && (
-                  <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-bold text-[8px] min-w-[15px] h-[15px] px-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-xs">
+                  <span className="absolute -top-1 -right-1 bg-rose-600 text-white font-bold text-[7.5px] min-w-[13px] h-[13px] px-0.5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 shadow-xs">
                     {item.badge}
                   </span>
                 )}
@@ -264,7 +287,7 @@ export function ClinicPortalSidebarNav({
               {/* Compact Label underneath */}
               <span
                 className={cn(
-                  'text-[9px] tracking-tight font-medium mt-0.5 leading-none text-center truncate max-w-[66px]',
+                  'text-[8px] tracking-tight font-medium mt-0.5 leading-none text-center truncate max-w-[62px]',
                   active
                     ? 'font-bold text-[#0d5c56] dark:text-teal-300'
                     : 'text-slate-500 dark:text-slate-400 group-hover:text-[#0d6157] dark:group-hover:text-slate-200',
@@ -298,15 +321,15 @@ export function ClinicPortalSidebarNav({
             >
               <div
                 className={cn(
-                  'relative size-8.5 rounded-xl flex items-center justify-center transition-all',
+                  'relative size-7.5 rounded-[8px] flex items-center justify-center transition-all',
                   active
                     ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/25 text-[#0d6157] dark:text-teal-300 shadow-2xs border border-[#0d8276]/30'
                     : 'text-slate-500 dark:text-slate-400 group-hover:bg-[#f0f9f7] group-hover:text-[#0d6157]',
                 )}
               >
-                <Icon className="size-4 stroke-[1.8] shrink-0" />
+                <Icon className="size-3.5 stroke-[1.8] shrink-0" />
               </div>
-              <span className="text-[8.5px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-tight leading-none">
+              <span className="text-[7.5px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-tight leading-none">
                 {item.label}
               </span>
             </Link>

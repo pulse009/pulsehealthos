@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowRight,
   Building2,
@@ -25,7 +26,7 @@ export default function ContactPage() {
     email: '',
     phone: '',
     clinicName: '',
-    clinicType: 'Hospital / Multi-Specialty',
+    clinicType: 'Hospital / Multi-Specialty Network',
     message: '',
   });
 
@@ -37,7 +38,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen w-full bg-white text-slate-900 font-sans antialiased selection:bg-teal-600 selection:text-white relative overflow-x-hidden">
       
-      {/* ─── CONTACT HERO CARD (Meditech Theme) ─── */}
+      {/* ─── HERO CARD (Meditech Theme) ─── */}
       <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3 pb-8 sm:pb-12">
         <div className="relative w-full overflow-hidden rounded-[28px] sm:rounded-[40px] border-[3px] sm:border-[5px] border-white shadow-[0_12px_40px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8] pb-14 sm:pb-20">
           
@@ -66,23 +67,15 @@ export default function ContactPage() {
             <div className="w-full max-w-7xl mx-auto rounded-full bg-white shadow-[0_2px_12px_rgba(13,92,86,0.05)] px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between">
               
               {/* Brand Logo */}
-              <Link href="/" className="flex items-center gap-2 group shrink-0">
-                <div className="relative size-6 sm:size-7 flex items-center justify-center text-[#0d8276]">
-                  <svg viewBox="0 0 24 24" className="size-6 sm:size-7 fill-current" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="3.5" />
-                    <circle cx="12" cy="3" r="1.5" />
-                    <circle cx="12" cy="21" r="1.5" />
-                    <circle cx="3" cy="12" r="1.5" />
-                    <circle cx="21" cy="12" r="1.5" />
-                    <circle cx="5.636" cy="5.636" r="1.5" />
-                    <circle cx="18.364" cy="18.364" r="1.5" />
-                    <circle cx="5.636" cy="18.364" r="1.5" />
-                    <circle cx="18.364" cy="5.636" r="1.5" />
-                  </svg>
-                </div>
-                <span className="text-base sm:text-lg font-semibold tracking-tight text-slate-900">
-                  Pulseware
-                </span>
+              <Link href="/" className="flex items-center group shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Pulseware"
+                  width={140}
+                  height={35}
+                  className="h-7 sm:h-8 w-auto object-contain"
+                  priority
+                />
               </Link>
 
               {/* Center Navigation Links */}

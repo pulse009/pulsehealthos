@@ -31,7 +31,7 @@ export default async function PortalDoctorDetailPage({
       notFound();
     }
 
-    const [availableServices, availableStaff] = await Promise.all([
+    const [availableServices, availableStaff, initialAppointmentTypes] = await Promise.all([
       prisma.service.findMany({
         where: { clinicId: clinicId!, isActive: true },
         select: {
@@ -60,6 +60,24 @@ export default async function PortalDoctorDetailPage({
         },
         orderBy: { name: 'asc' },
       }),
+      prisma.appointmentType.findMany({
+        where: {
+          clinicId: clinicId!,
+          isActive: true,
+          OR: [{ doctorId: null }, { doctorId }],
+        },
+        select: {
+          id: true,
+          name: true,
+          durationMinutes: true,
+          priceMinor: true,
+          currency: true,
+          description: true,
+          serviceId: true,
+          isActive: true,
+        },
+        orderBy: { name: 'asc' },
+      }),
     ]);
 
     const isPulseNow = Boolean(user.pulseNow) || !Boolean(user.pulseHealthOS);
@@ -84,11 +102,23 @@ export default async function PortalDoctorDetailPage({
       commissionPercent: isPulseNow ? null : s.commissionPercent,
     }));
 
+    const mappedAppointmentTypes = initialAppointmentTypes.map((at) => ({
+      id: at.id,
+      name: at.name,
+      durationMinutes: at.durationMinutes,
+      price: at.priceMinor ? at.priceMinor / 100 : null,
+      currency: at.currency || 'SAR',
+      description: at.description,
+      serviceId: at.serviceId,
+      isActive: at.isActive,
+    }));
+
     return (
       <DoctorDetailPortalView
         doctor={doctor}
         availableServices={availableServices}
         availableStaff={sanitizedStaff}
+        initialAppointmentTypes={mappedAppointmentTypes}
         backHref="/portal/doctors"
         userRole={user.role}
         isPulseNow={isPulseNow}

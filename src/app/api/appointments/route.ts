@@ -124,22 +124,23 @@ export const POST = withErrorHandling(async (request: Request) => {
     throw badRequest('Could not resolve patient.');
   }
 
-  // 3. Ensure patient has portal user account with unique PA-NUMBER
-  const accountResult = await ensurePatientUserAccount(
-    targetClinicId,
-    resolvedPatientId,
-    resolvedPatient.phone,
-    resolvedPatient.name,
-    resolvedPatient.fileNumber,
-  );
+  // 3. Resolve Doctor and Service concurrently
+  const [initialService, initialDoctor] = await Promise.all([
+    prisma.service.findFirst({
+      where: {
+        clinicId: targetClinicId,
+        OR: [{ id: input.serviceId }, { name: input.serviceId }],
+      },
+    }),
+    prisma.doctor.findFirst({
+      where: {
+        clinicId: targetClinicId,
+        OR: [{ id: input.doctorId }, { name: input.doctorId }],
+      },
+    }),
+  ]);
 
-  // 4. Resolve Doctor and Service (supports UUIDs or exact Names)
-  let resolvedService = await prisma.service.findFirst({
-    where: {
-      clinicId: targetClinicId,
-      OR: [{ id: input.serviceId }, { name: input.serviceId }],
-    },
-  });
+  let resolvedService = initialService;
   if (!resolvedService) {
     resolvedService = await prisma.service.findFirst({
       where: { clinicId: targetClinicId, isActive: true },
@@ -149,12 +150,7 @@ export const POST = withErrorHandling(async (request: Request) => {
     throw badRequest('Selected service is not found in this clinic.');
   }
 
-  let resolvedDoctor = await prisma.doctor.findFirst({
-    where: {
-      clinicId: targetClinicId,
-      OR: [{ id: input.doctorId }, { name: input.doctorId }],
-    },
-  });
+  let resolvedDoctor = initialDoctor;
   if (!resolvedDoctor) {
     const docService = await prisma.doctorService.findFirst({
       where: { serviceId: resolvedService.id },
@@ -185,12 +181,13 @@ export const POST = withErrorHandling(async (request: Request) => {
     throw badRequest(`Dr. ${resolvedDoctor.name} does not offer the selected service "${resolvedService.name}".`);
   }
 
-  // 5. Create appointment
+  // 4. Create appointment
   const result = await createAppointment(scope, {
     clinicId: targetClinicId,
     doctorId: resolvedDoctor.id,
     serviceId: resolvedService.id,
     patientId: resolvedPatientId,
+    appointmentTypeId: input.appointmentTypeId,
     startsAt: input.startsAt,
     notes: input.notes,
     status: input.status,
@@ -213,6 +210,8 @@ export const POST = withErrorHandling(async (request: Request) => {
     );
   }
 
+  const credentials = result.appointment?.patientCredentials;
+
   // 5. Update pending payment if specified
   if (input.pendingPayment && result.appointment?.id) {
     await prisma.appointment.update({
@@ -229,28 +228,19 @@ export const POST = withErrorHandling(async (request: Request) => {
   const tz = clinicConfig?.timezone || 'Asia/Riyadh';
   const formattedTime = formatInstant(input.startsAt, tz);
 
-  const service = await prisma.service.findUnique({
-    where: { id: input.serviceId },
-    select: { name: true },
-  });
-  const doctor = await prisma.doctor.findUnique({
-    where: { id: input.doctorId },
-    select: { name: true },
-  });
-
   // Non-blocking notification dispatch
   sendAppointmentWhatsAppNotification({
     clinicId: targetClinicId,
     patientPhone: resolvedPatient.phone,
     patientName: resolvedPatient.name || 'Patient',
-    serviceName: service?.name || 'Medical Service',
-    doctorName: doctor?.name || 'Doctor',
+    serviceName: resolvedService.name,
+    doctorName: resolvedDoctor.name,
     appointmentTime: formattedTime,
     status: input.status,
-    fileNumber: resolvedPatient.fileNumber,
+    fileNumber: resolvedPatient.fileNumber || result.appointment?.fileNumber,
     appointmentNumber: result.appointment?.appointmentNumber,
-    username: accountResult?.username || (resolvedPatient.fileNumber ? `PA-${resolvedPatient.fileNumber}` : undefined),
-    temporaryPassword: accountResult?.temporaryPassword,
+    username: credentials?.username || (resolvedPatient.fileNumber ? `PA-${resolvedPatient.fileNumber}` : undefined),
+    temporaryPassword: credentials?.temporaryPassword,
   }).catch((e) => console.error('Failed to dispatch appointment WhatsApp notification:', e));
 
   return NextResponse.json(
@@ -258,10 +248,10 @@ export const POST = withErrorHandling(async (request: Request) => {
       ok: true,
       appointment: {
         ...result.appointment,
-        fileNumber: resolvedPatient.fileNumber,
-        username: accountResult?.username,
+        fileNumber: resolvedPatient.fileNumber || result.appointment?.fileNumber,
+        username: credentials?.username,
       },
-      account: accountResult,
+      account: credentials,
     },
     { status: 201 },
   );

@@ -20,6 +20,10 @@ import {
   Building2,
   ChevronRight,
   AlertTriangle,
+  Loader2,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/primitives';
 
@@ -41,15 +45,29 @@ export interface PatientItem {
 interface PatientsPortalViewProps {
   clinicName: string;
   initialPatients: PatientItem[];
+  userRole?: string;
 }
 
 export function PatientsPortalView({
   clinicName,
   initialPatients = [],
+  userRole,
 }: PatientsPortalViewProps) {
+  const isNurse = userRole === 'NURSE';
   const [patients, setPatients] = useState<PatientItem[]>(initialPatients);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGender, setSelectedGender] = useState<string>('ALL');
+
+  // Checkbox & Bulk Selection State
+  const [selectedPatientIds, setSelectedPatientIds] = useState<string[]>([]);
+
+  // Toast State
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
 
   // Add Patient Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,9 +80,16 @@ export function PatientsPortalView({
   const [newNationality, setNewNationality] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
 
-  // Delete Patient Modal State
-  const [patientToDelete, setPatientToDelete] = useState<PatientItem | null>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  // Delete Confirmation Modal State (Unified for Single & Bulk)
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    type: 'SINGLE' | 'BULK';
+    patient?: PatientItem;
+    count?: number;
+  }>({
+    isOpen: false,
+    type: 'SINGLE',
+  });
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -89,6 +114,99 @@ export function PatientsPortalView({
       return true;
     });
   }, [patients, searchQuery, selectedGender]);
+
+  // Selection Handlers
+  const isAllSelected =
+    filteredPatients.length > 0 &&
+    filteredPatients.every((p) => selectedPatientIds.includes(p.id));
+
+  const isSomeSelected =
+    selectedPatientIds.length > 0 && !isAllSelected;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      // Unselect all currently visible
+      const visibleIdSet = new Set(filteredPatients.map((p) => p.id));
+      setSelectedPatientIds((prev) => prev.filter((id) => !visibleIdSet.has(id)));
+    } else {
+      // Select all visible
+      const newIds = new Set([...selectedPatientIds, ...filteredPatients.map((p) => p.id)]);
+      setSelectedPatientIds(Array.from(newIds));
+    }
+  };
+
+  const handleToggleSelectPatient = (id: string) => {
+    setSelectedPatientIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handlePromptDeleteSingle = (patient: PatientItem) => {
+    if (isNurse) return;
+    setDeleteError(null);
+    setDeleteModalState({
+      isOpen: true,
+      type: 'SINGLE',
+      patient,
+    });
+  };
+
+  const handlePromptDeleteBulk = () => {
+    if (isNurse || selectedPatientIds.length === 0) return;
+    setDeleteError(null);
+    setDeleteModalState({
+      isOpen: true,
+      type: 'BULK',
+      count: selectedPatientIds.length,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (isNurse) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      if (deleteModalState.type === 'SINGLE' && deleteModalState.patient) {
+        const pId = deleteModalState.patient.id;
+        const res = await fetch(`/api/patients?id=${encodeURIComponent(pId)}`, {
+          method: 'DELETE',
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data?.error || data?.message || 'Failed to delete patient.');
+        }
+
+        setPatients((prev) => prev.filter((p) => p.id !== pId));
+        setSelectedPatientIds((prev) => prev.filter((id) => id !== pId));
+        showToast(`Patient "${deleteModalState.patient.name}" deleted successfully.`);
+      } else if (deleteModalState.type === 'BULK' && selectedPatientIds.length > 0) {
+        const res = await fetch('/api/patients', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedPatientIds }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data?.error || data?.message || 'Failed to delete selected patients.');
+        }
+
+        const deletedSet = new Set(selectedPatientIds);
+        setPatients((prev) => prev.filter((p) => !deletedSet.has(p.id)));
+        setSelectedPatientIds([]);
+        showToast(`${data.count || selectedPatientIds.length} patients permanently deleted from clinic.`);
+      }
+
+      setDeleteModalState({ isOpen: false, type: 'SINGLE' });
+    } catch (err: any) {
+      console.error(err);
+      setDeleteError(err.message || 'An error occurred while deleting.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleCreatePatient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +258,7 @@ export function PatientsPortalView({
       setNewPhone('');
       setNewEmail('');
       setNewNationality('');
+      showToast(`Patient "${created.name}" registered successfully.`);
     } catch (err: any) {
       setModalError(err.message || 'Error creating patient');
     } finally {
@@ -147,39 +266,17 @@ export function PatientsPortalView({
     }
   };
 
-  const handleDeletePatient = async () => {
-    if (!patientToDelete) return;
-    if (deleteConfirmText.trim() !== 'CONFIRM DELETE') {
-      setDeleteError('Please type CONFIRM DELETE exactly to proceed.');
-      return;
-    }
-
-    setIsDeleting(true);
-    setDeleteError(null);
-
-    try {
-      const res = await fetch(`/api/patients?id=${encodeURIComponent(patientToDelete.id)}`, {
-        method: 'DELETE',
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data?.error || data?.message || 'Failed to delete patient.');
-      }
-
-      setPatients((prev) => prev.filter((p) => p.id !== patientToDelete.id));
-      setPatientToDelete(null);
-      setDeleteConfirmText('');
-    } catch (err: any) {
-      console.error(err);
-      setDeleteError(err.message || 'An error occurred while deleting patient.');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
+      
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="fixed top-4 right-6 z-50 flex items-center gap-2 bg-[#0d6157] text-white px-4 py-2.5 rounded-[8px] shadow-lg border border-[#0d6157]/40 text-xs font-semibold animate-in fade-in slide-in-from-top-3">
+          <CheckCircle2 className="size-4 shrink-0" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div>
@@ -237,6 +334,36 @@ export function PatientsPortalView({
         </div>
       </div>
 
+      {/* Bulk Action Strip */}
+      {!isNurse && selectedPatientIds.length > 0 && (
+        <div className="px-6 py-2.5 bg-blue-50/90 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-900/60 flex items-center justify-between gap-4 animate-in fade-in duration-150 shrink-0">
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 dark:text-blue-200">
+            <span className="inline-flex items-center justify-center bg-blue-600 text-white size-5 rounded-full text-[10px] font-bold">
+              {selectedPatientIds.length}
+            </span>
+            <span>patient{selectedPatientIds.length === 1 ? '' : 's'} selected</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedPatientIds([])}
+              className="px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-[6px] transition-colors cursor-pointer"
+            >
+              Clear Selection
+            </button>
+            <button
+              type="button"
+              onClick={handlePromptDeleteBulk}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-[6px] text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Delete Selected ({selectedPatientIds.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Patients Table */}
       <div className="flex-1 overflow-auto min-h-0">
         {filteredPatients.length === 0 ? (
@@ -248,7 +375,25 @@ export function PatientsPortalView({
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700 sticky top-0 z-10">
               <tr>
-                <th className="py-3 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                {!isNurse && (
+                  <th className="py-3 px-4 w-10 text-center">
+                    <button
+                      type="button"
+                      onClick={handleToggleSelectAll}
+                      title={isAllSelected ? 'Deselect all' : 'Select all visible'}
+                      className="p-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    >
+                      {isAllSelected ? (
+                        <CheckSquare className="size-4 text-blue-600 dark:text-blue-400" />
+                      ) : isSomeSelected ? (
+                        <MinusSquare className="size-4 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <Square className="size-4 text-slate-400" />
+                      )}
+                    </button>
+                  </th>
+                )}
+                <th className="py-3 px-4 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
                   PATIENT ID
                 </th>
                 <th className="py-3 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider">
@@ -266,9 +411,11 @@ export function PatientsPortalView({
                 <th className="py-3 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider whitespace-nowrap">
                   REGISTERED ON
                 </th>
-                <th className="py-3 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
-                  ACTION
-                </th>
+                {!isNurse && (
+                  <th className="py-3 px-6 font-bold text-slate-600 dark:text-slate-300 uppercase text-[10px] tracking-wider text-right whitespace-nowrap">
+                    ACTION
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -279,13 +426,33 @@ export function PatientsPortalView({
                   day: 'numeric',
                   year: 'numeric',
                 });
+                const isSelected = selectedPatientIds.includes(p.id);
 
                 return (
                   <tr
                     key={p.id}
-                    className="hover:bg-slate-50/70 dark:hover:bg-slate-850/40 transition-colors"
+                    className={`transition-colors ${
+                      isSelected
+                        ? 'bg-blue-50/50 dark:bg-blue-950/30'
+                        : 'hover:bg-slate-50/70 dark:hover:bg-slate-850/40'
+                    }`}
                   >
-                    <td className="py-3 px-6 whitespace-nowrap">
+                    {!isNurse && (
+                      <td className="py-3 px-4 w-10 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSelectPatient(p.id)}
+                          className="p-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="size-4 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <Square className="size-4 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </button>
+                      </td>
+                    )}
+                    <td className="py-3 px-4 whitespace-nowrap">
                       <span className="font-mono font-bold text-xs bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-[5px]">
                         {pid}
                       </span>
@@ -325,20 +492,18 @@ export function PatientsPortalView({
                     <td className="py-3 px-6 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                       {dateFormatted}
                     </td>
-                    <td className="py-3 px-6 whitespace-nowrap text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPatientToDelete(p);
-                          setDeleteConfirmText('');
-                          setDeleteError(null);
-                        }}
-                        className="p-1.5 rounded-[6px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                        title="Delete patient and all records"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </td>
+                    {!isNurse && (
+                      <td className="py-3 px-6 whitespace-nowrap text-right">
+                        <button
+                          type="button"
+                          onClick={() => handlePromptDeleteSingle(p)}
+                          className="p-1.5 rounded-[6px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                          title="Delete patient and all records"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -481,41 +646,51 @@ export function PatientsPortalView({
         </div>
       )}
 
-      {/* Delete Patient Confirmation Modal (Requires typing CONFIRM DELETE) */}
-      {patientToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="size-8 rounded-full bg-rose-100 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center text-rose-600 dark:text-rose-400">
-                  <AlertTriangle className="size-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-                    Delete Patient Record
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-                    Permanent deletion with full cascade
-                  </p>
-                </div>
+      {/* Delete Patient Confirmation Modal (Single & Bulk) */}
+      {deleteModalState.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[12px] shadow-2xl max-w-md w-full p-6 relative text-xs animate-in zoom-in-95 duration-100 flex flex-col space-y-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-start gap-3.5">
+              <div className="size-10 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-900">
+                <AlertTriangle className="size-5" />
               </div>
-              <button
-                type="button"
-                onClick={() => setPatientToDelete(null)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <X className="size-4" />
-              </button>
+              <div className="space-y-1 flex-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {deleteModalState.type === 'SINGLE'
+                    ? 'Delete Patient Record?'
+                    : `Delete ${deleteModalState.count} Patient Records?`}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {deleteModalState.type === 'SINGLE' && deleteModalState.patient ? (
+                    <>
+                      Are you sure you want to permanently delete{' '}
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {deleteModalState.patient.name}
+                      </span>{' '}
+                      (<span className="font-mono">{deleteModalState.patient.patientId || `PID-${deleteModalState.patient.id.slice(0, 6)}`}</span>)?
+                    </>
+                  ) : (
+                    <>
+                      Are you sure you want to permanently delete{' '}
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {deleteModalState.count} selected patients
+                      </span>{' '}
+                      from the clinic?
+                    </>
+                  )}
+                </p>
+              </div>
             </div>
 
-            {/* Warning Message */}
-            <div className="p-3 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80 rounded-[8px] text-rose-900 dark:text-rose-200 space-y-1.5">
-              <p className="font-semibold text-xs">
-                Are you sure you want to delete {patientToDelete.name}?
+            {/* Cascade Warning Box */}
+            <div className="p-3 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80 rounded-[8px] text-rose-900 dark:text-rose-200 space-y-1 text-xs">
+              <p className="font-semibold text-[11px] text-rose-800 dark:text-rose-300">
+                ⚠️ Permanent Cascade Deletion:
               </p>
               <p className="text-[11px] leading-relaxed text-rose-700 dark:text-rose-300">
-                This will permanently delete this patient and <strong>ALL associated data</strong> including all appointments, conversations, messages, reminders, and user accounts. This action <strong>cannot</strong> be undone.
+                This will permanently delete all associated data including appointments, conversations, messages, reminders, and patient portal accounts. This action <strong>cannot</strong> be undone.
               </p>
             </div>
 
@@ -525,37 +700,30 @@ export function PatientsPortalView({
               </div>
             )}
 
-            {/* Confirmation Input */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                Type <span className="font-mono text-rose-600 dark:text-rose-400 uppercase font-extrabold select-all">CONFIRM DELETE</span> to verify:
-              </label>
-              <input
-                type="text"
-                placeholder="CONFIRM DELETE"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-              />
-            </div>
-
             {/* Actions */}
-            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => setPatientToDelete(null)}
-                className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                disabled={isDeleting}
+                onClick={() => setDeleteModalState({ isOpen: false, type: 'SINGLE' })}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-[8px] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={isDeleting || deleteConfirmText.trim() !== 'CONFIRM DELETE'}
-                onClick={handleDeletePatient}
-                className="px-4 py-1.5 rounded-[8px] bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-[8px] shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               >
-                <Trash2 className="size-3.5" />
-                <span>{isDeleting ? 'Deleting All Data…' : 'Delete Patient Permanently'}</span>
+                {isDeleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                <span>
+                  {isDeleting
+                    ? 'Deleting...'
+                    : deleteModalState.type === 'SINGLE'
+                    ? 'Confirm Delete'
+                    : `Delete ${deleteModalState.count} Patients`}
+                </span>
               </button>
             </div>
           </div>

@@ -94,6 +94,41 @@ export function AccountsInvoiceDetailView({
     }).format(amount);
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
+            <CheckCircle2 className="size-3" /> Paid
+          </span>
+        );
+      case 'PARTIALLY_PAID':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+            <Clock className="size-3" /> Partial
+          </span>
+        );
+      case 'ISSUED':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d6157] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/30">
+            <Clock className="size-3" /> Issued
+          </span>
+        );
+      case 'CANCELLED':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            Cancelled
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            {status}
+          </span>
+        );
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -135,12 +170,12 @@ export function AccountsInvoiceDetailView({
   const balance = invoice.totalAmount - invoice.paidAmount;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950 p-6 space-y-6">
-      {/* 1. Top Action Navigation */}
-      <div className="flex items-center justify-between no-print">
+    <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-y-auto font-sans">
+      {/* 1. Top Action Navigation Header (Flush Border Attached to Sidebar) */}
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 sticky top-0 z-10 no-print">
         <Link
           href="/portal/accounts/invoices"
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-2.5 py-1.5 rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <ArrowLeft className="size-4" />
           <span>Back to Invoices</span>
@@ -149,7 +184,7 @@ export function AccountsInvoiceDetailView({
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] text-xs font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
           >
             <Printer className="size-3.5" />
             <span>Print Invoice</span>
@@ -162,7 +197,7 @@ export function AccountsInvoiceDetailView({
                 setIsPayOpen(true);
                 setErrorMsg(null);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white transition-all shadow-xs cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
             >
               <CreditCard className="size-3.5" />
               <span>Record Payment</span>
@@ -171,199 +206,197 @@ export function AccountsInvoiceDetailView({
         </div>
       </div>
 
-      {/* 2. Official Printable Invoice Paper */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-8 max-w-4xl mx-auto space-y-8 print:border-none print:shadow-none print:p-0">
-        {/* Invoice Header */}
-        <div className="flex flex-col sm:flex-row items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="size-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                +
+      {/* 2. Official Printable Invoice Paper Content */}
+      <div className="p-6 md:p-8 flex-1 min-h-0">
+        <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200/80 dark:border-slate-800 shadow-2xs p-6 sm:p-8 max-w-4xl mx-auto space-y-8 print:border-none print:shadow-none print:p-0">
+          {/* Invoice Header */}
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-[8px] bg-[#0d6157] text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+                  <ReceiptText className="size-4" />
+                </div>
+                <h1 className="text-xl font-bold text-slate-950 dark:text-white tracking-tight">
+                  {clinicName}
+                </h1>
               </div>
-              <h1 className="text-xl font-bold text-slate-950 dark:text-white tracking-tight">
-                {clinicName}
-              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Official Medical Invoice &amp; Tax Receipt
+              </p>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Official Medical Invoice &amp; Tax Receipt
-            </p>
+
+            <div className="text-left sm:text-right">
+              <div className="text-lg font-mono font-bold text-[#0d6157] dark:text-teal-400">
+                {invoice.invoiceNumber}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                Issue Date: <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">{new Date(invoice.issueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              </div>
+              {invoice.dueDate && (
+                <div className="text-xs text-slate-500">
+                  Due Date: <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">{new Date(invoice.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="text-left sm:text-right">
-            <div className="text-lg font-mono font-bold text-blue-600 dark:text-blue-400">
-              {invoice.invoiceNumber}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              Issue Date: <span className="font-semibold text-slate-700 dark:text-slate-300">{new Date(invoice.issueDate).toLocaleDateString()}</span>
-            </div>
-            {invoice.dueDate && (
-              <div className="text-xs text-slate-500">
-                Due Date: <span className="font-semibold text-slate-700 dark:text-slate-300">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+          {/* Patient & Doctor Information */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 rounded-[8px] bg-slate-50/75 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-xs">
+            <div>
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Billed To (Patient)</span>
+              <div className="text-sm font-bold text-slate-950 dark:text-white mt-1">
+                {invoice.patient?.name || 'Unnamed Patient'}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Patient & Doctor Information */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 rounded-xl bg-slate-50/75 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-xs">
-          <div>
-            <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Billed To (Patient)</span>
-            <div className="text-sm font-bold text-slate-950 dark:text-white mt-1">
-              {invoice.patient?.name || 'Unnamed Patient'}
-            </div>
-            <div className="text-slate-500 mt-0.5">
-              Phone: <span className="font-mono text-slate-700 dark:text-slate-300">{invoice.patient?.phone}</span>
-            </div>
-            {invoice.patient?.fileNumber && (
-              <div className="text-slate-500">
-                Medical File: <span className="font-mono font-semibold text-blue-600">PID-{invoice.patient.fileNumber.toString().padStart(4, '0')}</span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Clinical Service Provider</span>
-            <div className="text-sm font-bold text-slate-950 dark:text-white mt-1">
-              {invoice.doctor?.name || 'Clinic Department'}
-            </div>
-            {invoice.doctor?.specialty && (
               <div className="text-slate-500 mt-0.5">
-                Specialty: {invoice.doctor.specialty}
+                Phone: <span className="font-mono text-slate-700 dark:text-slate-300">{invoice.patient?.phone}</span>
               </div>
-            )}
-            {invoice.appointment && (
-              <div className="text-slate-500">
-                Appointment: #{invoice.appointment.appointmentNumber}
-              </div>
-            )}
-          </div>
-        </div>
+              {invoice.patient?.fileNumber && (
+                <div className="text-slate-500">
+                  Medical File: <span className="font-mono font-semibold text-[#0d6157] dark:text-teal-400">PID-{invoice.patient.fileNumber.toString().padStart(4, '0')}</span>
+                </div>
+              )}
+            </div>
 
-        {/* Line Items Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                <th className="py-2.5 px-2">Item Description</th>
-                <th className="py-2.5 px-2 text-center">Qty</th>
-                <th className="py-2.5 px-2 text-right">Unit Price</th>
-                <th className="py-2.5 px-2 text-right">Total Price</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {invoice.items.map((item) => (
-                <tr key={item.id}>
-                  <td className="py-3 px-2">
-                    <div className="font-semibold text-slate-900 dark:text-white">
-                      {item.description}
-                    </div>
-                  </td>
-                  <td className="py-3 px-2 text-center font-mono">{item.quantity}</td>
-                  <td className="py-3 px-2 text-right font-mono">{formatSAR(item.unitPrice)}</td>
-                  <td className="py-3 px-2 text-right font-mono font-bold text-slate-900 dark:text-white">
-                    {formatSAR(item.totalPrice)}
-                  </td>
+            <div>
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Treating Practitioner / Doctor</span>
+              <div className="text-sm font-bold text-slate-950 dark:text-white mt-1">
+                {invoice.doctor?.name || 'Assigned Department'}
+              </div>
+              <div className="text-slate-500 mt-0.5">
+                Specialization: <span className="text-slate-700 dark:text-slate-300 font-medium">{invoice.doctor?.specialty || 'Clinical Services'}</span>
+              </div>
+              <div className="mt-2">
+                {getStatusBadge(invoice.status)}
+              </div>
+            </div>
+          </div>
+
+          {/* Line Items Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b-2 border-slate-200 dark:border-slate-700 text-slate-400 uppercase tracking-wider font-bold text-[10px]">
+                  <th className="py-2.5 px-2">Description / Procedure</th>
+                  <th className="py-2.5 px-2 text-center">Qty</th>
+                  <th className="py-2.5 px-2 text-right">Unit Price</th>
+                  <th className="py-2.5 px-2 text-right">Total Price</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Financial Summary Calculation */}
-        <div className="flex flex-col sm:flex-row justify-between gap-6 border-t border-slate-200 dark:border-slate-700 pt-6">
-          <div className="text-xs text-slate-500 max-w-sm">
-            {invoice.notes && (
-              <div>
-                <span className="font-bold text-slate-700 dark:text-slate-300">Notes / Remarks:</span>
-                <p className="mt-1 italic">{invoice.notes}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="w-full sm:w-64 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-              <span>Subtotal:</span>
-              <span className="font-mono">{formatSAR(invoice.subtotal)}</span>
-            </div>
-            {invoice.discountAmount > 0 && (
-              <div className="flex justify-between text-emerald-600">
-                <span>Discount:</span>
-                <span className="font-mono">- {formatSAR(invoice.discountAmount)}</span>
-              </div>
-            )}
-            {invoice.taxAmount > 0 && (
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Tax / VAT:</span>
-                <span className="font-mono">+ {formatSAR(invoice.taxAmount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm font-bold text-slate-950 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
-              <span>Total Amount:</span>
-              <span className="font-mono text-blue-600 dark:text-blue-400">{formatSAR(invoice.totalAmount)}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-emerald-600">
-              <span>Paid Amount:</span>
-              <span className="font-mono">{formatSAR(invoice.paidAmount)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-rose-600 pt-1 border-t border-slate-100 dark:border-slate-800">
-              <span>Balance Due:</span>
-              <span className="font-mono">{formatSAR(balance)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Transactions Ledger */}
-        {invoice.transactions.length > 0 && (
-          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Payment Transaction History
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-semibold">
-                    <th className="py-2 px-3">Date</th>
-                    <th className="py-2 px-3">Method</th>
-                    <th className="py-2 px-3">Reference #</th>
-                    <th className="py-2 px-3">Received By</th>
-                    <th className="py-2 px-3 text-right">Amount</th>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {invoice.items.map((item) => (
+                  <tr key={item.id}>
+                    <td className="py-3 px-2">
+                      <div className="font-semibold text-slate-900 dark:text-white">
+                        {item.description}
+                      </div>
+                    </td>
+                    <td className="py-3 px-2 text-center font-mono">{item.quantity}</td>
+                    <td className="py-3 px-2 text-right font-mono">{formatSAR(item.unitPrice)}</td>
+                    <td className="py-3 px-2 text-right font-mono font-bold text-slate-900 dark:text-white">
+                      {formatSAR(item.totalPrice)}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {invoice.transactions.map((tx) => (
-                    <tr key={tx.id}>
-                      <td className="py-2.5 px-3">{new Date(tx.paymentDate).toLocaleString()}</td>
-                      <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800">
-                          {tx.method}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{tx.reference || '—'}</td>
-                      <td className="py-2.5 px-3">{tx.receivedBy?.name || 'Staff'}</td>
-                      <td className="py-2.5 px-3 text-right font-bold text-emerald-600">
-                        +{formatSAR(tx.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Financial Summary Calculation */}
+          <div className="flex flex-col sm:flex-row justify-between gap-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+            <div className="text-xs text-slate-500 max-w-sm">
+              {invoice.notes && (
+                <div>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">Notes / Remarks:</span>
+                  <p className="mt-1 italic">{invoice.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="w-full sm:w-64 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                <span>Subtotal:</span>
+                <span className="font-mono">{formatSAR(invoice.subtotal)}</span>
+              </div>
+              {invoice.discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>Discount:</span>
+                  <span className="font-mono">- {formatSAR(invoice.discountAmount)}</span>
+                </div>
+              )}
+              {invoice.taxAmount > 0 && (
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span>Tax / VAT:</span>
+                  <span className="font-mono">+ {formatSAR(invoice.taxAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm font-bold text-slate-950 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span>Total Amount:</span>
+                <span className="font-mono text-[#0d6157] dark:text-teal-400">{formatSAR(invoice.totalAmount)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-emerald-600">
+                <span>Paid Amount:</span>
+                <span className="font-mono">{formatSAR(invoice.paidAmount)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-rose-600 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <span>Balance Due:</span>
+                <span className="font-mono">{formatSAR(balance)}</span>
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Payment Transactions Ledger */}
+          {invoice.transactions.length > 0 && (
+            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Payment Transaction History
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-500 font-semibold">
+                      <th className="py-2 px-3">Date</th>
+                      <th className="py-2 px-3">Method</th>
+                      <th className="py-2 px-3">Reference #</th>
+                      <th className="py-2 px-3">Received By</th>
+                      <th className="py-2 px-3 text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {invoice.transactions.map((tx) => (
+                      <tr key={tx.id}>
+                        <td className="py-2.5 px-3 font-mono text-[11px]">{new Date(tx.paymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded-[8px] text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            {tx.method}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-slate-500">{tx.reference || '—'}</td>
+                        <td className="py-2.5 px-3">{tx.receivedBy?.name || 'Staff'}</td>
+                        <td className="py-2.5 px-3 text-right font-bold text-emerald-600 font-mono">
+                          +{formatSAR(tx.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 3. Record Payment Modal */}
       {isPayOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 no-print">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[8px] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CreditCard className="size-5 text-emerald-600" />
+                <CreditCard className="size-5 text-[#0d6157] dark:text-teal-400" />
                 <h3 className="text-base font-bold text-slate-950 dark:text-white">Record Payment</h3>
               </div>
               <button
                 onClick={() => setIsPayOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-[8px] cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -371,7 +404,7 @@ export function AccountsInvoiceDetailView({
 
             <form onSubmit={handleRecordPayment} className="p-6 space-y-4">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs">
+                <div className="p-3 rounded-[8px] bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs">
                   {errorMsg}
                 </div>
               )}
@@ -387,7 +420,7 @@ export function AccountsInvoiceDetailView({
                   required
                   value={payAmount}
                   onChange={(e) => setPayAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-xl text-sm font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-[8px] text-sm font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                 />
               </div>
 
@@ -398,7 +431,7 @@ export function AccountsInvoiceDetailView({
                 <select
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold focus:outline-hidden"
                 >
                   <option value="CASH">💵 Cash (Physical Drawer)</option>
                   <option value="CARD">💳 Card / POS Machine</option>
@@ -417,7 +450,7 @@ export function AccountsInvoiceDetailView({
                   value={payRef}
                   onChange={(e) => setPayRef(e.target.value)}
                   placeholder="e.g. POS-AUTH-8821"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                 />
               </div>
 
@@ -425,14 +458,14 @@ export function AccountsInvoiceDetailView({
                 <button
                   type="button"
                   onClick={() => setIsPayOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  className="px-4 py-2 rounded-[8px] text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white shadow-xs cursor-pointer"
                 >
                   {isSubmitting ? 'Recording...' : 'Confirm Payment'}
                 </button>

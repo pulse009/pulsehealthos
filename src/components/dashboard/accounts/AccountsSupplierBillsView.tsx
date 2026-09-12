@@ -189,15 +189,16 @@ export function AccountsSupplierBillsView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP HEADER TOOLBAR (Attached Border to Border) */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 sticky top-0 z-10">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
             <span>{clinicName}</span>
             <span>•</span>
-            <span className="text-blue-600 dark:text-blue-400">Accounts Payable</span>
+            <span className="text-[#0d6157] dark:text-teal-400 font-semibold">Accounts Payable</span>
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-            Supplier &amp; Vendor Bills
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <Truck className="size-5 text-[#0d6157] dark:text-teal-400" />
+            <span>Supplier &amp; Vendor Bills</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
             Manage inventory procurement invoices, credit terms, and vendor payment settlements.
@@ -210,7 +211,7 @@ export function AccountsSupplierBillsView({
             setIsCreateOpen(true);
             setErrorMsg(null);
           }}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0 hover:scale-[1.01] active:scale-[0.99]"
         >
           <Plus className="size-3.5" />
           <span>New Supplier Bill</span>
@@ -220,97 +221,97 @@ export function AccountsSupplierBillsView({
       {/* 2. STATS ROW (Flush Border Attached with Border) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         {/* Card 1: Total Bills */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Total Bills
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {totalBillsCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 All-time Bills
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <FileText className="size-4" />
           </div>
         </div>
 
         {/* Card 2: Unpaid Bills */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-wider">
               Pending Bills
             </span>
-            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none">
+            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none font-mono">
               {unpaidCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-rose-100 dark:border-rose-900/50 inline-block">
+              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-rose-200/80 dark:border-rose-900/50 inline-block">
                 Awaiting Payment
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-rose-50/80 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100/70 dark:border-rose-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-rose-50/90 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200/80 dark:border-rose-900/50 shadow-2xs">
             <Clock className="size-4" />
           </div>
         </div>
 
         {/* Card 3: Total Outstanding Due */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Outstanding Due
             </span>
-            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none">
+            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none font-mono">
               {formatSAR(totalDueAmount)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-rose-100 dark:border-rose-900/50 inline-block">
+              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-rose-200/80 dark:border-rose-900/50 inline-block">
                 Vendor Balance
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-rose-50/80 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100/70 dark:border-rose-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-rose-50/90 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200/80 dark:border-rose-900/50 shadow-2xs">
             <TrendingDown className="size-4" />
           </div>
         </div>
 
         {/* Card 4: Settled / Paid */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Settled Amount
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {formatSAR(totalPaidAmount)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Paid to Suppliers
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <DollarSign className="size-4" />
           </div>
         </div>
       </div>
 
       {/* 3. TOOLBAR (Filter Pills & Search) */}
-      <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           {['ALL', 'UNPAID', 'PARTIALLY_PAID', 'PAID'].map((st) => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer ${
                 statusFilter === st
-                  ? 'bg-blue-600 text-white shadow-2xs'
+                  ? 'bg-[#0d6157] text-white shadow-2xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
@@ -326,7 +327,7 @@ export function AccountsSupplierBillsView({
             placeholder="Search by bill #, supplier, PO..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
           />
         </div>
       </div>
@@ -334,8 +335,8 @@ export function AccountsSupplierBillsView({
       {/* 4. ATTACHED BORDER TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-[10px] uppercase font-bold sticky top-0 z-10 backdrop-blur-xs">
+          <table className="w-full min-w-[900px] text-left text-xs border-collapse">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-[10px] uppercase font-bold sticky top-0 z-10 backdrop-blur-xs whitespace-nowrap">
               <tr>
                 <th className="py-3 px-6">Bill #</th>
                 <th className="py-3 px-4">Supplier</th>
@@ -349,7 +350,7 @@ export function AccountsSupplierBillsView({
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 whitespace-nowrap">
               {filteredBills.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="text-center py-16 text-slate-400">
@@ -367,7 +368,7 @@ export function AccountsSupplierBillsView({
                   const balance = bill.totalAmount - bill.paidAmount;
                   return (
                     <tr key={bill.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-6 font-mono font-bold text-[#0d6157] dark:text-teal-400">
                         {bill.billNumber}
                       </td>
                       <td className="py-3 px-4">
@@ -377,11 +378,11 @@ export function AccountsSupplierBillsView({
                       <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300 text-[11px]">
                         {bill.purchaseOrder?.poNumber || '—'}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                        {new Date(bill.billDate).toLocaleDateString()}
+                      <td className="py-3 px-4 text-slate-500 font-medium text-[11px]">
+                        {new Date(bill.billDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                        {bill.dueDate ? new Date(bill.dueDate).toLocaleDateString() : '—'}
+                      <td className="py-3 px-4 text-slate-500 font-medium text-[11px]">
+                        {bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                         {formatSAR(bill.totalAmount)}
@@ -420,7 +421,7 @@ export function AccountsSupplierBillsView({
                               setIsPayOpen(true);
                               setErrorMsg(null);
                             }}
-                            className="px-2.5 py-1 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] transition-colors cursor-pointer shadow-2xs inline-flex items-center gap-1"
+                            className="px-2.5 py-1 text-[10px] font-bold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs inline-flex items-center gap-1"
                           >
                             <CreditCard className="size-3" />
                             <span>Pay Bill</span>
@@ -439,10 +440,10 @@ export function AccountsSupplierBillsView({
       {/* 5. MODAL: NEW SUPPLIER BILL */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-lg w-full p-5 relative text-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-2xl max-w-lg w-full p-5 relative text-xs">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-blue-50 dark:bg-blue-950 text-blue-600">
+                <div className="p-1 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300">
                   <Truck className="size-4" />
                 </div>
                 <div>
@@ -453,7 +454,7 @@ export function AccountsSupplierBillsView({
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -516,7 +517,7 @@ export function AccountsSupplierBillsView({
                     required
                     value={totalAmount}
                     onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-bold focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                   />
                 </div>
                 <div>
@@ -527,7 +528,7 @@ export function AccountsSupplierBillsView({
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                   />
                 </div>
               </div>
@@ -541,7 +542,7 @@ export function AccountsSupplierBillsView({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. Vendor Invoice #MED-9921"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
                 />
               </div>
 
@@ -549,14 +550,14 @@ export function AccountsSupplierBillsView({
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[8px]"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[8px] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-[8px] shadow-xs transition-colors disabled:opacity-50"
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Bill'}
                 </button>
@@ -569,10 +570,10 @@ export function AccountsSupplierBillsView({
       {/* 6. MODAL: PAY SUPPLIER BILL */}
       {isPayOpen && selectedBill && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in duration-100">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xl max-w-md w-full p-5 relative text-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-2xl max-w-md w-full p-5 relative text-xs">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="p-1 rounded-[6px] bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
+                <div className="p-1 rounded-[8px] bg-emerald-50 dark:bg-emerald-950 text-emerald-600">
                   <CreditCard className="size-4" />
                 </div>
                 <div>
@@ -583,7 +584,7 @@ export function AccountsSupplierBillsView({
               <button
                 type="button"
                 onClick={() => setIsPayOpen(false)}
-                className="p-1 rounded-[6px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-[8px] text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="size-4" />
               </button>

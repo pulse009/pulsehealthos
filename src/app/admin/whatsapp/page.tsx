@@ -41,7 +41,7 @@ export default async function AdminWhatsAppPage() {
   ]);
 
   const webhookUrl = `${env.APP_URL}/api/webhooks/whatsapp`;
-  const platformSecretSet = Boolean(env.WHATSAPP_APP_SECRET);
+  const hasClinicSecrets = integrations.some((i) => Boolean(i.appSecretCipher));
 
   return (
     <>
@@ -60,17 +60,10 @@ export default async function AdminWhatsAppPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted">Signature verification</span>
-              <Badge tone={platformSecretSet ? 'success' : 'danger'}>
-                {platformSecretSet ? 'Enabled' : 'Not configured'}
+              <Badge tone={hasClinicSecrets ? 'success' : 'neutral'}>
+                {hasClinicSecrets ? 'Active (Per-Clinic)' : 'Configured per Clinic Profile'}
               </Badge>
             </div>
-            {!platformSecretSet ? (
-              <p className="text-xs text-red-600 dark:text-red-400">
-                <code className="font-mono">WHATSAPP_APP_SECRET</code> is unset, so every inbound
-                webhook is rejected. This fails closed on purpose — an unset secret must never be
-                read as &ldquo;all signatures valid&rdquo;.
-              </p>
-            ) : null}
           </CardBody>
         </Card>
 

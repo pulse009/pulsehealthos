@@ -161,6 +161,7 @@ export interface DoctorDetailProps {
   };
   availableServices?: ServiceItem[];
   availableStaff?: StaffItem[];
+  initialAppointmentTypes?: DoctorAppointmentTypeItem[];
   backHref?: string;
   userRole?: string;
   isPulseNow?: boolean;
@@ -170,6 +171,7 @@ export function DoctorDetailPortalView({
   doctor: initialDoctor,
   availableServices: initialServices = [],
   availableStaff: initialStaff = [],
+  initialAppointmentTypes = [],
   backHref = '/portal/doctors',
   userRole,
   isPulseNow = false,
@@ -302,7 +304,40 @@ export function DoctorDetailPortalView({
   const [appointmentTypeSearch, setAppointmentTypeSearch] = useState('');
 
   // Doctor Appointment Types State (attached to real services)
-  const [appointmentTypesList, setAppointmentTypesList] = useState<DoctorAppointmentTypeItem[]>([]);
+  const [appointmentTypesList, setAppointmentTypesList] = useState<DoctorAppointmentTypeItem[]>(
+    initialAppointmentTypes || []
+  );
+
+  useEffect(() => {
+    if (initialAppointmentTypes && initialAppointmentTypes.length > 0) {
+      setAppointmentTypesList(initialAppointmentTypes);
+    }
+  }, [initialAppointmentTypes]);
+
+  useEffect(() => {
+    async function loadDoctorAppointmentTypes() {
+      try {
+        const res = await fetch(`/api/appointment-types?doctorId=${doctor.id}&clinicId=${(doctor as any).clinicId || ''}`);
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.appointmentTypes)) {
+          const mapped: DoctorAppointmentTypeItem[] = data.appointmentTypes.map((at: any) => ({
+            id: at.id,
+            name: at.name,
+            durationMinutes: at.durationMinutes,
+            price: at.priceMinor ? at.priceMinor / 100 : null,
+            currency: at.currency || 'SAR',
+            description: at.description,
+            serviceId: at.serviceId,
+            isActive: at.isActive,
+          }));
+          setAppointmentTypesList(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load appointment types:', err);
+      }
+    }
+    loadDoctorAppointmentTypes();
+  }, [doctor.id, (doctor as any).clinicId]);
 
   // Expand / Collapse State for Service Rows (all expanded by default)
   const [expandedServiceIds, setExpandedServiceIds] = useState<Set<string>>(() => {
@@ -885,7 +920,7 @@ export function DoctorDetailPortalView({
     }
   };
 
-  // Create Appointment Type Handler (creates only appointment type attached to target service)
+  // Create Appointment Type Handler (persists appointment type attached to target service in database)
   const handleCreateAppointmentType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newServiceName.trim()) return;
@@ -893,31 +928,51 @@ export function DoctorDetailPortalView({
     setIsSubmittingService(true);
     try {
       const targetServiceId = newServiceTargetServiceId || doctorAssignedServices[0]?.id || '';
-      const generatedId = `apt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
-      const newApt: DoctorAppointmentTypeItem = {
-        id: generatedId,
+      const payload = {
+        clinicId: (doctor as any).clinicId,
+        doctorId: doctor.id,
+        serviceId: targetServiceId,
         name: newServiceName.trim(),
-        durationMinutes: Number(newServiceDuration),
+        durationMinutes: Number(newServiceDuration) || 30,
         price: newServicePrice ? Number(newServicePrice) : null,
         currency: 'SAR',
-        description: newServiceDescription.trim() || null,
-        serviceId: targetServiceId,
+        description: newServiceDescription.trim() || undefined,
         isActive: true,
       };
 
-      setAppointmentTypesList((prev) => [newApt, ...prev]);
+      const res = await fetch('/api/appointment-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.ok && data.appointmentType) {
+        const createdApt: DoctorAppointmentTypeItem = {
+          id: data.appointmentType.id,
+          name: data.appointmentType.name,
+          durationMinutes: data.appointmentType.durationMinutes,
+          price: data.appointmentType.priceMinor ? data.appointmentType.priceMinor / 100 : null,
+          currency: data.appointmentType.currency || 'SAR',
+          description: data.appointmentType.description,
+          serviceId: data.appointmentType.serviceId,
+          isActive: data.appointmentType.isActive,
+        };
 
-      // Auto-expand the target service so the new appointment type is immediately visible
-      if (targetServiceId) {
-        setExpandedServiceIds((prev) => new Set(prev).add(targetServiceId));
+        setAppointmentTypesList((prev) => [createdApt, ...prev.filter((at) => at.id !== createdApt.id)]);
+
+        // Auto-expand the target service so the new appointment type is immediately visible
+        if (targetServiceId) {
+          setExpandedServiceIds((prev) => new Set(prev).add(targetServiceId));
+        }
+
+        setIsAddServiceModalOpen(false);
+        setNewServiceName('');
+        setNewServicePrice('');
+        setNewServiceDescription('');
+        setNewServiceTargetServiceId(doctorAssignedServices[0]?.id || '');
+      } else {
+        console.error('Failed to create appointment type in database:', data?.error);
       }
-
-      setIsAddServiceModalOpen(false);
-      setNewServiceName('');
-      setNewServicePrice('');
-      setNewServiceDescription('');
-      setNewServiceTargetServiceId(doctorAssignedServices[0]?.id || '');
     } catch (err) {
       console.error('Failed to create appointment type:', err);
     } finally {
@@ -931,17 +986,23 @@ export function DoctorDetailPortalView({
     setIsDeleteAptModalOpen(true);
   };
 
-  // Confirm Delete Appointment Type (removes appointment type only)
+  // Confirm Delete Appointment Type (removes appointment type from DB)
   const confirmDeleteAppointmentType = async () => {
     if (!aptToDelete) return;
     setIsDeletingApt(true);
 
     try {
-      // Remove from appointment types list
-      setAppointmentTypesList((prev) => prev.filter((at) => at.id !== aptToDelete.id));
-
-      setIsDeleteAptModalOpen(false);
-      setAptToDelete(null);
+      const res = await fetch(`/api/appointment-types?id=${aptToDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setAppointmentTypesList((prev) => prev.filter((at) => at.id !== aptToDelete.id));
+        setIsDeleteAptModalOpen(false);
+        setAptToDelete(null);
+      } else {
+        console.error('Failed to delete appointment type from database:', data?.error);
+      }
     } catch (err) {
       console.error('Failed to delete appointment type:', err);
     } finally {

@@ -29,15 +29,42 @@ enum Role {
   DOCTOR
   PATIENT
   RECEPTIONIST
+  NURSE
+  MANAGER
+  PHARMACIST
+  LAB_TECHNICIAN
+  PATHOLOGIST
+}
+
+enum LabOrderStatus {
+  ORDERED
+  SAMPLE_COLLECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum LabPriority {
+  ROUTINE
+  URGENT
+  STAT_EMERGENCY
 }
 
 enum AppointmentStatus {
   PENDING
   CONFIRMED
+  CHECKED_IN
   CANCELLED
   RESCHEDULED // superseded by a newer appointment; the original slot is released
   COMPLETED
   NO_SHOW
+}
+
+enum EncounterStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 enum LeadStatus {
@@ -142,6 +169,8 @@ model User {
   createdClinicExpenses   ClinicExpense[]          @relation("ClinicExpenseCreatedBy")
   closedDayEndClosings    DayEndClosing[]          @relation("DayEndClosedBy")
   verifiedDayEndClosings  DayEndClosing[]          @relation("DayEndVerifiedBy")
+  collectedLabOrders      LabOrder[]               @relation("LabOrderCollectedBy")
+  verifiedLabOrders       LabOrder[]               @relation("LabOrderVerifiedBy")
 
   @@index([clinicId])
   @@index([role])
@@ -194,6 +223,7 @@ model Clinic {
   reminderRules   ReminderRule[]
   auditLogs       AuditLog[]
   systemLogs      SystemLog[]
+  appointmentTypes AppointmentType[]
 
   inventoryCategories     InventoryCategory[]
   inventorySuppliers      Supplier[]
@@ -210,6 +240,9 @@ model Clinic {
   supplierPayments        SupplierPayment[]
   clinicExpenses          ClinicExpense[]
   dayEndClosings          DayEndClosing[]
+  encounters              ClinicalEncounter[]
+  labOrders               LabOrder[]
+  labTestCatalog          LabTestCatalog[]
 
   @@index([isActive])
 }
@@ -328,10 +361,13 @@ model Doctor {
   breaks           DoctorBreak[]
   timeOff          DoctorTimeOff[]
   services         DoctorService[]
+  appointmentTypes AppointmentType[]
   appointments     Appointment[]
   paymentStructure DoctorPaymentStructure?
   invoices         Invoice[]
   payouts          DoctorPayout[]
+  encounters       ClinicalEncounter[]
+  labOrders        LabOrder[]
 
   @@index([clinicId, isActive])
   @@index([coordinatorId])
@@ -450,6 +486,7 @@ model Service {
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   doctors      DoctorService[]
+  appointmentTypes AppointmentType[]
   appointments Appointment[]
   invoiceItems InvoiceItem[]
 
@@ -597,6 +634,8 @@ model Patient {
   appointments  Appointment[]
   invoices      Invoice[]
   payments      PaymentTransaction[]
+  encounters    ClinicalEncounter[]
+  labOrders     LabOrder[]
 
   @@unique([clinicId, phone])
   @@unique([clinicId, fileNumber])
@@ -722,6 +761,8 @@ model Appointment {
   doctor    Doctor  @relation(fields: [doctorId], references: [id], onDelete: Restrict)
   serviceId String
   service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  appointmentTypeId String?
+  appointmentType   AppointmentType? @relation(fields: [appointmentTypeId], references: [id], onDelete: SetNull)
   patientId String
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   leadId    String?
@@ -773,6 +814,7 @@ model Appointment {
 
   reminders Reminder[]
   invoice   Invoice?
+  encounter ClinicalEncounter?
 
   @@unique([clinicId, appointmentNumber])
   @@index([clinicId, startsAt])
@@ -782,6 +824,35 @@ model Appointment {
   @@index([patientId, startsAt])
   @@index([leadId])
   @@index([serviceId])
+  @@index([appointmentTypeId])
+}
+
+model AppointmentType {
+  id              String   @id @default(uuid())
+  clinicId        String
+  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  serviceId       String
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  doctorId        String?
+  doctor          Doctor?  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  name            String
+  durationMinutes Int      @default(30)
+  priceMinor      Int?
+  currency        String?  @default("SAR")
+  description     String?
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  appointments    Appointment[]
+
+  @@index([clinicId])
+  @@index([serviceId])
+  @@index([doctorId])
 }
 
 model Reminder {
@@ -1346,4 +1417,148 @@ model DayEndClosing {
   @@index([clinicId, closingDate])
   @@index([closedByUserId])
 }
+
+// ---------------------------------------------------------------------------
+// Clinical Documentation & Consultation Encounters (EMR)
+// ---------------------------------------------------------------------------
+
+model ClinicalEncounter {
+  id       String @id @default(uuid())
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  appointmentId String? @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  status EncounterStatus @default(IN_PROGRESS)
+
+  // Subjective
+  chiefComplaint     String?
+  hpi                String?
+  pastMedicalHistory String?
+  allergies          String[] @default([])
+
+  // Objective
+  vitalsJson   Json?
+  physicalExam Json?
+
+  // Assessment
+  primaryDiagnosis   String?
+  secondaryDiagnosis String?
+  icd10Code          String?
+  clinicalNotes      String?
+
+  // Plan
+  treatmentPlan String?
+  patientAdvice String?
+  followUpDays  Int?
+  followUpDate  DateTime? @db.Timestamptz(3)
+
+  // Prescriptions & Lab orders
+  prescriptionsJson Json?
+  labOrdersJson     Json?
+  labOrders         LabOrder[]
+
+  startedAt   DateTime  @default(now()) @db.Timestamptz(3)
+  completedAt DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([clinicId, status])
+  @@index([clinicId, startedAt])
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([appointmentId])
+}
+
+// ---------------------------------------------------------------------------
+// Laboratory & Diagnostic Pathology (LIS)
+// ---------------------------------------------------------------------------
+
+model LabTestCatalog {
+  id              String   @id @default(uuid())
+  clinicId        String
+  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  code            String
+  name            String
+  category        String   @default("Biochemistry") // Hematology, Biochemistry, Microbiology, Immunology, Radiology, Pathology
+  sampleType      String   @default("Blood")        // Blood, Serum, Plasma, Urine, Stool, Swab, Sputum, Tissue
+  containerType   String?  @default("Lavender (EDTA)") // Tube cap color / container
+  normalRange     String?  // Text description or JSON range
+  unit            String?
+  parametersJson  Json?    // Array of sub-parameters with units and reference ranges e.g. [{ name: "WBC", unit: "10^3/uL", min: 4.5, max: 11.0 }]
+  turnaroundHours Int      @default(24)
+  price           Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  @@unique([clinicId, code])
+  @@index([clinicId, category])
+  @@index([clinicId, isActive])
+}
+
+model LabOrder {
+  id                  String             @id @default(uuid())
+  orderNumber         String
+  clinicId            String
+  clinic              Clinic             @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId           String
+  patient             Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId            String?
+  doctor              Doctor?            @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+
+  encounterId         String?
+  encounter           ClinicalEncounter? @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+
+  status              LabOrderStatus     @default(ORDERED)
+  priority            LabPriority        @default(ROUTINE)
+
+  testName            String
+  category            String             @default("Biochemistry")
+  sampleType          String             @default("Blood")
+  specimenId          String?            // Barcode / Lab tracking sample ID
+  tubeType            String?
+
+  clinicalNotes       String?
+  instructions        String?
+
+  collectedAt         DateTime?          @db.Timestamptz(3)
+  collectedById       String?
+  collectedBy         User?              @relation("LabOrderCollectedBy", fields: [collectedById], references: [id], onDelete: SetNull)
+
+  // Results & Parameters
+  resultsJson         Json?              // Structured array: [{ parameter, value, unit, referenceRange, flag: "NORMAL" | "HIGH" | "LOW" | "CRITICAL", remarks }]
+  resultsSummary      String?
+  hasAbnormalResults  Boolean            @default(false)
+  reportFileUrl       String?
+
+  verifiedAt          DateTime?          @db.Timestamptz(3)
+  verifiedById        String?
+  verifiedBy          User?              @relation("LabOrderVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  price               Float              @default(0)
+
+  createdAt           DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime           @updatedAt @db.Timestamptz(3)
+
+  @@unique([clinicId, orderNumber])
+  @@index([clinicId, status])
+  @@index([clinicId, priority])
+  @@index([clinicId, createdAt])
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([encounterId])
+  @@index([specimenId])
+}
+
+
 

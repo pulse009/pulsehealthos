@@ -16,11 +16,15 @@ import {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+function isStaffManager(role: string): boolean {
+  return role === 'CLIENT' || role === 'SUPER_ADMIN' || role === 'MANAGER';
+}
+
 export async function GET(request: Request) {
   try {
     limitByIp(request, 'api-read', RateLimits.API_READ);
     const { user, scope } = await requireScope();
-    if (user.role !== 'CLIENT' && user.role !== 'SUPER_ADMIN') {
+    if (!isStaffManager(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : (request.headers.get('x-clinic-id') || '');
@@ -35,7 +39,7 @@ export async function POST(request: Request) {
   try {
     limitByIp(request, 'api-write', RateLimits.API_WRITE);
     const { user, scope } = await requireScope();
-    if (user.role !== 'CLIENT' && user.role !== 'SUPER_ADMIN') {
+    if (!isStaffManager(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const body = await parseJson(request, createStaffRoleSchema);
@@ -52,7 +56,7 @@ export async function PATCH(request: Request) {
   try {
     limitByIp(request, 'api-write', RateLimits.API_WRITE);
     const { user, scope } = await requireScope();
-    if (user.role !== 'CLIENT' && user.role !== 'SUPER_ADMIN') {
+    if (!isStaffManager(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const body = await parseJson(request, resetStaffPasswordSchema);
@@ -69,7 +73,7 @@ export async function DELETE(request: Request) {
   try {
     limitByIp(request, 'api-write', RateLimits.API_WRITE);
     const { user, scope } = await requireScope();
-    if (user.role !== 'CLIENT' && user.role !== 'SUPER_ADMIN') {
+    if (!isStaffManager(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const url = new URL(request.url);

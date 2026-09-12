@@ -23,6 +23,7 @@ import {
   LuTrash2 as Trash2,
   LuX as X,
   LuTriangleAlert as AlertTriangle,
+  LuEllipsis as MoreHorizontal,
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 
@@ -61,7 +62,7 @@ export function DoctorsPortalDashboard({
 }: DoctorsPortalDashboardProps) {
   const [doctors, setDoctors] = useState<DoctorCardItem[]>(initialDoctors);
 
-  const canDelete = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN';
+  const canDelete = userRole === 'CLIENT' || userRole === 'SUPER_ADMIN' || userRole === 'MANAGER';
 
   // Delete Doctor Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -116,6 +117,7 @@ export function DoctorsPortalDashboard({
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [activeActionId, setActiveActionId] = useState<string | null>(null);
 
   // Available Specialties list
   const availableSpecialties = useMemo(() => {
@@ -516,31 +518,31 @@ export function DoctorsPortalDashboard({
         ) : (
           /* VIEW 2: TABLE LIST VIEW */
           <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 z-10 border-b-2 border-slate-200 dark:border-slate-700 shadow-2xs">
                 <tr className="divide-x divide-slate-200 dark:divide-slate-700/60">
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     DOCTOR
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     LOGIN USERNAME
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     SPECIALTY / DEPARTMENT
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     STATUS
                   </th>
                   <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     SLOT DURATION
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     SERVICES
                   </th>
                   <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">
                     UPCOMING APPOINTMENTS
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase text-right">
+                  <th className="sticky top-0 right-0 z-20 bg-slate-50 dark:bg-slate-800 py-2.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase text-right whitespace-nowrap shadow-[-4px_0_8px_rgba(0,0,0,0.04)] border-l border-slate-200 dark:border-slate-700">
                     ACTION
                   </th>
                 </tr>
@@ -556,18 +558,20 @@ export function DoctorsPortalDashboard({
                   filteredDoctors.map((row) => (
                     <tr
                       key={row.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60"
+                      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60 ${
+                        activeActionId === row.id ? 'relative z-30' : 'relative z-0'
+                      }`}
                     >
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2.5">
                           {row.imageUrl ? (
                             <img
                               src={row.imageUrl}
                               alt={row.name}
-                              className="size-7 rounded-lg object-cover border border-slate-200 shrink-0"
+                              className="size-7 rounded-[8px] object-cover border border-slate-200 shrink-0"
                             />
                           ) : (
-                            <div className="size-7 rounded-lg bg-gradient-to-br from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                            <div className="size-7 rounded-[8px] bg-gradient-to-br from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                               {row.name ? row.name.replace('Dr. ', '').charAt(0).toUpperCase() : 'D'}
                             </div>
                           )}
@@ -587,10 +591,10 @@ export function DoctorsPortalDashboard({
                         </div>
                       </td>
 
-                      <td className="py-2.5 px-4 font-mono">
+                      <td className="py-2.5 px-4 font-mono whitespace-nowrap">
                         {row.user?.username ? (
                           <div className="space-y-0.5">
-                            <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20">
+                            <span className="inline-block px-2 py-0.5 rounded-[8px] text-[11px] font-bold bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20">
                               @{row.user.username}
                             </span>
                             <span className="block text-[10px] text-slate-400 font-sans truncate max-w-[140px]">
@@ -602,7 +606,7 @@ export function DoctorsPortalDashboard({
                         )}
                       </td>
 
-                      <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300">
+                      <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
                         {row.specialty || 'General Practitioner'}
                       </td>
 
@@ -610,7 +614,7 @@ export function DoctorsPortalDashboard({
                         <button
                           type="button"
                           onClick={(e) => handleToggleStatus(row.id, row.isActive, e)}
-                          className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-all cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-[8px] text-[11px] font-bold border transition-all cursor-pointer ${
                             row.isActive
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                               : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
@@ -624,7 +628,7 @@ export function DoctorsPortalDashboard({
                         {row.appointmentMinutes ? `${row.appointmentMinutes} mins` : 'Default (30m)'}
                       </td>
 
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
                           {row.services.length} services
                         </span>
@@ -634,24 +638,71 @@ export function DoctorsPortalDashboard({
                         {row.upcomingAppointmentsCount} Bookings
                       </td>
 
-                      <td className="py-2.5 px-4 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-2 justify-end">
-                          <Link
-                            href={`/portal/doctors/${row.id}`}
-                            className="inline-flex items-center gap-1 text-slate-700 hover:text-[#0d6157] dark:text-slate-300 dark:hover:text-teal-400 font-bold text-xs"
+                      <td
+                        className={`sticky right-0 ${
+                          activeActionId === row.id ? 'z-30' : 'z-10'
+                        } bg-white group-hover:bg-slate-50 dark:bg-slate-900 dark:group-hover:bg-slate-800/90 py-2.5 px-4 text-right whitespace-nowrap shadow-[-4px_0_8px_rgba(0,0,0,0.04)] border-l border-slate-100 dark:border-slate-800 transition-colors`}
+                      >
+                        <div className="relative inline-block text-right">
+                          <button
+                            type="button"
+                            onClick={() => setActiveActionId(activeActionId === row.id ? null : row.id)}
+                            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Actions"
                           >
-                            <span>Manage</span>
-                            <ChevronRight className="size-3.5" />
-                          </Link>
-                          {canDelete && (
-                            <button
-                              type="button"
-                              onClick={(e) => promptDeleteDoctor(row, e)}
-                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
-                              title="Delete doctor"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
+                            <MoreHorizontal className="size-4" />
+                          </button>
+
+                          {activeActionId === row.id && (
+                            <>
+                              {/* Backdrop to close action dropdown on click outside */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveActionId(null);
+                                }}
+                              />
+
+                              <div className="absolute right-0 top-full mt-1.5 z-50 w-48 bg-white dark:bg-slate-850 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                                <Link
+                                  href={`/portal/doctors/${row.id}`}
+                                  onClick={() => setActiveActionId(null)}
+                                  className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-between font-semibold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                >
+                                  <span>Manage Profile</span>
+                                  <ChevronRight className="size-3.5 text-slate-400" />
+                                </Link>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveActionId(null);
+                                    handleToggleStatus(row.id, row.isActive, e);
+                                  }}
+                                  className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                >
+                                  <Power className={`size-3.5 ${row.isActive ? 'text-emerald-500' : 'text-slate-400'}`} />
+                                  <span>{row.isActive ? 'Mark Inactive' : 'Activate Doctor'}</span>
+                                </button>
+
+                                {canDelete && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveActionId(null);
+                                      promptDeleteDoctor(row, e);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer font-semibold"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                    <span>Delete Doctor</span>
+                                  </button>
+                                )}
+                              </div>
+                            </>
                           )}
                         </div>
                       </td>

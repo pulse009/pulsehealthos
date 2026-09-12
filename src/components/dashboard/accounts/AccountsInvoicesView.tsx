@@ -278,15 +278,16 @@ export function AccountsInvoicesView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP HEADER TOOLBAR (Attached Border to Border) */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 sticky top-0 z-10">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
             <span>{clinicName}</span>
             <span>•</span>
-            <span className="text-blue-600 dark:text-blue-400">Billing &amp; Invoices</span>
+            <span className="text-[#0d6157] dark:text-teal-400 font-semibold">Billing &amp; Invoices</span>
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-            Patient Invoices &amp; Billing
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <ReceiptText className="size-5 text-[#0d6157] dark:text-teal-400" />
+            <span>Patient Invoices &amp; Billing</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
             Create clinical invoices, record multi-method payments, and track receivables.
@@ -299,7 +300,7 @@ export function AccountsInvoicesView({
             setIsCreateOpen(true);
             setErrorMsg(null);
           }}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer shrink-0 hover:scale-[1.01] active:scale-[0.99]"
         >
           <Plus className="size-3.5" />
           <span>Create Invoice</span>
@@ -309,97 +310,97 @@ export function AccountsInvoicesView({
       {/* 2. STATS ROW (Flush Border Attached with Border) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         {/* Card 1: Total Invoices */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Total Invoices
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {totalInvoicesCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 All-time Invoices
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <FileText className="size-4" />
           </div>
         </div>
 
         {/* Card 2: Pending Invoices */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
               Pending Invoices
             </span>
-            <div className="text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none">
+            <div className="text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none font-mono">
               {pendingInvoicesCount}
             </div>
             <div className="pt-0.5">
-              <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-amber-100 dark:border-amber-900/50 inline-block">
+              <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-200/80 dark:border-amber-900/50 inline-block">
                 Awaiting Settlement
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-amber-50/80 dark:bg-amber-950/60 text-amber-500 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-100/70 dark:border-amber-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-amber-50/90 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200/80 dark:border-amber-900/50 shadow-2xs">
             <Clock className="size-4" />
           </div>
         </div>
 
         {/* Card 3: Total Receivables */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="block text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
               Receivables Balance
             </span>
-            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none">
+            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none font-mono">
               {formatSAR(totalReceivables)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-rose-100 dark:border-rose-900/50 inline-block">
+              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-rose-200/80 dark:border-rose-900/50 inline-block">
                 Patient Outstanding
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-rose-50/80 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100/70 dark:border-rose-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-rose-50/90 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200/80 dark:border-rose-900/50 shadow-2xs">
             <DollarSign className="size-4" />
           </div>
         </div>
 
         {/* Card 4: Total Collected */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Total Collected
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {formatSAR(totalCollected)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Realized Revenue
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <TrendingUp className="size-4" />
           </div>
         </div>
       </div>
 
       {/* 3. TOOLBAR (Filter Pills & Search) */}
-      <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
+      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 shrink-0">
         <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto">
           {['ALL', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED'].map((st) => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-2.5 py-1 rounded-[6px] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                 statusFilter === st
-                  ? 'bg-blue-600 text-white shadow-2xs'
+                  ? 'bg-[#0d6157] text-white shadow-2xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
@@ -419,7 +420,7 @@ export function AccountsInvoicesView({
             placeholder="Search by invoice #, patient, doctor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+            className="w-full bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-[8px] pl-8.5 pr-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
           />
         </div>
       </div>
@@ -427,13 +428,13 @@ export function AccountsInvoicesView({
       {/* 4. ATTACHED BORDER TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-[10px] uppercase font-bold sticky top-0 z-10 backdrop-blur-xs">
+          <table className="w-full min-w-[900px] text-left text-xs border-collapse">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 text-[10px] uppercase font-bold sticky top-0 z-10 backdrop-blur-xs whitespace-nowrap">
               <tr>
                 <th className="py-3 px-6">Invoice #</th>
                 <th className="py-3 px-4">Patient</th>
                 <th className="py-3 px-4">Doctor</th>
-                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">Issue Date</th>
                 <th className="py-3 px-4 text-right">Total</th>
                 <th className="py-3 px-4 text-right">Paid</th>
                 <th className="py-3 px-4 text-right">Balance</th>
@@ -441,7 +442,7 @@ export function AccountsInvoicesView({
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 whitespace-nowrap">
               {filteredInvoices.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-16 text-slate-400">
@@ -462,7 +463,7 @@ export function AccountsInvoicesView({
                       <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
                         <Link
                           href={`/portal/accounts/invoices/${inv.id}`}
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                          className="text-[#0d6157] dark:text-teal-400 hover:underline"
                         >
                           {inv.invoiceNumber}
                         </Link>
@@ -478,10 +479,19 @@ export function AccountsInvoicesView({
                         </div>
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
-                        {inv.doctor?.name || '—'}
+                        {inv.doctor?.name ? `Dr. ${inv.doctor.name}` : '—'}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                        {new Date(inv.issueDate).toLocaleDateString()}
+                      <td className="py-3 px-4 text-slate-500 font-medium text-[11px]">
+                        {new Date(inv.issueDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}{' '}
+                        •{' '}
+                        {new Date(inv.issueDate).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </td>
                       <td className="py-3 px-4 text-right font-bold font-mono text-slate-900 dark:text-white">
                         {formatSAR(inv.totalAmount)}
@@ -501,14 +511,14 @@ export function AccountsInvoicesView({
                             <button
                               type="button"
                               onClick={() => openPayModal(inv)}
-                              className="px-2.5 py-1 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] transition-colors cursor-pointer shadow-2xs"
+                              className="px-2.5 py-1 text-[10px] font-bold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs"
                             >
                               Pay
                             </button>
                           )}
                           <Link
                             href={`/portal/accounts/invoices/${inv.id}`}
-                            className="p-1 rounded-[6px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all inline-flex items-center justify-center"
+                            className="p-1.5 rounded-[8px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all inline-flex items-center justify-center"
                             title="View Invoice Detail"
                           >
                             <Eye className="size-3.5" />
@@ -597,7 +607,7 @@ export function AccountsInvoicesView({
                   <button
                     type="button"
                     onClick={handleAddLineItem}
-                    className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+                    className="flex items-center gap-1 text-xs font-semibold text-[#0d6157] dark:text-teal-400 hover:underline cursor-pointer"
                   >
                     <Plus className="size-3.5" />
                     <span>Add Item</span>
@@ -606,13 +616,13 @@ export function AccountsInvoicesView({
 
                 <div className="space-y-2">
                   {lineItems.map((item, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row gap-2 items-end">
+                    <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-[8px] border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row gap-2 items-end">
                       <div className="flex-1 w-full sm:w-auto">
                         <label className="block text-[10px] font-semibold text-slate-500 mb-1">Service Preset</label>
                         <select
                           value={item.serviceId || ''}
                           onChange={(e) => handleServiceSelect(idx, e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                          className="w-full px-2.5 py-1.5 rounded-[8px] text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                         >
                           <option value="">-- Manual Custom Item --</option>
                           {services.map((s) => (
@@ -637,7 +647,7 @@ export function AccountsInvoicesView({
                             }
                           }}
                           placeholder="e.g. Laser Consultation"
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                          className="w-full px-2.5 py-1.5 rounded-[8px] text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                         />
                       </div>
 
@@ -655,7 +665,7 @@ export function AccountsInvoicesView({
                               setLineItems(next);
                             }
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center"
+                          className="w-full px-2.5 py-1.5 rounded-[8px] text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center"
                         />
                       </div>
 
@@ -674,7 +684,7 @@ export function AccountsInvoicesView({
                               setLineItems(next);
                             }
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-right"
+                          className="w-full px-2.5 py-1.5 rounded-[8px] text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-right"
                         />
                       </div>
 
@@ -682,7 +692,7 @@ export function AccountsInvoicesView({
                         <button
                           type="button"
                           onClick={() => handleRemoveLineItem(idx)}
-                          className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg cursor-pointer"
+                          className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-[8px] cursor-pointer"
                         >
                           <Trash2 className="size-3.5" />
                         </button>
@@ -704,7 +714,7 @@ export function AccountsInvoicesView({
                     min="0"
                     value={discountAmount}
                     onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
                 <div>
@@ -717,7 +727,7 @@ export function AccountsInvoicesView({
                     min="0"
                     value={taxAmount}
                     onChange={(e) => setTaxAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                   />
                 </div>
               </div>
@@ -731,7 +741,7 @@ export function AccountsInvoicesView({
                   value={invoiceNotes}
                   onChange={(e) => setInvoiceNotes(e.target.value)}
                   placeholder="Optional patient payment terms or instructions..."
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 />
               </div>
 
@@ -739,14 +749,14 @@ export function AccountsInvoicesView({
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  className="px-4 py-2 rounded-[8px] text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white shadow-xs cursor-pointer"
                 >
                   {isSubmitting ? 'Creating...' : 'Generate Invoice'}
                 </button>
@@ -762,12 +772,12 @@ export function AccountsInvoicesView({
           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CreditCard className="size-5 text-emerald-600" />
+                <CreditCard className="size-5 text-[#0d6157]" />
                 <h3 className="text-base font-bold text-slate-950 dark:text-white">Record Invoice Payment</h3>
               </div>
               <button
                 onClick={() => setIsPayOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-[8px] cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -775,12 +785,12 @@ export function AccountsInvoicesView({
 
             <form onSubmit={handleRecordPayment} className="p-6 space-y-4">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs">
+                <div className="p-3 rounded-[8px] bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs">
                   {errorMsg}
                 </div>
               )}
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-1">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-[8px] border border-slate-200/80 dark:border-slate-700 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-500">Invoice:</span>
                   <span className="font-bold text-slate-900 dark:text-white">{selectedInvoice.invoiceNumber}</span>
@@ -814,7 +824,7 @@ export function AccountsInvoicesView({
                   required
                   value={payAmount}
                   onChange={(e) => setPayAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-xl text-sm font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="w-full px-3 py-2 rounded-[8px] text-sm font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
               </div>
 
@@ -825,7 +835,7 @@ export function AccountsInvoicesView({
                 <select
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold"
                 >
                   <option value="CASH">💵 Cash (Physical Drawer)</option>
                   <option value="CARD">💳 Card / POS Machine</option>
@@ -844,7 +854,7 @@ export function AccountsInvoicesView({
                   value={payRef}
                   onChange={(e) => setPayRef(e.target.value)}
                   placeholder="e.g. POS-AUTH-9012"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                  className="w-full px-3 py-2 rounded-[8px] text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 />
               </div>
 
@@ -852,14 +862,14 @@ export function AccountsInvoicesView({
                 <button
                   type="button"
                   onClick={() => setIsPayOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                  className="px-4 py-2 rounded-[8px] text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  className="px-5 py-2 rounded-[8px] text-xs font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white shadow-xs cursor-pointer"
                 >
                   {isSubmitting ? 'Recording...' : 'Confirm Payment'}
                 </button>

@@ -79,15 +79,16 @@ export function AccountsReportsView({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP HEADER TOOLBAR (Attached Border to Border) */}
-      <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 no-print">
+      <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0 no-print sticky top-0 z-10">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
             <span>{clinicName}</span>
             <span>•</span>
-            <span className="text-blue-600 dark:text-blue-400">Financial Statements</span>
+            <span className="text-[#0d6157] dark:text-teal-400 font-semibold">Financial Statements</span>
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
-            Profit &amp; Loss (P&amp;L) Statement
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-2">
+            <FileText className="size-5 text-[#0d6157] dark:text-teal-400" />
+            <span>Profit &amp; Loss (P&amp;L) Statement</span>
           </h1>
           <p className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
             Comprehensive income statement detailing clinical revenue, direct costs, overheads, and net margins.
@@ -101,19 +102,19 @@ export function AccountsReportsView({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
             />
             <span className="text-[10px] text-slate-400 font-semibold uppercase">to</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden"
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
             />
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
             >
               <Filter className="size-3.5" />
               <span>{isLoading ? 'Updating...' : 'Filter'}</span>
@@ -134,53 +135,53 @@ export function AccountsReportsView({
       {/* 2. STATS ROW (Flush Border Attached with Border) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-800 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 no-print">
         {/* Card 1: Gross Income */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Gross Income
             </span>
-            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none font-mono">
               {formatSAR(report.revenue.totalRevenue)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 {report.revenue.paymentCount} payments collected
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <DollarSign className="size-4" />
           </div>
         </div>
 
         {/* Card 2: Total Costs & OPEX */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-wider">
               Total Costs &amp; OPEX
             </span>
-            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none">
+            <div className="text-xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none font-mono">
               {formatSAR(report.costs.totalCosts)}
             </div>
             <div className="pt-0.5">
-              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-rose-100 dark:border-rose-900/50 inline-block">
+              <span className="bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-rose-200/80 dark:border-rose-900/50 inline-block">
                 Overheads + COGS
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-rose-50/80 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100/70 dark:border-rose-900/50 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-rose-50/90 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200/80 dark:border-rose-900/50 shadow-2xs">
             <TrendingDown className="size-4" />
           </div>
         </div>
 
         {/* Card 3: Net Operating Income */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Net Operating Income
             </span>
             <div
-              className={`text-xl font-black tracking-tight leading-none ${
+              className={`text-xl font-black tracking-tight leading-none font-mono ${
                 report.netIncome >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}
             >
@@ -188,10 +189,10 @@ export function AccountsReportsView({
             </div>
             <div className="pt-0.5">
               <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border inline-block ${
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border inline-block ${
                   report.netIncome >= 0
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50'
-                    : 'bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-900/50'
+                    : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200/80 dark:border-rose-900/50'
                 }`}
               >
                 EBITDA Margin
@@ -201,8 +202,8 @@ export function AccountsReportsView({
           <div
             className={`size-9 rounded-[8px] flex items-center justify-center shrink-0 shadow-2xs border ${
               report.netIncome >= 0
-                ? 'bg-emerald-50/80 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400 border-emerald-100/70 dark:border-emerald-900/50'
-                : 'bg-rose-50/80 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 border-rose-100/70 dark:border-rose-900/50'
+                ? 'bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-900/50'
+                : 'bg-rose-50/90 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200/80 dark:border-rose-900/50'
             }`}
           >
             <TrendingUp className="size-4" />
@@ -210,27 +211,27 @@ export function AccountsReportsView({
         </div>
 
         {/* Card 4: Profit Margin */}
-        <div className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+        <div className="px-5 py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
           <div className="space-y-0.5">
-            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span className="block text-[10px] font-bold text-[#0d6157] dark:text-teal-400 uppercase tracking-wider">
               Profit Margin
             </span>
             <div
-              className={`text-xl font-black tracking-tight leading-none ${
+              className={`text-xl font-black tracking-tight leading-none font-mono ${
                 report.profitMarginPercent >= 0
-                  ? 'text-emerald-600 dark:text-emerald-400'
+                  ? 'text-[#0d6157] dark:text-teal-400'
                   : 'text-rose-600 dark:text-rose-400'
               }`}
             >
               {report.profitMarginPercent}%
             </div>
             <div className="pt-0.5">
-              <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-[6px] border border-slate-200 dark:border-slate-700 inline-block">
+              <span className="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20 inline-block">
                 Return on Revenue
               </span>
             </div>
           </div>
-          <div className="size-9 rounded-[8px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <div className="size-9 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center shrink-0 border border-[#0d8276]/20 shadow-2xs">
             <Percent className="size-4" />
           </div>
         </div>
@@ -238,7 +239,7 @@ export function AccountsReportsView({
 
       {/* 3. STATEMENT DOCUMENT BODY (Attached Border Container) */}
       <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50/50 dark:bg-slate-950 p-6 print:p-0">
-        <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[10px] shadow-2xs overflow-hidden print:border-none print:shadow-none print:p-0">
+        <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[8px] shadow-2xs overflow-hidden print:border-none print:shadow-none print:p-0">
           {/* Statement Header */}
           <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 text-center bg-slate-50/60 dark:bg-slate-850/60 space-y-1">
             <h2 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
@@ -310,8 +311,7 @@ export function AccountsReportsView({
                 Object.entries(report.costs.expenseByCategory).map(([cat, val]) => (
                   <div
                     key={cat}
-                    className="px-6 py-2.5 flex justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition-colors"
-                  >
+                    className="px-6 py-2.5 flex justify-between text-slate-600 dark:text-slate-300 hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition-colors">
                     <span>{cat.replace('_', ' ')} Overheads</span>
                     <span className="font-mono">{formatSAR(val)}</span>
                   </div>
@@ -325,22 +325,22 @@ export function AccountsReportsView({
           </div>
 
           {/* 4. Net Operating Profit Summary Footer */}
-          <div className="px-6 py-4 bg-[#0f172a] text-white dark:bg-slate-850 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="px-6 py-4 bg-[#0d6157] text-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span className="block text-[10px] font-bold text-teal-100/80 uppercase tracking-wider">
                 Net Operating Income (EBITDA Net Profit)
               </span>
-              <div className="text-xl font-black text-emerald-400 tracking-tight font-mono mt-0.5">
+              <div className="text-xl font-black text-white tracking-tight font-mono mt-0.5">
                 {formatSAR(report.netIncome)}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Net Profit Margin:</span>
+              <span className="text-xs text-teal-100">Net Profit Margin:</span>
               <span
-                className={`text-xs font-black font-mono px-2.5 py-1 rounded-[6px] border ${
+                className={`text-xs font-black font-mono px-2.5 py-1 rounded-[8px] border ${
                   report.profitMarginPercent >= 0
-                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                    ? 'bg-white/20 text-white border-white/30'
                     : 'bg-rose-950/80 text-rose-300 border-rose-800'
                 }`}
               >

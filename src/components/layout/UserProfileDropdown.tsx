@@ -88,6 +88,8 @@ export function UserProfileDropdown({
       ? 'Receptionist'
       : userRole || 'Member';
 
+  const isNurse = userRole === 'NURSE';
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Profile Avatar Button */}
@@ -135,21 +137,23 @@ export function UserProfileDropdown({
 
           {/* Menu Options */}
           <div className="p-1 space-y-0.5">
-            {/* Clinic Profile Option */}
-            <Link
-              href={profileHref}
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
-              role="menuitem"
-            >
-              <Building2 className="size-4 text-[#0d8276] group-hover:scale-110 transition-transform shrink-0" />
-              <div className="flex flex-col text-left min-w-0">
-                <span className="leading-tight">Clinic Profile</span>
-                <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 leading-tight">
-                  View clinic details (read-only)
-                </span>
-              </div>
-            </Link>
+            {/* Clinic Profile Option (Hidden for Nurse) */}
+            {!isNurse && (
+              <Link
+                href={profileHref}
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
+                role="menuitem"
+              >
+                <Building2 className="size-4 text-[#0d8276] group-hover:scale-110 transition-transform shrink-0" />
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="leading-tight">Clinic Profile</span>
+                  <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 leading-tight">
+                    View clinic details (read-only)
+                  </span>
+                </div>
+              </Link>
+            )}
 
             {/* Security & 2FA Option */}
             <Link
@@ -167,21 +171,23 @@ export function UserProfileDropdown({
               </div>
             </Link>
 
-            {/* Upgrade & Plans Option */}
-            <Link
-              href="/portal/subscription"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
-              role="menuitem"
-            >
-              <TrendingUp className="size-4 text-[#0d8276] group-hover:scale-110 transition-transform shrink-0" />
-              <div className="flex flex-col text-left min-w-0">
-                <span className="leading-tight">Upgrade &amp; Plans</span>
-                <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 leading-tight">
-                  Pricing, tiers &amp; AI quota
-                </span>
-              </div>
-            </Link>
+            {/* Upgrade & Plans Option (Hidden for Nurse) */}
+            {!isNurse && (
+              <Link
+                href="/portal/subscription"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-[#e6f6f3] hover:text-[#0d5c56] dark:hover:bg-slate-800 dark:hover:text-teal-300 transition-colors group cursor-pointer"
+                role="menuitem"
+              >
+                <TrendingUp className="size-4 text-[#0d8276] group-hover:scale-110 transition-transform shrink-0" />
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="leading-tight">Upgrade &amp; Plans</span>
+                  <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 leading-tight">
+                    Pricing, tiers &amp; AI quota
+                  </span>
+                </div>
+              </Link>
+            )}
 
             {/* Log Out Option */}
             <button

@@ -508,16 +508,16 @@ export function InventoryPurchaseOrdersView({
       {/* 4. TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[900px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
-                <th className="py-2.5 px-6">PO Number</th>
-                <th className="py-2.5 px-4">Supplier</th>
-                <th className="py-2.5 px-4">Order Date</th>
-                <th className="py-2.5 px-4">Items Summary</th>
-                <th className="py-2.5 px-4">Total Amount</th>
-                <th className="py-2.5 px-4">Status</th>
-                <th className="py-2.5 px-6 text-right">Actions</th>
+                <th className="py-2.5 px-6 whitespace-nowrap">PO Number</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Supplier</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Order Date</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Items Summary</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Total Amount</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Status</th>
+                <th className="py-2.5 px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -546,19 +546,23 @@ export function InventoryPurchaseOrdersView({
                       key={po.id}
                       className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
-                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         #{po.poNumber}
                       </td>
 
-                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
                         {po.supplier?.name || 'Supplier'}
                       </td>
 
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                        {new Date(po.orderDate).toLocaleDateString()}
+                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                        {new Date(po.orderDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <div className="space-y-0.5">
                           {po.items.map((i) => (
                             <div key={i.id} className="text-xs text-slate-700 dark:text-slate-300">
@@ -571,38 +575,38 @@ export function InventoryPurchaseOrdersView({
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         ${po.totalAmount.toFixed(2)}
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {po.status === 'RECEIVED' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/25">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/25 whitespace-nowrap">
                             Fully Received
                           </span>
                         ) : po.status === 'PARTIALLY_RECEIVED' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 whitespace-nowrap">
                             Partially Received
                           </span>
                         ) : po.status === 'SENT' || po.status === 'ISSUED' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800 whitespace-nowrap">
                             Sent to Supplier
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
                             Draft
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-6 text-right">
+                      <td className="py-3 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           {po.status === 'DRAFT' && (
                             <button
                               type="button"
                               onClick={() => handleUpdatePOStatus(po.id, 'SENT')}
                               disabled={isSubmitting}
-                              className="px-2.5 py-1 text-[10px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs inline-flex items-center gap-1 disabled:opacity-50"
+                              className="px-2.5 py-1 text-[10px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs inline-flex items-center gap-1 disabled:opacity-50 whitespace-nowrap"
                               title="Mark as Sent to Supplier"
                             >
                               <Send className="size-3" />
@@ -613,7 +617,7 @@ export function InventoryPurchaseOrdersView({
                             <button
                               type="button"
                               onClick={() => handleOpenReceiveModal(po)}
-                              className="px-2.5 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs inline-flex items-center gap-1"
+                              className="px-2.5 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-colors cursor-pointer shadow-2xs inline-flex items-center gap-1 whitespace-nowrap"
                             >
                               <ArrowDownRight className="size-3" />
                               <span>Receive Goods</span>
@@ -625,7 +629,7 @@ export function InventoryPurchaseOrdersView({
                               setSelectedPO(po);
                               setIsDetailModalOpen(true);
                             }}
-                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer"
+                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer whitespace-nowrap"
                           >
                             Details
                           </button>

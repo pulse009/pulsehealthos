@@ -490,14 +490,14 @@ export function InventoryItemDetailView({
         {/* TAB 2: BATCHES & LOTS */}
         {activeTab === 'batches' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[700px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="py-2.5 px-6">Batch / Lot #</th>
-                  <th className="py-2.5 px-4">Expiry Date</th>
-                  <th className="py-2.5 px-4">Received Date</th>
-                  <th className="py-2.5 px-4">Available Qty</th>
-                  <th className="py-2.5 px-4">Unit Cost</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">Batch / Lot #</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Expiry Date</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Received Date</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Available Qty</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Unit Cost</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -510,25 +510,33 @@ export function InventoryItemDetailView({
                 ) : (
                   item.batches.map((b) => (
                     <tr key={b.id} className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors">
-                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         {b.batchNumber}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {b.expiryDate ? (
                           <span className="font-semibold text-slate-700 dark:text-slate-300">
-                            {new Date(b.expiryDate).toLocaleDateString()}
+                            {new Date(b.expiryDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
                           </span>
                         ) : (
                           <span className="text-slate-400">N/A</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-slate-500">
-                        {new Date(b.receivedDate).toLocaleDateString()}
+                      <td className="py-3 px-4 text-slate-500 whitespace-nowrap font-mono text-[11px]">
+                        {new Date(b.receivedDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         {b.quantity} {item.unit}
                       </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         ${b.unitCost ? b.unitCost.toFixed(2) : '0.00'}
                       </td>
                     </tr>
@@ -542,15 +550,15 @@ export function InventoryItemDetailView({
         {/* TAB 3: STOCK MOVEMENTS */}
         {activeTab === 'movements' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[800px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="py-2.5 px-6">Date &amp; Time</th>
-                  <th className="py-2.5 px-4">Movement Type</th>
-                  <th className="py-2.5 px-4">Quantity</th>
-                  <th className="py-2.5 px-4">Stock Ledger</th>
-                  <th className="py-2.5 px-4">User</th>
-                  <th className="py-2.5 px-6">Reference / Notes</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">Date &amp; Time</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Movement Type</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Quantity</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Stock Ledger</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">User</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">Reference / Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -563,14 +571,33 @@ export function InventoryItemDetailView({
                 ) : (
                   item.movements.map((m) => {
                     const isPositive = m.quantity > 0;
+                    const dateObj = new Date(m.createdAt);
+                    const formattedDate = dateObj.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+                    const formattedTime = dateObj.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: true,
+                    });
+
                     return (
                       <tr key={m.id} className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors">
-                        <td className="py-3 px-6 text-slate-500 font-mono text-[11px]">
-                          {new Date(m.createdAt).toLocaleString()}
+                        <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {formattedDate}
+                          </span>
+                          <span className="text-slate-300 dark:text-slate-600 mx-1.5">•</span>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            {formattedTime}
+                          </span>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 whitespace-nowrap">
                           <span
-                            className={`px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold ${
+                            className={`px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold inline-block whitespace-nowrap ${
                               m.type === 'STOCK_RECEIVED'
                                 ? 'bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20'
                                 : m.type === 'STOCK_ISSUED'
@@ -581,7 +608,7 @@ export function InventoryItemDetailView({
                             {m.type.replace(/_/g, ' ')}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-mono font-bold">
+                        <td className="py-3 px-4 font-mono font-bold whitespace-nowrap">
                           <span
                             className={
                               isPositive
@@ -592,14 +619,21 @@ export function InventoryItemDetailView({
                             {isPositive ? `+${m.quantity}` : m.quantity} {item.unit}
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                          {m.previousStock} → <strong>{m.newStock}</strong>
+                        <td className="py-3 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                          {m.previousStock} → <strong className="text-slate-900 dark:text-white">{m.newStock}</strong>
                         </td>
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium">
+                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
                           {m.createdBy?.name || 'System'}
                         </td>
-                        <td className="py-3 px-6 text-slate-500 text-[11px]">
-                          {m.notes || m.referenceId ? `${m.referenceId ? '#' + m.referenceId + ': ' : ''}${m.notes || ''}` : '—'}
+                        <td className="py-3 px-6 text-slate-600 dark:text-slate-400 text-xs">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {m.referenceId && (
+                              <span className="font-mono font-bold text-[10px] text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/20 px-1.5 py-0.5 rounded-[4px] border border-[#0d8276]/20 whitespace-nowrap">
+                                #{m.referenceId}
+                              </span>
+                            )}
+                            <span>{m.notes || '—'}</span>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -613,16 +647,16 @@ export function InventoryItemDetailView({
         {/* TAB 4: PURCHASE HISTORY */}
         {activeTab === 'purchases' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[800px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="py-2.5 px-6">PO Number</th>
-                  <th className="py-2.5 px-4">Supplier</th>
-                  <th className="py-2.5 px-4">Order Date</th>
-                  <th className="py-2.5 px-4">Ordered Qty</th>
-                  <th className="py-2.5 px-4">Received Qty</th>
-                  <th className="py-2.5 px-4">Unit Cost</th>
-                  <th className="py-2.5 px-6">PO Status</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">PO Number</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Supplier</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Order Date</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Ordered Qty</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Received Qty</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Unit Cost</th>
+                  <th className="py-2.5 px-6 whitespace-nowrap">PO Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -635,27 +669,31 @@ export function InventoryItemDetailView({
                 ) : (
                   item.poItems.map((poi) => (
                     <tr key={poi.id} className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors">
-                      <td className="py-3 px-6 font-mono font-bold text-[#0d6157] dark:text-teal-400">
+                      <td className="py-3 px-6 font-mono font-bold text-[#0d6157] dark:text-teal-400 whitespace-nowrap">
                         <Link href={`/portal/inventory/purchase-orders`} className="hover:underline">
                           #{poi.purchaseOrder.poNumber}
                         </Link>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-white">
+                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-white whitespace-nowrap">
                         {poi.purchaseOrder.supplier.name}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                        {new Date(poi.purchaseOrder.orderDate).toLocaleDateString()}
+                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                        {new Date(poi.purchaseOrder.orderDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         {poi.quantity} {item.unit}
                       </td>
-                      <td className="py-3 px-4 font-bold text-[#0d6157] dark:text-teal-300">
+                      <td className="py-3 px-4 font-bold text-[#0d6157] dark:text-teal-300 whitespace-nowrap">
                         {poi.receivedQuantity} {item.unit}
                       </td>
-                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
+                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         ${poi.unitCost.toFixed(2)}
                       </td>
-                      <td className="py-3 px-6">
+                      <td className="py-3 px-6 whitespace-nowrap">
                         <span className="px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                           {poi.purchaseOrder.status}
                         </span>

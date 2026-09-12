@@ -403,16 +403,16 @@ export function InventoryRequestsView({
       {/* 4. TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[850px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
-                <th className="py-2.5 px-6">Req. Number</th>
-                <th className="py-2.5 px-4">Requested By</th>
-                <th className="py-2.5 px-4">Items &amp; Quantities</th>
-                <th className="py-2.5 px-4">Department / Reason</th>
-                <th className="py-2.5 px-4">Date</th>
-                <th className="py-2.5 px-4">Status</th>
-                <th className="py-2.5 px-6 text-right">Actions</th>
+                <th className="py-2.5 px-6 whitespace-nowrap">Req. #</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Requested By</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Items Requested</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Department &amp; Reason</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Date</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Status</th>
+                <th className="py-2.5 px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -435,11 +435,11 @@ export function InventoryRequestsView({
                       key={r.id}
                       className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
-                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         #{r.requestNumber}
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <div className="font-bold text-slate-900 dark:text-white">
                           {r.requestedBy.name}
                         </div>
@@ -448,7 +448,7 @@ export function InventoryRequestsView({
                         </span>
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <div className="space-y-0.5">
                           {r.items.map((i) => (
                             <div key={i.id} className="text-xs text-slate-700 dark:text-slate-300">
@@ -463,38 +463,42 @@ export function InventoryRequestsView({
 
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                         {r.department && (
-                          <span className="block font-semibold text-slate-800 dark:text-slate-200">
+                          <span className="block font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             {r.department}
                           </span>
                         )}
                         <span className="text-[11px] text-slate-400">{r.reason || '—'}</span>
                       </td>
 
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                        {new Date(r.createdAt).toLocaleDateString()}
+                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                        {new Date(r.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {r.status === 'PENDING' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 whitespace-nowrap">
                             Pending
                           </span>
                         ) : r.status === 'APPROVED' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20 whitespace-nowrap">
                             Approved
                           </span>
                         ) : r.status === 'RELEASED' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 whitespace-nowrap">
                             Released
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800 whitespace-nowrap">
                             Rejected
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-6 text-right">
+                      <td className="py-3 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           {isOwnerOrAdmin && r.status === 'PENDING' && (
                             <>
@@ -502,7 +506,7 @@ export function InventoryRequestsView({
                                 type="button"
                                 disabled={isSubmitting}
                                 onClick={() => handleApprove(r.id)}
-                                className="px-2.5 py-1 text-[10px] font-semibold bg-[#e6f6f3] hover:bg-[#d6f0ea] text-[#0d5c56] dark:bg-[#0d6157]/25 dark:hover:bg-[#0d6157]/40 dark:text-teal-300 rounded-[8px] border border-[#0d8276]/20 transition-colors cursor-pointer shadow-2xs"
+                                className="px-2.5 py-1 text-[10px] font-semibold bg-[#e6f6f3] hover:bg-[#d6f0ea] text-[#0d5c56] dark:bg-[#0d6157]/25 dark:hover:bg-[#0d6157]/40 dark:text-teal-300 rounded-[8px] border border-[#0d8276]/20 transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
                               >
                                 Approve
                               </button>
@@ -510,7 +514,7 @@ export function InventoryRequestsView({
                                 type="button"
                                 disabled={isSubmitting}
                                 onClick={() => handleOpenReject(r)}
-                                className="px-2.5 py-1 text-[10px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900 dark:text-rose-300 rounded-[8px] border border-rose-200/80 transition-colors cursor-pointer shadow-2xs"
+                                className="px-2.5 py-1 text-[10px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900 dark:text-rose-300 rounded-[8px] border border-rose-200/80 transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
                               >
                                 Reject
                               </button>
@@ -522,7 +526,7 @@ export function InventoryRequestsView({
                               type="button"
                               disabled={isSubmitting}
                               onClick={() => handleRelease(r.id)}
-                              className="px-3 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all cursor-pointer shadow-xs"
+                              className="px-3 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all cursor-pointer shadow-xs whitespace-nowrap"
                             >
                               Release Stock
                             </button>
@@ -534,7 +538,7 @@ export function InventoryRequestsView({
                               setSelectedRequest(r);
                               setIsDetailModalOpen(true);
                             }}
-                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer shadow-2xs"
+                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer whitespace-nowrap"
                           >
                             Details
                           </button>

@@ -81,14 +81,6 @@ export async function verifyWebhookSignature(
     });
   }
 
-  // 2. Secondary fallback: check env.WHATSAPP_APP_SECRET if present
-  if (env.WHATSAPP_APP_SECRET) {
-    const expected = hmacSha256Hex(env.WHATSAPP_APP_SECRET, rawBody);
-    if (safeEqual(expected, cleanProvided)) {
-      return { valid: true };
-    }
-  }
-
   if (env.NODE_ENV === 'development') {
     logger.warn('whatsapp.signature.dev_bypass', 'Signature mismatch bypassed in development mode', {
       provided: cleanProvided.slice(0, 10) + '...',
@@ -111,7 +103,7 @@ export async function verifySubscription(params: URLSearchParams): Promise<strin
 
   if (mode !== 'subscribe' || !token || !challenge) return null;
 
-  // 1. Primary: Check Verify Token stored in database by Master Admin
+  // Primary: Check Verify Token stored in database by Clinic Profiles
   try {
     const integrations = await prisma.whatsAppIntegration.findMany({
       where: { verifyTokenCipher: { not: null } },
@@ -139,11 +131,6 @@ export async function verifySubscription(params: URLSearchParams): Promise<strin
     logger.warn('whatsapp.verify.db_error', 'Failed to query verify tokens from DB', {
       error: String(dbErr),
     });
-  }
-
-  // 2. Secondary fallback: Check global env.WHATSAPP_VERIFY_TOKEN if set
-  if (env.WHATSAPP_VERIFY_TOKEN && safeEqual(env.WHATSAPP_VERIFY_TOKEN, token)) {
-    return challenge;
   }
 
   return null;

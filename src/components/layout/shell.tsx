@@ -50,22 +50,30 @@ export function AppShell({
     .join('')
     .toUpperCase();
 
+  const isNurse = userRole === 'NURSE';
+  const isManager = userRole === 'MANAGER';
   const isReceptionist = userRole === 'RECEPTIONIST';
 
   const showSecondarySidebar =
     workspaceKind === 'Clinic' &&
     !isReceptionist &&
-    (pathname === '/portal' ||
+    (isNurse ||
+      isManager ||
+      pathname === '/portal' ||
       pathname.startsWith('/portal/doctors') ||
       pathname.startsWith('/portal/services') ||
       pathname.startsWith('/portal/patients') ||
       pathname.startsWith('/portal/appointments') ||
       pathname.startsWith('/portal/roles') ||
+      pathname.startsWith('/portal/manager') ||
+      pathname.startsWith('/portal/nurse') ||
+      pathname.startsWith('/portal/pharmacy') ||
       pathname.startsWith('/portal/organization') ||
       pathname.startsWith('/portal/profile') ||
       pathname.startsWith('/portal/security') ||
       pathname.startsWith('/portal/subscription') ||
       pathname.startsWith('/portal/upgrade') ||
+      pathname.startsWith('/portal/conversations') ||
       (!isPulseNow && pathname.startsWith('/portal/inventory')) ||
       (!isPulseNow && pathname.startsWith('/portal/accounts')));
 
@@ -73,15 +81,16 @@ export function AppShell({
     <div className="flex h-screen overflow-hidden bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans">
       <TopProgressBar />
 
-      {/* 1. FIXED PRIMARY MAIN SIDEBAR (LEFTMOST SLIM RAIL) */}
-      <aside
-        className={cn(
-          'surface hidden shrink-0 flex-col border-r border-[#0d8276]/15 dark:border-slate-800 lg:flex sticky top-0 h-screen z-30 overflow-hidden select-none',
-          workspaceKind === 'Clinic'
-            ? 'w-[72px] bg-[#f8fcfa] dark:bg-[#090d16] border-r border-[#0d8276]/15 dark:border-slate-800'
-            : 'w-60 bg-white dark:bg-slate-900'
-        )}
-      >
+      {/* 1. FIXED PRIMARY MAIN SIDEBAR (LEFTMOST SLIM RAIL - HIDDEN FOR NURSE & MANAGER) */}
+      {!isNurse && !isManager && (
+        <aside
+          className={cn(
+            'surface hidden shrink-0 flex-col border-r border-[#0d8276]/15 dark:border-slate-800 lg:flex sticky top-0 h-screen z-30 overflow-hidden select-none',
+            workspaceKind === 'Clinic'
+              ? 'w-[72px] bg-[#f8fcfa] dark:bg-[#090d16] border-r border-[#0d8276]/15 dark:border-slate-800'
+              : 'w-60 bg-white dark:bg-slate-900'
+          )}
+        >
         {/* Brand Header (Admin Portal Only) */}
         {workspaceKind === 'Admin' ? (
           <div className="h-[52px] flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800 px-4 shrink-0">
@@ -137,6 +146,7 @@ export function AppShell({
           </div>
         )}
       </aside>
+      )}
 
       {/* 2. SECONDARY SIDEBAR (RENDERED FOR DASHBOARD & DOCTORS MODULE) */}
       {showSecondarySidebar && <DoctorSecondarySidebar userRole={userRole} isPulseNow={isPulseNow} />}

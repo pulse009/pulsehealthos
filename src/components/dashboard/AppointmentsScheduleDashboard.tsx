@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -26,8 +27,15 @@ import {
   Globe,
   Trash2,
   AlertTriangle,
+  Send,
+  ExternalLink,
+  ShieldCheck,
+  Layers,
+  HeartPulse,
 } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
+import { AppointmentsCalendarView } from './AppointmentsCalendarView';
 
 export interface AppointmentItem {
   id: string;
@@ -39,9 +47,14 @@ export interface AppointmentItem {
   patientAvatar?: string;
   department: string;
   doctor: string;
-  status: 'Confirmed' | 'In Progress' | 'Pending' | 'Cancelled';
+  status: 'Confirmed' | 'Checked In' | 'In Progress' | 'Pending' | 'Cancelled' | 'Completed';
   date: number;
   rawStartsAt?: string;
+  servicePrice?: number;
+  invoiceNumber?: string;
+  invoiceTotal?: number;
+  invoiceDiscount?: number;
+  invoiceStatus?: string;
 }
 
 export interface DashboardMetricsProps {
@@ -65,11 +78,29 @@ export interface DoctorOption {
   serviceIds?: string[];
 }
 
+export interface WhatsAppInfoProps {
+  isConnected: boolean;
+  displayPhoneNumber?: string | null;
+}
+
+export interface AppointmentTypeItem {
+  id: string;
+  serviceId: string;
+  doctorId?: string | null;
+  name: string;
+  durationMinutes: number;
+  priceMinor?: number | null;
+  currency?: string | null;
+  description?: string | null;
+  isActive?: boolean;
+}
+
 export interface AppointmentsScheduleDashboardProps {
   clinicId?: string;
   clinicName?: string;
   timezone?: string;
   initialAppointments?: AppointmentItem[];
+  initialAppointmentTypes?: AppointmentTypeItem[];
   departments?: string[];
   doctors?: string[];
   serviceDoctorMap?: Record<string, string[]>;
@@ -78,6 +109,8 @@ export interface AppointmentsScheduleDashboardProps {
   doctorsList?: DoctorOption[];
   metrics?: DashboardMetricsProps;
   userRole?: string;
+  whatsappInfo?: WhatsAppInfoProps;
+  showWhatsAppButton?: boolean;
 }
 
 const DEFAULT_DEPARTMENTS = [
@@ -95,6 +128,14 @@ const DEFAULT_DAILY_TIME_SLOTS: string[] = [
   '18:00', '18:30', '19:00', '19:30', '20:00',
 ];
 
+const getLocalTodayDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function AppointmentsScheduleDashboard({
   clinicId,
   clinicName = 'Reveal Skin & Glow Care',
@@ -111,15 +152,41 @@ export function AppointmentsScheduleDashboard({
   doctorServiceMap = {},
   servicesList = [],
   doctorsList = [],
+  initialAppointmentTypes = [],
   metrics = { totalCount: 0, bookedCount: 0, pendingCount: 0, cancellationsCount: 0 },
   userRole,
+  whatsappInfo = { isConnected: false },
+  showWhatsAppButton = false,
 }: AppointmentsScheduleDashboardProps) {
   const [appointments, setAppointments] = useState<AppointmentItem[]>(initialAppointments);
+  const [appointmentTypesList, setAppointmentTypesList] = useState<AppointmentTypeItem[]>(
+    initialAppointmentTypes || []
+  );
 
-  // Sync with server appointments when updated
+  // Sync with server appointments & appointment types when updated
   useEffect(() => {
     setAppointments(initialAppointments);
   }, [initialAppointments]);
+
+  useEffect(() => {
+    if (initialAppointmentTypes && initialAppointmentTypes.length > 0) {
+      setAppointmentTypesList(initialAppointmentTypes);
+    }
+  }, [initialAppointmentTypes]);
+
+  // Fetch live appointment types for this clinic on mount
+  useEffect(() => {
+    if (clinicId) {
+      fetch(`/api/appointment-types?clinicId=${clinicId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.ok && Array.isArray(data.appointmentTypes)) {
+            setAppointmentTypesList(data.appointmentTypes);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [clinicId]);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -132,6 +199,7 @@ export function AppointmentsScheduleDashboard({
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
 
   // New Appointment Form State
@@ -164,9 +232,9 @@ export function AppointmentsScheduleDashboard({
   // Booking Parameters
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
+  const [selectedAppointmentTypeId, setSelectedAppointmentTypeId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0] ?? '';
+    return getLocalTodayDateString();
   });
   const [selectedSlotStartsAt, setSelectedSlotStartsAt] = useState<string>('');
   const [availableSlots, setAvailableSlots] = useState<
@@ -183,6 +251,15 @@ export function AppointmentsScheduleDashboard({
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Complete Appointment & Doctor Discount Modal State
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [appointmentToComplete, setAppointmentToComplete] = useState<AppointmentItem | null>(null);
+  const [discountType, setDiscountType] = useState<'AMOUNT' | 'PERCENT'>('AMOUNT');
+  const [discountValue, setDiscountValue] = useState<number>(0);
+  const [completionNotes, setCompletionNotes] = useState<string>('');
+  const [isCompleting, setIsCompleting] = useState<boolean>(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
 
   // Search Existing Patient by File Number
   const handleSearchPatient = async () => {
@@ -243,40 +320,60 @@ export function AppointmentsScheduleDashboard({
 
   // Compute effective slots: dynamic availability from API or standard clinic slots fallback
   const effectiveSlots = useMemo(() => {
+    const nowTime = Date.now();
+
     if (availableSlots.length > 0) {
-      return availableSlots.map((s) => {
-        const dateObj = new Date(s.startsAt);
-        const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        return {
-          startsAt: s.startsAt,
-          label: `${timeStr} (Available)`,
-        };
-      });
+      return availableSlots
+        .filter((s) => {
+          const slotMs = new Date(s.startsAt).getTime();
+          return slotMs > nowTime;
+        })
+        .map((s) => {
+          const dateObj = new Date(s.startsAt);
+          const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return {
+            startsAt: s.startsAt,
+            label: `${timeStr} (Available)`,
+          };
+        });
     }
 
     if (!selectedDate) return [];
 
-    return DEFAULT_DAILY_TIME_SLOTS.map((t) => {
-      const iso = new Date(`${selectedDate}T${t}:00`).toISOString();
-      const [h, m] = t.split(':');
-      const hourNum = parseInt(h ?? '9', 10);
-      const ampm = hourNum >= 12 ? 'PM' : 'AM';
-      const displayHour = hourNum % 12 || 12;
-      const formatted = `${displayHour.toString().padStart(2, '0')}:${m} ${ampm}`;
-      return {
-        startsAt: iso,
-        label: `${formatted} (Available Slot)`,
-      };
-    });
+    return DEFAULT_DAILY_TIME_SLOTS
+      .map((t) => {
+        const iso = new Date(`${selectedDate}T${t}:00`).toISOString();
+        const slotMs = new Date(iso).getTime();
+        const [h, m] = t.split(':');
+        const hourNum = parseInt(h ?? '9', 10);
+        const ampm = hourNum >= 12 ? 'PM' : 'AM';
+        const displayHour = hourNum % 12 || 12;
+        const formatted = `${displayHour.toString().padStart(2, '0')}:${m} ${ampm}`;
+        return {
+          startsAt: iso,
+          slotMs,
+          label: `${formatted} (Available Slot)`,
+        };
+      })
+      .filter((slot) => {
+        // Exclude past slots
+        return slot.slotMs > nowTime;
+      })
+      .map(({ startsAt, label }) => ({
+        startsAt,
+        label,
+      }));
   }, [availableSlots, selectedDate]);
 
-  // Ensure a slot is selected whenever effectiveSlots updates
+  // Ensure a valid future slot is selected whenever effectiveSlots updates
   useEffect(() => {
     if (effectiveSlots.length > 0) {
       const exists = effectiveSlots.some((s) => s.startsAt === selectedSlotStartsAt);
       if (!exists && effectiveSlots[0]) {
         setSelectedSlotStartsAt(effectiveSlots[0].startsAt);
       }
+    } else {
+      setSelectedSlotStartsAt('');
     }
   }, [effectiveSlots, selectedSlotStartsAt]);
 
@@ -300,8 +397,28 @@ export function AppointmentsScheduleDashboard({
     }
   }, [modalCompatibleServices, selectedServiceId]);
 
+  // Appointment types matching the currently selected service (and optionally doctor)
+  const availableAppointmentTypes = useMemo(() => {
+    const sId = selectedServiceId || modalCompatibleServices[0]?.id;
+    if (!sId) return [];
+    return appointmentTypesList.filter(
+      (at) => at.serviceId === sId && (!at.doctorId || !selectedDoctorId || at.doctorId === selectedDoctorId)
+    );
+  }, [appointmentTypesList, selectedServiceId, modalCompatibleServices, selectedDoctorId]);
+
+  // Ensure selectedAppointmentTypeId is valid within availableAppointmentTypes
+  useEffect(() => {
+    if (availableAppointmentTypes.length > 0) {
+      if (selectedAppointmentTypeId && !availableAppointmentTypes.some((at) => at.id === selectedAppointmentTypeId)) {
+        setSelectedAppointmentTypeId('');
+      }
+    } else {
+      setSelectedAppointmentTypeId('');
+    }
+  }, [availableAppointmentTypes, selectedAppointmentTypeId]);
+
   // Open modal with fresh state
-  const handleOpenNewAppointmentModal = () => {
+  const handleOpenNewAppointmentModal = (prefillDate?: string, prefillTime?: string) => {
     setPatientTab('NEW');
     setSearchFileNumber('');
     setFoundPatient(null);
@@ -313,6 +430,7 @@ export function AppointmentsScheduleDashboard({
     setPatientNationality('');
     setPendingPayment('');
     setAppointmentNotes('');
+    setSelectedAppointmentTypeId('');
     setFormError(null);
     setSlotsError(null);
     setAvailableSlots([]);
@@ -329,9 +447,13 @@ export function AppointmentsScheduleDashboard({
     const initialServiceId = (docServices[0] || servicesList[0])?.id || '';
     setSelectedServiceId(initialServiceId);
 
-    const todayStr = new Date().toISOString().split('T')[0] ?? '';
-    setSelectedDate(todayStr);
-    setSelectedSlotStartsAt(new Date(`${todayStr}T09:00:00`).toISOString());
+    const targetDate = prefillDate || getLocalTodayDateString();
+    setSelectedDate(targetDate);
+    if (prefillTime && targetDate) {
+      setSelectedSlotStartsAt(new Date(`${targetDate}T${prefillTime}:00`).toISOString());
+    } else {
+      setSelectedSlotStartsAt('');
+    }
     setNewStatus('Confirmed');
     setIsModalOpen(true);
   };
@@ -582,6 +704,10 @@ export function AppointmentsScheduleDashboard({
       setFormError('Please select an available time slot.');
       return;
     }
+    if (new Date(selectedSlotStartsAt).getTime() <= Date.now()) {
+      setFormError('The selected time slot is in the past. Please choose an upcoming time slot.');
+      return;
+    }
 
     const effectiveServiceId = selectedServiceId || modalCompatibleServices[0]?.id || servicesList[0]?.id || '';
     const effectiveDoctorId = selectedDoctorId || modalDoctors[0]?.id || doctorsList[0]?.id || '';
@@ -622,6 +748,7 @@ export function AppointmentsScheduleDashboard({
           patientPhone: pPhone,
           pendingPayment: pendingPayment.trim() || undefined,
           notes: appointmentNotes.trim() || undefined,
+          appointmentTypeId: selectedAppointmentTypeId || undefined,
           startsAt: selectedSlotStartsAt,
           status: newStatus === 'Confirmed' ? 'CONFIRMED' : 'PENDING',
         }),
@@ -667,6 +794,7 @@ export function AppointmentsScheduleDashboard({
       setNewPatientName('');
       setNewPhone('');
       setSelectedSlotStartsAt('');
+      setSelectedAppointmentTypeId('');
       setFoundPatient(null);
       setSearchFileNumber('');
       setPendingPayment('');
@@ -689,6 +817,13 @@ export function AppointmentsScheduleDashboard({
             Confirmed
           </span>
         );
+      case 'Checked In':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] text-[11px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/30">
+            <span className="size-1.5 rounded-full bg-[#0d8276] animate-ping" />
+            Checked In
+          </span>
+        );
       case 'In Progress':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
@@ -703,6 +838,13 @@ export function AppointmentsScheduleDashboard({
             Pending
           </span>
         );
+      case 'Completed':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800">
+            <span className="size-1.5 rounded-full bg-teal-500" />
+            Completed
+          </span>
+        );
       case 'Cancelled':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800">
@@ -712,6 +854,68 @@ export function AppointmentsScheduleDashboard({
         );
       default:
         return null;
+    }
+  };
+
+  const handleOpenCompleteModal = (item: AppointmentItem) => {
+    setActiveActionId(null);
+    setAppointmentToComplete(item);
+    setDiscountType('AMOUNT');
+    setDiscountValue(0);
+    setCompletionNotes('');
+    setCompleteError(null);
+    setIsCompleteModalOpen(true);
+  };
+
+  const handleConfirmCompleteAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appointmentToComplete) return;
+    setIsCompleting(true);
+    setCompleteError(null);
+
+    const basePrice = appointmentToComplete.servicePrice ?? 0;
+    const computedDiscount =
+      discountType === 'PERCENT'
+        ? Math.min(basePrice, (basePrice * (discountValue || 0)) / 100)
+        : Math.min(basePrice, Math.max(0, discountValue || 0));
+    const finalTotal = Math.max(0, basePrice - computedDiscount);
+
+    try {
+      const res = await fetch(`/api/appointments/${appointmentToComplete.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'COMPLETED',
+          discountAmount: discountType === 'AMOUNT' ? discountValue : undefined,
+          discountPercent: discountType === 'PERCENT' ? discountValue : undefined,
+          notes: completionNotes.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to complete appointment');
+      }
+
+      setAppointments((prev) =>
+        prev.map((app) =>
+          app.id === appointmentToComplete.id
+            ? {
+                ...app,
+                status: 'Completed',
+                invoiceDiscount: computedDiscount,
+                invoiceTotal: finalTotal,
+              }
+            : app
+        )
+      );
+
+      setIsCompleteModalOpen(false);
+      setAppointmentToComplete(null);
+    } catch (err) {
+      setCompleteError(err instanceof Error ? err.message : 'Failed to complete appointment');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -727,10 +931,14 @@ export function AppointmentsScheduleDashboard({
       const dbStatus =
         newStatus === 'Confirmed'
           ? 'CONFIRMED'
+          : newStatus === 'Checked In'
+          ? 'CHECKED_IN'
           : newStatus === 'Cancelled'
           ? 'CANCELLED'
           : newStatus === 'Pending'
           ? 'PENDING'
+          : newStatus === 'Completed'
+          ? 'COMPLETED'
           : 'CONFIRMED';
 
       await fetch(`/api/appointments/${id}`, {
@@ -787,7 +995,6 @@ export function AppointmentsScheduleDashboard({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
       {/* 1. TOP COMPACT HEADER (FLUSH BORDER ATTACHED TO SIDEBAR) */}
-      {/* 1. TOP COMPACT HEADER (FLUSH BORDER ATTACHED TO SIDEBAR) */}
       <div className="px-6 py-3 border-b border-[#0d8276]/10 dark:border-slate-800 flex items-center justify-between gap-4 bg-white dark:bg-slate-900 shrink-0">
         <div>
           <h1 className="text-lg font-semibold text-[#0d3d38] dark:text-white tracking-tight leading-tight">
@@ -798,14 +1005,44 @@ export function AppointmentsScheduleDashboard({
             <span className="font-semibold text-[#0d5c56] dark:text-teal-300">{clinicName}</span> ({timezone}).
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenNewAppointmentModal}
-          className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-[0_4px_14px_rgba(13,97,87,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
-        >
-          <Plus className="size-3.5 stroke-[2.5]" />
-          <span>New Appointment</span>
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          {showWhatsAppButton && (
+            whatsappInfo?.isConnected ? (
+              <button
+                type="button"
+                onClick={() => setIsWhatsAppModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 bg-emerald-50 hover:bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300/90 dark:border-emerald-700 font-semibold text-xs px-3.5 py-2 rounded-[8px] shadow-2xs transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
+                title="WhatsApp is connected & working"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <FaWhatsapp className="size-4 text-[#25D366]" />
+                <span>WhatsApp Activated</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsWhatsAppModalOpen(true)}
+                className="inline-flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold text-xs px-3.5 py-2 rounded-[8px] shadow-[0_4px_14px_rgba(37,211,102,0.28)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
+                title="Click to connect WhatsApp integration"
+              >
+                <FaWhatsapp className="size-4" />
+                <span>Connect WhatsApp</span>
+              </button>
+            )
+          )}
+
+          <button
+            type="button"
+            onClick={() => handleOpenNewAppointmentModal()}
+            className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs px-4 py-2 rounded-[8px] shadow-[0_4px_14px_rgba(13,97,87,0.22)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0"
+          >
+            <Plus className="size-3.5 stroke-[2.5]" />
+            <span>New Appointment</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. STAT CARDS ROW (COMPACT, FLAT, NO ROUNDNESS, ATTACHED DIRECTLY TO SIDEBAR) */}
@@ -1104,15 +1341,17 @@ export function AppointmentsScheduleDashboard({
 
         {/* Render View Mode */}
         {viewMode === 'calendar' ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500 overflow-y-auto">
-            <CalendarIcon className="size-10 mb-2.5 text-[#0d8276]/30 dark:text-slate-700" />
-            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Calendar View
-            </h4>
-            <p className="text-xs text-slate-400 max-w-xs mt-1">
-              Viewing schedule for {clinicName}. Switch to List view to manage individual bookings.
-            </p>
-          </div>
+          <AppointmentsCalendarView
+            appointments={filteredAppointments}
+            clinicName={clinicName}
+            timezone={timezone}
+            userRole={userRole}
+            onOpenNewAppointment={handleOpenNewAppointmentModal}
+            onUpdateStatus={handleUpdateStatus}
+            onOpenCompleteModal={handleOpenCompleteModal}
+            onDeleteAppointment={handleDeleteAppointment}
+            getStatusBadge={getStatusBadge}
+          />
         ) : (
           /* TABLE VIEW WITH COMPACT ROW HEIGHT & DIFFERENTIATING BORDER LINES */
           <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
@@ -1137,7 +1376,7 @@ export function AppointmentsScheduleDashboard({
                   <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider">
                     STATUS
                   </th>
-                  <th className="py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider text-right">
+                  <th className="sticky top-0 right-0 z-20 bg-[#f8fcfa] dark:bg-slate-800 py-2.5 px-4 text-[11px] font-semibold text-[#0d5c56] dark:text-slate-300 uppercase tracking-wider text-right whitespace-nowrap shadow-[-4px_0_8px_rgba(0,0,0,0.04)] border-l border-slate-200/70 dark:border-slate-700">
                     ACTION
                   </th>
                 </tr>
@@ -1146,57 +1385,49 @@ export function AppointmentsScheduleDashboard({
                 {filteredAppointments.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-slate-400 font-medium text-xs">
-                      No appointments matching the selected filters. Click &quot;Reset&quot; to view all.
+                      No appointments found matching your selected filters.
                     </td>
                   </tr>
                 ) : (
                   filteredAppointments.map((row) => (
                     <tr
                       key={row.id}
-                      className="hover:bg-[#f4fcfa]/80 dark:hover:bg-slate-800/50 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60"
+                      className={`hover:bg-[#f0f9f7]/40 dark:hover:bg-slate-800/40 transition-colors group divide-x divide-slate-100 dark:divide-slate-800/60 ${
+                        activeActionId === row.id ? 'relative z-30' : 'relative z-0'
+                      }`}
                     >
                       {/* 1. FILE NO */}
                       <td className="py-2.5 px-4 whitespace-nowrap">
-                        {typeof row.fileNumber === 'number' ? (
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800 shadow-2xs"
-                            title="Medical File Number"
-                          >
-                            FR-{String(row.fileNumber).padStart(3, '0')}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 font-mono text-xs">-</span>
-                        )}
+                        <span className="font-mono text-xs font-bold text-[#0d6157] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/20 px-2 py-0.5 rounded-[8px] border border-[#0d8276]/20">
+                          {row.fileNumber ? `FR-${String(row.fileNumber).padStart(3, '0')}` : 'FR-001'}
+                        </span>
                       </td>
 
                       {/* 2. APPOINTMENT NO */}
                       <td className="py-2.5 px-4 whitespace-nowrap">
-                        {typeof row.appointmentNumber === 'number' ? (
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-[#e6f6f3] text-[#0d6157] dark:bg-teal-950/60 dark:text-teal-300 border border-[#0d8276]/30 dark:border-teal-800 shadow-2xs"
-                            title="Appointment Number"
-                          >
-                            AP-{String(row.appointmentNumber).padStart(3, '0')}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 font-mono text-xs">-</span>
-                        )}
+                        <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[8px] border border-slate-200 dark:border-slate-700">
+                          {row.appointmentNumber
+                            ? `AP-${String(row.appointmentNumber).padStart(3, '0')}`
+                            : 'AP-001'}
+                        </span>
                       </td>
 
                       {/* 3. PATIENT */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2.5">
-                          <div className="size-7 rounded-lg bg-[#e6f6f3] text-[#0d6157] dark:bg-teal-900/40 dark:text-teal-300 flex items-center justify-center text-[11px] font-bold shrink-0 border border-[#0d8276]/20">
-                            {row.patientName[0]}
+                          <div className="size-7 rounded-[8px] bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 flex items-center justify-center font-bold text-xs shrink-0 border border-[#0d8276]/20">
+                            {row.patientName ? row.patientName.charAt(0).toUpperCase() : 'P'}
                           </div>
-                          <div className="min-w-0">
-                            <span className="block font-semibold text-slate-900 dark:text-white truncate text-xs leading-tight">
+                          <div>
+                            <span className="font-bold text-slate-900 dark:text-white block text-xs">
                               {row.patientName}
                             </span>
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-mono leading-tight mt-0.5">
-                              <span>{row.patientDetails}</span>
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.2">
+                              {row.patientDetails && <span>{row.patientDetails}</span>}
                               <span>•</span>
-                              <span className="font-semibold text-slate-600 dark:text-slate-400">{row.time}</span>
+                              <span className="font-medium text-slate-600 dark:text-slate-300">
+                                {row.time}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1218,88 +1449,144 @@ export function AppointmentsScheduleDashboard({
                       </td>
 
                       {/* 7. ACTION */}
-                      <td className="py-2.5 px-4 text-right relative whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActiveActionId(activeActionId === row.id ? null : row.id)
-                          }
-                          className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                        >
-                          <MoreHorizontal className="size-4" />
-                        </button>
+                      <td
+                        className={`sticky right-0 ${
+                          activeActionId === row.id ? 'z-30' : 'z-10'
+                        } bg-white group-hover:bg-[#f0f9f7]/40 dark:bg-slate-900 dark:group-hover:bg-slate-800/80 py-2.5 px-4 text-right whitespace-nowrap shadow-[-4px_0_8px_rgba(0,0,0,0.04)] border-l border-slate-100 dark:border-slate-800 transition-colors`}
+                      >
+                        <div className="relative inline-block text-right">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveActionId(activeActionId === row.id ? null : row.id)
+                            }
+                            className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-[8px] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          >
+                            <MoreHorizontal className="size-4" />
+                          </button>
 
-                        {activeActionId === row.id && (
-                          <>
-                            {/* Backdrop to close action dropdown on click outside */}
-                            <div
-                              className="fixed inset-0 z-20"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveActionId(null);
-                              }}
-                            />
+                          {activeActionId === row.id && (
+                            <>
+                              {/* Backdrop to close action dropdown on click outside */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveActionId(null);
+                                }}
+                              />
 
-                            <div className="absolute right-4 top-8 z-30 w-44 bg-white dark:bg-slate-800 rounded-[8px] shadow-xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUpdateStatus(row.id, 'Confirmed');
-                                }}
-                                className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
-                              >
-                                <CheckCircle2 className="size-3.5 text-emerald-500" />
-                                <span>Mark Confirmed</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUpdateStatus(row.id, 'In Progress');
-                                }}
-                                className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
-                              >
-                                <Clock className="size-3.5 text-blue-500" />
-                                <span>Mark In Progress</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUpdateStatus(row.id, 'Pending');
-                                }}
-                                className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
-                              >
-                                <Clock className="size-3.5 text-amber-500" />
-                                <span>Mark Pending</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUpdateStatus(row.id, 'Cancelled');
-                                }}
-                                className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
-                              >
-                                <AlertCircle className="size-3.5 text-red-500" />
-                                <span>Mark Cancelled</span>
-                              </button>
-                              <hr className="my-1 border-slate-100 dark:border-slate-700" />
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteAppointment(row);
-                                }}
-                                className="w-full px-3.5 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-semibold cursor-pointer"
-                              >
-                                <Trash2 className="size-3.5" />
-                                <span>Remove</span>
-                              </button>
-                            </div>
-                          </>
-                        )}
+                                <div className="absolute right-0 top-full mt-1.5 z-50 w-52 bg-white dark:bg-slate-800 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateStatus(row.id, 'Checked In');
+                                    }}
+                                    className="w-full px-3.5 py-2 text-[#0d5c56] dark:text-teal-300 hover:bg-[#e6f6f3] dark:hover:bg-[#0d6157]/20 flex items-center gap-2 font-bold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                  >
+                                    <UserCheck className="size-3.5 text-[#0d8276]" />
+                                    <span>Check In Patient (Arrived)</span>
+                                  </button>
+
+                                  {userRole === 'NURSE' ? (
+                                    <Link
+                                      href="/portal/nurse"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="w-full px-3.5 py-2 text-[#0d5c56] dark:text-teal-300 hover:bg-[#e6f6f3] dark:hover:bg-[#0d6157]/20 flex items-center gap-2 font-bold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                    >
+                                      <HeartPulse className="size-3.5 text-[#0d8276]" />
+                                      <span>Nurse Station (Triage &amp; Vitals)</span>
+                                    </Link>
+                                  ) : (
+                                    <>
+                                      <Link
+                                        href="/portal/consultations"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 font-semibold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                      >
+                                        <Stethoscope className="size-3.5 text-teal-600" />
+                                        <span>Doctor Consultation Desk</span>
+                                      </Link>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenCompleteModal(row);
+                                        }}
+                                        className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 font-semibold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                      >
+                                        <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                        <span>Complete &amp; Apply Discount</span>
+                                      </button>
+                                    </>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateStatus(row.id, 'Confirmed');
+                                    }}
+                                    className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="size-3.5 text-emerald-500" />
+                                    <span>Mark Confirmed</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateStatus(row.id, 'In Progress');
+                                    }}
+                                    className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Clock className="size-3.5 text-blue-500" />
+                                    <span>Mark In Progress</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateStatus(row.id, 'Pending');
+                                    }}
+                                    className="w-full px-3.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Clock className="size-3.5 text-amber-500" />
+                                    <span>Mark Pending</span>
+                                  </button>
+
+                                  {userRole !== 'NURSE' && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleUpdateStatus(row.id, 'Cancelled');
+                                        }}
+                                        className="w-full px-3.5 py-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer font-semibold"
+                                      >
+                                        <AlertCircle className="size-3.5 text-rose-500" />
+                                        <span>Mark Cancelled</span>
+                                      </button>
+                                      <hr className="my-1 border-slate-100 dark:border-slate-700" />
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteAppointment(row);
+                                        }}
+                                        className="w-full px-3.5 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-semibold cursor-pointer"
+                                      >
+                                        <Trash2 className="size-3.5" />
+                                        <span>Remove</span>
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1610,6 +1897,30 @@ export function AppointmentsScheduleDashboard({
                   </div>
                 </div>
 
+                {/* Appointment Type Dropdown (ONLY shown if appointment types exist for selected service) */}
+                {availableAppointmentTypes.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Appointment Type
+                    </label>
+                    <div className="relative">
+                      <Layers className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                      <select
+                        value={selectedAppointmentTypeId}
+                        onChange={(e) => setSelectedAppointmentTypeId(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      >
+                        <option value="">General / Standard Consultation</option>
+                        {availableAppointmentTypes.map((at) => (
+                          <option key={at.id} value={at.id}>
+                            {at.name} ({at.durationMinutes}m{at.priceMinor !== undefined && at.priceMinor !== null ? ` - ${(at.priceMinor / 100).toFixed(0)} ${at.currency || 'SAR'}` : ''})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {/* Date & Time Slot */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -1621,8 +1932,11 @@ export function AppointmentsScheduleDashboard({
                     <input
                       type="date"
                       value={selectedDate}
-                      min={new Date().toISOString().split('T')[0]}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      min={getLocalTodayDateString()}
+                      onChange={(e) => {
+                        setSelectedDate(e.target.value);
+                        setSelectedSlotStartsAt('');
+                      }}
                       className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer font-medium"
                     />
                   </div>
@@ -1642,7 +1956,7 @@ export function AppointmentsScheduleDashboard({
                         {isLoadingSlots ? (
                           <option value="">Checking available slots...</option>
                         ) : effectiveSlots.length === 0 ? (
-                          <option value="">No slots available</option>
+                          <option value="">No upcoming slots available</option>
                         ) : (
                           effectiveSlots.map((slot) => (
                             <option key={slot.startsAt} value={slot.startsAt}>
@@ -1823,6 +2137,370 @@ export function AppointmentsScheduleDashboard({
           </div>
         </div>
       )}
+
+      {/* ─── WHATSAPP STATUS / CONNECT MODAL ─── */}
+      {isWhatsAppModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-[#0d8276]/20 dark:border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            {/* Modal Top Header */}
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-[8px] bg-[#25D366]/15 text-[#25D366] flex items-center justify-center border border-[#25D366]/30 shadow-2xs">
+                  <FaWhatsapp className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    {whatsappInfo?.isConnected ? 'WhatsApp Integration Active' : 'Connect WhatsApp'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {whatsappInfo?.isConnected ? 'Live patient messaging and automated reminders' : 'Enable automated messaging for your clinic'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWhatsAppModalOpen(false)}
+                className="p-1 rounded-[8px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 text-xs text-slate-600 dark:text-slate-300">
+              {whatsappInfo?.isConnected ? (
+                <>
+                  {/* Status Banner */}
+                  <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-[8px] flex items-start gap-3">
+                    <div className="size-6 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <ShieldCheck className="size-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-emerald-800 dark:text-emerald-200 text-xs">
+                        WhatsApp Activated & Connected
+                      </h4>
+                      <p className="text-[11px] text-emerald-700/90 dark:text-emerald-300/90 mt-0.5 leading-relaxed">
+                        Meta Cloud API webhook is active and connected. Real-time patient confirmations and reminders are transmitting normally.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Connected Details Grid */}
+                  <div className="grid grid-cols-1 gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-[8px] border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">Connection Status:</span>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-[8px] font-bold text-[11px]">
+                        <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Active & Online
+                      </span>
+                    </div>
+                    {whatsappInfo?.displayPhoneNumber && (
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">WhatsApp Number:</span>
+                        <span className="font-semibold text-slate-900 dark:text-white font-mono">
+                          {whatsappInfo.displayPhoneNumber}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">Automations:</span>
+                      <span className="font-semibold text-[#0d5c56] dark:text-teal-300">
+                        24h & 2h Reminders Enabled
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Connect Guidance */}
+                  <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 rounded-[8px] space-y-2">
+                    <h4 className="font-bold text-[#0d3d38] dark:text-teal-200 text-xs flex items-center gap-1.5">
+                      <FaWhatsapp className="size-4 text-[#25D366]" />
+                      Direct WhatsApp Integration
+                    </h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Connect your WhatsApp Business Account (via Meta Cloud API) to send automated booking confirmations, patient intake flows, and reschedule reminders.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div className="flex items-start gap-2 text-slate-600 dark:text-slate-400">
+                      <span className="size-4 rounded-full bg-[#0d6157]/10 text-[#0d6157] font-bold flex items-center justify-center shrink-0 text-[10px]">1</span>
+                      <span>Configure your WhatsApp Phone ID & credentials in Organization Settings.</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-slate-600 dark:text-slate-400">
+                      <span className="size-4 rounded-full bg-[#0d6157]/10 text-[#0d6157] font-bold flex items-center justify-center shrink-0 text-[10px]">2</span>
+                      <span>Setup Webhook token to receive inbound patient messages automatically.</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-slate-600 dark:text-slate-400">
+                      <span className="size-4 rounded-full bg-[#0d6157]/10 text-[#0d6157] font-bold flex items-center justify-center shrink-0 text-[10px]">3</span>
+                      <span>Instant status activation with active green badge on dashboard.</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsWhatsAppModalOpen(false)}
+                  className="px-3.5 py-1.5 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                <Link
+                  href="/portal/organization"
+                  onClick={() => setIsWhatsAppModalOpen(false)}
+                  className="px-4 py-1.5 rounded-[8px] bg-[#0d6157] hover:bg-[#0a4e46] text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>{whatsappInfo?.isConnected ? 'Manage WhatsApp Settings' : 'Configure WhatsApp Now'}</span>
+                  <ExternalLink className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── 4. COMPLETE APPOINTMENT & DOCTOR DISCOUNT MODAL ─── */}
+      {isCompleteModalOpen && appointmentToComplete && (() => {
+        const basePrice = appointmentToComplete.servicePrice ?? 0;
+        const computedDiscount =
+          discountType === 'PERCENT'
+            ? Math.min(basePrice, (basePrice * (discountValue || 0)) / 100)
+            : Math.min(basePrice, Math.max(0, discountValue || 0));
+        const finalPayable = Math.max(0, basePrice - computedDiscount);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-950/20">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-[8px] bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                    <CheckCircle2 className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                      Complete Consultation
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Apply doctor discount and generate the final patient invoice
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCompleteModalOpen(false)}
+                  className="p-1.5 rounded-[8px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="size-4.5" />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleConfirmCompleteAppointment} className="p-6 space-y-5 overflow-y-auto">
+                {completeError && (
+                  <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-[8px] text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                    <AlertCircle className="size-4 shrink-0" />
+                    <span>{completeError}</span>
+                  </div>
+                )}
+
+                {/* Patient & Service Summary Card */}
+                <div className="p-4 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Patient:</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      {appointmentToComplete.patientName}{' '}
+                      {appointmentToComplete.fileNumber && (
+                        <span className="text-[10px] text-slate-400 font-normal">
+                          (File #{appointmentToComplete.fileNumber})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Doctor:</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {appointmentToComplete.doctor}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                    <span className="text-xs text-slate-400 font-medium">Service / Treatment:</span>
+                    <span className="text-xs font-bold text-[#0d6157] dark:text-teal-300">
+                      {appointmentToComplete.department}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-medium">Standard Price:</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      SAR {basePrice.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Discount Mode Selector */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Doctor Discount:
+                    </label>
+                    <div className="inline-flex rounded-[8px] border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDiscountType('AMOUNT');
+                          setDiscountValue(0);
+                        }}
+                        className={`px-2.5 py-1 rounded-[8px] transition-all cursor-pointer ${
+                          discountType === 'AMOUNT'
+                            ? 'bg-white dark:bg-slate-700 text-[#0d6157] dark:text-teal-300 shadow-2xs font-bold'
+                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        Fixed SAR (﷼)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDiscountType('PERCENT');
+                          setDiscountValue(0);
+                        }}
+                        className={`px-2.5 py-1 rounded-[8px] transition-all cursor-pointer ${
+                          discountType === 'PERCENT'
+                            ? 'bg-white dark:bg-slate-700 text-[#0d6157] dark:text-teal-300 shadow-2xs font-bold'
+                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        Percentage (%)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={discountType === 'PERCENT' ? 100 : basePrice}
+                      step={discountType === 'PERCENT' ? 1 : 0.5}
+                      value={discountValue || ''}
+                      onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                      placeholder={discountType === 'PERCENT' ? 'e.g. 20 (for 20%)' : 'e.g. 50 (for 50 SAR)'}
+                      className="w-full pl-3.5 pr-14 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none select-none">
+                      {discountType === 'PERCENT' ? '%' : 'SAR'}
+                    </div>
+                  </div>
+
+                  {/* Preset Discount Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400 font-medium mr-1">Quick Select:</span>
+                    {[
+                      { label: 'No Discount', type: 'AMOUNT' as const, val: 0 },
+                      { label: '5%', type: 'PERCENT' as const, val: 5 },
+                      { label: '10%', type: 'PERCENT' as const, val: 10 },
+                      { label: '15%', type: 'PERCENT' as const, val: 15 },
+                      { label: '20%', type: 'PERCENT' as const, val: 20 },
+                      { label: '50 SAR', type: 'AMOUNT' as const, val: 50 },
+                      { label: '100 SAR', type: 'AMOUNT' as const, val: 100 },
+                      { label: '100% Free', type: 'PERCENT' as const, val: 100 },
+                    ].map((chip) => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        onClick={() => {
+                          setDiscountType(chip.type);
+                          setDiscountValue(chip.val);
+                        }}
+                        className={`px-2.5 py-1 rounded-[8px] text-[10px] font-semibold transition-all cursor-pointer border ${
+                          discountType === chip.type && discountValue === chip.val
+                            ? 'bg-[#0d6157] text-white border-[#0d6157]'
+                            : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Calculation Preview Box */}
+                <div className="p-4 rounded-[8px] bg-gradient-to-br from-emerald-50/90 to-teal-50/70 dark:from-emerald-950/40 dark:to-teal-950/20 border border-emerald-200/80 dark:border-emerald-800/60 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                    <span>Subtotal:</span>
+                    <span className="font-semibold">SAR {basePrice.toFixed(2)}</span>
+                  </div>
+                  {computedDiscount > 0 && (
+                    <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                      <span>Doctor Discount Applied:</span>
+                      <span className="font-bold">
+                        - SAR {computedDiscount.toFixed(2)}{' '}
+                        {discountType === 'PERCENT' ? `(${discountValue}%)` : ''}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-2 border-t border-emerald-200/80 dark:border-emerald-800/60">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Final Payable Amount:
+                    </span>
+                    <span className="text-base font-extrabold text-[#0d6157] dark:text-teal-300">
+                      SAR {finalPayable.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Clinical Notes / Reason */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Notes / Concession Reason (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={completionNotes}
+                    onChange={(e) => setCompletionNotes(e.target.value)}
+                    placeholder="e.g. VIP Family Courtesy / Follow-up Concession"
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
+                  />
+                </div>
+
+                {/* Submit Actions */}
+                <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsCompleteModalOpen(false)}
+                    disabled={isCompleting}
+                    className="px-4 py-2 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCompleting}
+                    className="px-5 py-2.5 rounded-[8px] bg-[#0d6157] hover:bg-[#0a4e46] text-white font-bold text-xs shadow-md shadow-teal-900/10 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isCompleting ? (
+                      <>
+                        <div className="size-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Generating Invoice...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="size-4" />
+                        <span>
+                          Complete &amp; Issue Invoice (SAR {finalPayable.toFixed(2)})
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

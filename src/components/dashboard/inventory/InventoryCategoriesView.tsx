@@ -215,14 +215,14 @@ export function InventoryCategoriesView({
       {/* 4. TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[700px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
-                <th className="py-2.5 px-6">Category Name</th>
-                <th className="py-2.5 px-4">Description</th>
-                <th className="py-2.5 px-4">Associated Items</th>
-                <th className="py-2.5 px-4">Created Date</th>
-                <th className="py-2.5 px-6 text-right">Actions</th>
+                <th className="py-2.5 px-6 whitespace-nowrap">Category Name</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Description</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Associated Items</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Created Date</th>
+                <th className="py-2.5 px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -244,7 +244,7 @@ export function InventoryCategoriesView({
                     key={c.id}
                     className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                   >
-                    <td className="py-3 px-6 font-bold text-slate-900 dark:text-white">
+                    <td className="py-3 px-6 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <span className="size-2 rounded-full bg-[#0d8276]"></span>
                         <span>{c.name}</span>
@@ -253,7 +253,7 @@ export function InventoryCategoriesView({
                     <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
                       {c.description || '—'}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap">
                       <Link
                         href={`/portal/inventory/items?category=${c.id}`}
                         className="inline-flex items-center gap-1 font-bold text-[#0d6157] dark:text-teal-400 hover:underline"
@@ -261,10 +261,14 @@ export function InventoryCategoriesView({
                         {c._count?.items ?? 0} items
                       </Link>
                     </td>
-                    <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
-                      {new Date(c.createdAt).toLocaleDateString()}
+                    <td className="py-3 px-4 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                      {new Date(c.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
                     </td>
-                    <td className="py-3 px-6 text-right">
+                    <td className="py-3 px-6 text-right whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => {

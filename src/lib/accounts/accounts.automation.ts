@@ -6,13 +6,22 @@ import {
   sendPaymentReceiptWhatsAppNotification,
 } from '@/lib/whatsapp/notifications.service';
 
+export interface AppointmentCompletedOptions {
+  discountAmount?: number;
+  discountPercent?: number;
+  notes?: string;
+}
+
 /**
  * Triggered whenever an appointment is marked as COMPLETED by the attending doctor.
- * 1. Automatically generates the patient Invoice if not already created.
+ * 1. Automatically generates the patient Invoice (with optional Doctor Discount) if not already created.
  * 2. Automatically dispatches the post-treatment WhatsApp message with fee summary
  *    and prompts the patient to settle at the front desk reception via Cash or Card.
  */
-export async function handleAppointmentCompleted(appointmentId: string): Promise<any> {
+export async function handleAppointmentCompleted(
+  appointmentId: string,
+  options?: AppointmentCompletedOptions,
+): Promise<any> {
   try {
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -28,7 +37,29 @@ export async function handleAppointmentCompleted(appointmentId: string): Promise
 
     let invoice = appointment.invoice;
 
-    // 1. If no invoice exists, auto-create the invoice for this appointment
+    const basePrice = appointment.service?.priceMinor ? appointment.service.priceMinor / 100 : 0;
+    
+    // Calculate Doctor Discount (Fixed Amount or Percentage)
+    let calculatedDiscount = 0;
+    if (typeof options?.discountPercent === 'number' && options.discountPercent > 0) {
+      calculatedDiscount = (basePrice * options.discountPercent) / 100;
+    } else if (typeof options?.discountAmount === 'number' && options.discountAmount > 0) {
+      calculatedDiscount = options.discountAmount;
+    }
+    calculatedDiscount = Math.min(basePrice, Math.max(0, calculatedDiscount));
+    const finalTotal = Math.max(0, basePrice - calculatedDiscount);
+
+    const discountNote =
+      calculatedDiscount > 0
+        ? ` (Doctor Discount Applied: SAR ${calculatedDiscount.toFixed(2)}${
+            options?.discountPercent ? ` [${options.discountPercent}%]` : ''
+          })`
+        : '';
+    const invoiceNotes = options?.notes
+      ? `${options.notes}${discountNote}`
+      : `Auto-generated on completion of appointment with ${appointment.doctor?.name || 'Doctor'}${discountNote}`;
+
+    // 1. If no invoice exists, auto-create the invoice for this appointment with the discount
     if (!invoice) {
       const yearMonth = new Date().toISOString().slice(2, 7).replace('-', '');
       const count = await prisma.invoice.count({
@@ -38,8 +69,6 @@ export async function handleAppointmentCompleted(appointmentId: string): Promise
         },
       });
       const invoiceNumber = `INV-${yearMonth}-${String(count + 1).padStart(4, '0')}`;
-
-      const price = appointment.service?.priceMinor ? appointment.service.priceMinor / 100 : 0;
       const description = appointment.service?.name || 'Doctor Clinical Consultation';
 
       invoice = await prisma.invoice.create({
@@ -50,25 +79,37 @@ export async function handleAppointmentCompleted(appointmentId: string): Promise
           appointmentId: appointment.id,
           invoiceNumber,
           issueDate: new Date(),
-          subtotal: price,
-          discountAmount: 0,
+          subtotal: basePrice,
+          discountAmount: calculatedDiscount,
           taxAmount: 0,
-          totalAmount: price,
+          totalAmount: finalTotal,
           paidAmount: 0,
           currency: 'SAR',
           status: 'ISSUED',
-          notes: `Auto-generated on completion of appointment with ${appointment.doctor?.name || 'Doctor'}`,
+          notes: invoiceNotes,
           items: {
             create: [
               {
                 serviceId: appointment.serviceId,
                 description,
                 quantity: 1,
-                unitPrice: price,
-                totalPrice: price,
+                unitPrice: basePrice,
+                totalPrice: basePrice,
               },
             ],
           },
+        },
+        select: { id: true, invoiceNumber: true, totalAmount: true, status: true },
+      });
+    } else if (calculatedDiscount > 0 && invoice.status === 'ISSUED') {
+      // If invoice already existed and was unpaid, update the discount
+      invoice = await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          subtotal: basePrice,
+          discountAmount: calculatedDiscount,
+          totalAmount: finalTotal,
+          notes: invoiceNotes,
         },
         select: { id: true, invoiceNumber: true, totalAmount: true, status: true },
       });

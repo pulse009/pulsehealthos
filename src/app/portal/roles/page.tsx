@@ -38,7 +38,7 @@ export default async function RolesPage() {
     name: s.name,
     username: s.username,
     email: s.email,
-    role: s.role as 'COORDINATOR' | 'RECEPTIONIST',
+    role: s.role as 'COORDINATOR' | 'RECEPTIONIST' | 'NURSE' | 'MANAGER' | 'PHARMACIST',
     isActive: s.isActive,
     createdAt: s.createdAt,
     coordinatedDoctors: s.coordinatedDoctors,

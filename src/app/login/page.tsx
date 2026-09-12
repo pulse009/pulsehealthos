@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth/session';
 import { LoginForm } from './login-form';
@@ -23,23 +24,24 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-white font-sans antialiased selection:bg-teal-600 selection:text-white p-2 sm:p-3 lg:p-4 flex flex-col">
-      {/* ─── Main Viewport Card ─── */}
-      <div className="relative h-full w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_12px_40px_rgba(13,92,86,0.07)] bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8] flex flex-col justify-between">
+    <div className="min-h-screen w-full bg-white text-slate-900 font-sans antialiased selection:bg-teal-600 selection:text-white flex flex-col justify-between p-2 sm:p-4 lg:p-6">
+      
+      {/* ─── MAIN WRAPPER CARD (Hero Aesthetic) ─── */}
+      <div className="relative w-full overflow-hidden rounded-[28px] sm:rounded-[40px] border-[3px] sm:border-[5px] border-white shadow-[0_12px_40px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8] flex flex-col flex-1 pb-10">
 
-        {/* Fluted texture overlay */}
+        {/* Vertical fluted / slat texture overlay */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-75"
+          className="absolute inset-0 pointer-events-none opacity-80"
           style={{
             backgroundImage: `repeating-linear-gradient(
               90deg,
-              rgba(255,255,255,0.25) 0px,
-              rgba(255,255,255,0) 36px,
-              rgba(13,92,86,0.02) 72px,
-              rgba(255,255,255,0.6) 72px,
-              rgba(255,255,255,0.6) 73px,
-              rgba(13,92,86,0.04) 73px,
-              rgba(13,92,86,0.04) 74px
+              rgba(255, 255, 255, 0.25) 0px,
+              rgba(255, 255, 255, 0) 36px,
+              rgba(13, 92, 86, 0.025) 72px,
+              rgba(255, 255, 255, 0.6) 72px,
+              rgba(255, 255, 255, 0.6) 73px,
+              rgba(13, 92, 86, 0.05) 73px,
+              rgba(13, 92, 86, 0.05) 74px
             )`,
           }}
         />
@@ -49,23 +51,15 @@ export default async function LoginPage({
 
         {/* ─── Top Utility Strip ─── */}
         <div className="relative z-20 px-6 sm:px-10 lg:px-14 pt-5 sm:pt-7 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative size-7 sm:size-8 flex items-center justify-center text-[#0d8276] group-hover:scale-105 transition-transform duration-200">
-              <svg viewBox="0 0 24 24" className="size-7 fill-current" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="3.5" />
-                <circle cx="12" cy="3" r="1.5" />
-                <circle cx="12" cy="21" r="1.5" />
-                <circle cx="3" cy="12" r="1.5" />
-                <circle cx="21" cy="12" r="1.5" />
-                <circle cx="5.636" cy="5.636" r="1.5" />
-                <circle cx="18.364" cy="18.364" r="1.5" />
-                <circle cx="5.636" cy="18.364" r="1.5" />
-                <circle cx="18.364" cy="5.636" r="1.5" />
-              </svg>
-            </div>
-            <span className="text-lg sm:text-xl font-semibold tracking-tight text-slate-900">
-              Pulseware
-            </span>
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/logo.png"
+              alt="Pulseware"
+              width={140}
+              height={35}
+              className="h-7 sm:h-8 w-auto object-contain"
+              priority
+            />
           </Link>
 
           <Link

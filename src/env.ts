@@ -43,8 +43,6 @@ const envSchema = z.object({
   GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
 
   WHATSAPP_API_BASE_URL: z.string().url().default('https://graph.facebook.com/v21.0'),
-  WHATSAPP_VERIFY_TOKEN: z.string().optional().default(''),
-  WHATSAPP_APP_SECRET: z.string().optional().default(''),
   WHATSAPP_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
 
   RATE_LIMIT_REDIS_URL: z.string().optional().default(''),

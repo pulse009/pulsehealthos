@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { requireClientUser } from '@/lib/auth/guards';
 import { prisma } from '@/lib/db/prisma';
 import { SubscriptionPortalView } from '@/components/dashboard/SubscriptionPortalView';
@@ -7,7 +8,11 @@ export const metadata: Metadata = { title: 'Subscription & Plans' };
 export const dynamic = 'force-dynamic';
 
 export default async function SubscriptionPage() {
-  const { clinicId } = await requireClientUser();
+  const { user, clinicId } = await requireClientUser();
+
+  if (user.role === 'NURSE') {
+    redirect('/portal/nurse');
+  }
 
   const [clinic, doctorsCount, servicesCount] = await Promise.all([
     prisma.clinic.findUnique({

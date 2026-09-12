@@ -26,7 +26,11 @@ import {
   LuCalendarDays as CalendarDays,
   LuBuilding2 as Building2,
   LuShield as Shield,
+  LuShieldAlert as ShieldAlert,
+  LuClock as Clock,
   LuTrendingUp as TrendingUp,
+  LuHeartPulse as HeartPulse,
+  LuPill as Pill,
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
@@ -66,7 +70,9 @@ export function DoctorSecondarySidebar({
   const urlTab = searchParams.get('tab');
 
   const isDoctor = userRole === 'DOCTOR';
+  const isNurse = userRole === 'NURSE';
   const isCoordinator = userRole === 'COORDINATOR';
+  const isManager = userRole === 'MANAGER';
 
   // Instant shared synchronous activeTab state
   const [currentTab, setActiveTab] = useDoctorActiveTab(urlTab);
@@ -127,6 +133,9 @@ export function DoctorSecondarySidebar({
 
   const isAppointmentsPage = pathname.startsWith('/portal/appointments');
   const isRolesPage = pathname.startsWith('/portal/roles');
+  const isManagerPage = pathname.startsWith('/portal/manager');
+  const isNursePage = pathname.startsWith('/portal/nurse');
+  const isPharmacyPage = pathname.startsWith('/portal/pharmacy');
   const isOrganizationPage = pathname.startsWith('/portal/organization') || pathname.startsWith('/portal/profile');
   const isSecurityPage = pathname.startsWith('/portal/security');
   const isSubscriptionPage = pathname.startsWith('/portal/subscription') || pathname.startsWith('/portal/upgrade');
@@ -134,6 +143,466 @@ export function DoctorSecondarySidebar({
 
   const isInventoryPage = pathname.startsWith('/portal/inventory');
   const isAccountsPage = pathname.startsWith('/portal/accounts');
+
+  if (isNurse) {
+    return (
+      <aside
+        className="w-64 shrink-0 flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 h-full overflow-hidden select-none"
+        aria-label="Nurse Navigation"
+      >
+        {/* 1. Header with Icon and Pulseware Title */}
+        <div className="h-[52px] px-5 border-b border-[#0d8276]/10 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="size-6 rounded-lg bg-gradient-to-tr from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center shadow-xs">
+              <svg viewBox="0 0 24 24" className="size-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="3.5" />
+                <circle cx="12" cy="3" r="1.5" />
+                <circle cx="12" cy="21" r="1.5" />
+                <circle cx="3" cy="12" r="1.5" />
+                <circle cx="21" cy="12" r="1.5" />
+                <circle cx="5.636" cy="5.636" r="1.5" />
+                <circle cx="18.364" cy="18.364" r="1.5" />
+                <circle cx="5.636" cy="18.364" r="1.5" />
+                <circle cx="18.364" cy="5.636" r="1.5" />
+              </svg>
+            </div>
+            <h2 className="text-sm font-semibold text-[#0d3d38] dark:text-white tracking-tight">
+              Pulse<span className="text-[#0d8276]">ware</span>
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#e6f6f3] dark:bg-[#0d6157]/30 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/20">
+            Nurse Station
+          </span>
+        </div>
+
+        {/* Nurse Navigation Menu */}
+        <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4 min-h-0">
+          {/* Top Station Banner */}
+          <Link
+            href="/portal/nurse"
+            className={cn(
+              'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
+              pathname === '/portal/nurse' && (!urlTab || urlTab === 'triage')
+                ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
+                : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <HeartPulse className="size-4 text-[#0d6157] dark:text-teal-400" />
+              <span>Nurse Station</span>
+            </div>
+          </Link>
+
+          {/* Section: Clinical Nursing & Flow */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <Activity className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Clinical Nursing &amp; Flow</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/nurse?tab=triage"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/nurse' && (urlTab === 'triage' || !urlTab)
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="size-3.5" />
+                  <span>Triage &amp; Vitals</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/nurse?tab=queue"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/nurse' && urlTab === 'queue'
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="size-3.5" />
+                  <span>Waiting Room Queue</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/appointments"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/appointments')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="size-3.5" />
+                  <span>Appointments</span>
+                </div>
+                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                  Limited
+                </span>
+              </Link>
+
+              <Link
+                href="/portal/patients"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/patients')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="size-3.5" />
+                  <span>Patient Directory</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/nurse?tab=history"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/nurse' && urlTab === 'history'
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="size-3.5" />
+                  <span>Basic Patient Clinical History</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/inventory/requests"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/inventory')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Boxes className="size-3.5" />
+                  <span>Medical Supplies Request</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Section: Inbox & Profile */}
+          <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <Wrench className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Inbox &amp; Security</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/conversations"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/conversations')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="size-3.5" />
+                  <span>Inbox/Internal Communication</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/security"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/security')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className="size-3.5" />
+                  <span>My Profile / Personal Security</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  if (isManager && !currentDoctorId) {
+    return (
+      <aside
+        className="w-64 shrink-0 flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 h-full overflow-hidden select-none"
+        aria-label="Manager Navigation"
+      >
+        {/* 1. Header with Icon and Pulseware Title */}
+        <div className="h-[52px] px-5 border-b border-[#0d8276]/10 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="size-6 rounded-lg bg-gradient-to-tr from-[#0d6157] to-[#0d8276] text-white flex items-center justify-center shadow-xs">
+              <svg viewBox="0 0 24 24" className="size-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="3.5" />
+                <circle cx="12" cy="3" r="1.5" />
+                <circle cx="12" cy="21" r="1.5" />
+                <circle cx="3" cy="12" r="1.5" />
+                <circle cx="21" cy="12" r="1.5" />
+                <circle cx="5.636" cy="5.636" r="1.5" />
+                <circle cx="18.364" cy="18.364" r="1.5" />
+                <circle cx="5.636" cy="18.364" r="1.5" />
+                <circle cx="18.364" cy="5.636" r="1.5" />
+              </svg>
+            </div>
+            <h2 className="text-sm font-semibold text-[#0d3d38] dark:text-white tracking-tight">
+              Pulse<span className="text-[#0d8276]">ware</span>
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+            Manager Hub
+          </span>
+        </div>
+
+        {/* Manager Navigation Menu */}
+        <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4 min-h-0">
+          {/* Top Ops Hub Banner */}
+          <Link
+            href="/portal/manager"
+            className={cn(
+              'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
+              pathname === '/portal/manager'
+                ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
+                : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <Building2 className="size-4 text-[#0d6157] dark:text-teal-400" />
+              <span>Operations Hub</span>
+            </div>
+          </Link>
+
+          {/* Section: Operations & Clinical Governance */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <Building2 className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Operations & Governance</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/manager"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/manager'
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Activity className="size-3.5" />
+                  <span>Overview &amp; Roster</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/doctors"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/doctors')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="size-3.5" />
+                  <span>Doctors Management</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/roles"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/roles')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="size-3.5" />
+                  <span>Staff Roles &amp; Directory</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/accounts/closing"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/accounts/closing')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Clock className="size-3.5" />
+                  <span>Cash Register Z-Reports</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/inventory/purchase-orders"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/inventory/purchase-orders')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Boxes className="size-3.5" />
+                  <span>Procurement &amp; POs</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/accounts"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/accounts' || (pathname.startsWith('/portal/accounts') && !pathname.includes('closing'))
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="size-3.5" />
+                  <span>Financial Ledger</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/inventory"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/inventory') && !pathname.includes('purchase-orders')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Boxes className="size-3.5" />
+                  <span>Medical Inventory</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Section: Practice Utilities & Front Desk */}
+          <div className="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <Wrench className="size-3 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Practice Utilities</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/appointments"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/appointments')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="size-3.5" />
+                  <span>Appointments Schedule</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/services"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/services')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="size-3.5" />
+                  <span>Clinical Services</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/patients"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/patients')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="size-3.5" />
+                  <span>Patients Directory</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/conversations"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/conversations')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="size-3.5" />
+                  <span>Internal Communications</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/organization"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/organization') || pathname.startsWith('/portal/profile')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 className="size-3.5" />
+                  <span>Clinic Profile</span>
+                </div>
+              </Link>
+
+              <Link
+                href="/portal/security"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname.startsWith('/portal/security')
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="size-3.5" />
+                  <span>Security &amp; 2FA</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -185,6 +654,48 @@ export function DoctorSecondarySidebar({
                 </span>
               )}
             </Link>
+          ) : isManagerPage ? (
+            <Link
+              href="/portal/manager"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold shadow-2xs cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Building2 className="size-4 text-[#0d6157]" />
+                <span>Operations Hub</span>
+              </div>
+            </Link>
+          ) : isNursePage ? (
+            <Link
+              href="/portal/nurse"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold shadow-2xs cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <HeartPulse className="size-4 text-[#0d6157]" />
+                <span>Nurse Station</span>
+              </div>
+            </Link>
+          ) : isPharmacyPage ? (
+            <Link
+              href="/portal/pharmacy"
+              className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold shadow-2xs cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Pill className="size-4 text-[#0d6157]" />
+                <span>Pharmacy Station</span>
+              </div>
+            </Link>
+          ) : isRolesPage ? (
+            <Link
+              href="/portal/roles"
+              className={cn(
+                'flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer',
+                roleTab === 'all' || !roleTab || pathname === '/portal/roles'
+                  ? 'bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium'
+              )}
+            >
+              <span>All Roles</span>
+            </Link>
           ) : (
             <Link
               href="/portal/doctors"
@@ -200,8 +711,128 @@ export function DoctorSecondarySidebar({
           )}
         </div>
 
-        {/* 3. Accounts Tabs */}
-        {isAccountsPage ? (
+        {/* Dynamic Section Navigation Tabs */}
+        {isManagerPage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-[#0d3d38] dark:text-white">
+              <Building2 className="size-4 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Operations & Management</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/manager"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/manager'
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <span>Overview &amp; Roster</span>
+              </Link>
+              <Link
+                href="/portal/roles"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Staff Roles &amp; Directory</span>
+              </Link>
+              <Link
+                href="/portal/accounts/closing"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Cash Register Z-Reports</span>
+              </Link>
+              <Link
+                href="/portal/inventory/purchase-orders"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Procurement &amp; PO Approvals</span>
+              </Link>
+              <Link
+                href="/portal/accounts"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Financial Ledger</span>
+              </Link>
+            </div>
+          </div>
+        ) : isNursePage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-[#0d3d38] dark:text-white">
+              <HeartPulse className="size-4 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Clinical Nursing Station</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/nurse"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/nurse'
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <span>Triage &amp; Vitals Intake</span>
+              </Link>
+              <Link
+                href="/portal/appointments"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Waiting Room Queue</span>
+              </Link>
+              <Link
+                href="/portal/patients"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Patient Directory</span>
+              </Link>
+              <Link
+                href="/portal/inventory/requests"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Medical Supplies Request</span>
+              </Link>
+            </div>
+          </div>
+        ) : isPharmacyPage ? (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-[#0d3d38] dark:text-white">
+              <Pill className="size-4 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
+              <span>Pharmacy &amp; Dispensing</span>
+            </div>
+            <div className="space-y-0.5">
+              <Link
+                href="/portal/pharmacy"
+                className={cn(
+                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                  pathname === '/portal/pharmacy'
+                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
+                )}
+              >
+                <span>Prescription Queue</span>
+              </Link>
+              <Link
+                href="/portal/inventory/items"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Drug Catalog &amp; Stock</span>
+              </Link>
+              <Link
+                href="/portal/inventory/low-stock"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Low Stock Alerts</span>
+              </Link>
+              <Link
+                href="/portal/inventory/suppliers"
+                className="flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15 transition-all"
+              >
+                <span>Pharma Suppliers</span>
+              </Link>
+            </div>
+          </div>
+        ) : isAccountsPage ? (
           <div className="space-y-1">
             <div className="flex items-center gap-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-[#0d3d38] dark:text-white">
               <Wallet className="size-4 text-[#0d6157] dark:text-teal-400 stroke-[2.2]" />
@@ -446,17 +1077,7 @@ export function DoctorSecondarySidebar({
               <span>Staff Roles</span>
             </div>
             <div className="space-y-0.5">
-              <Link
-                href="/portal/roles?tab=all"
-                className={cn(
-                  'flex items-center justify-between w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all',
-                  roleTab === 'all'
-                    ? 'font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-[#0d6157] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15'
-                )}
-              >
-                <span>All Roles</span>
-              </Link>
+           
               <Link
                 href="/portal/roles?tab=coordinators"
                 className={cn(
@@ -730,19 +1351,6 @@ export function DoctorSecondarySidebar({
               >
                 <span>Patients Directory</span>
               </Link>
-              {!isCoordinator && (
-                <Link
-                  href="/portal/roles"
-                  className={cn(
-                    'flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors',
-                    pathname.startsWith('/portal/roles')
-                      ? 'bg-[#e6f6f3] text-[#0d5c56] font-semibold border border-[#0d8276]/20'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-[#0d6157] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60'
-                  )}
-                >
-                  <span>Roles &amp; Staff</span>
-                </Link>
-              )}
               <Link
                 href="/portal/organization"
                 className={cn(

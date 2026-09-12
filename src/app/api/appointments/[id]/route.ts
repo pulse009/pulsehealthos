@@ -101,10 +101,14 @@ export async function PATCH(request: Request, context: Context) {
         data: { status: targetStatus as any },
       });
 
-      // Automation: If appointment is completed, generate invoice and send WhatsApp billing notice
+      // Automation: If appointment is completed, generate invoice (with optional doctor discount) and send WhatsApp billing notice
       if (targetStatus === 'COMPLETED') {
         const { handleAppointmentCompleted } = await import('@/lib/accounts/accounts.automation');
-        handleAppointmentCompleted(updated.id).catch((err) => {
+        handleAppointmentCompleted(updated.id, {
+          discountAmount: typeof body.discountAmount === 'number' ? body.discountAmount : undefined,
+          discountPercent: typeof body.discountPercent === 'number' ? body.discountPercent : undefined,
+          notes: body.notes,
+        }).catch((err) => {
           console.error('Failed to run post-completion billing automation:', err);
         });
       }

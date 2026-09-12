@@ -40,7 +40,12 @@ export async function requireClientUser(): Promise<{
       user.role !== 'PATIENT' &&
       user.role !== 'DOCTOR' &&
       user.role !== 'COORDINATOR' &&
-      user.role !== 'RECEPTIONIST')
+      user.role !== 'RECEPTIONIST' &&
+      user.role !== 'NURSE' &&
+      user.role !== 'MANAGER' &&
+      user.role !== 'PHARMACIST' &&
+      user.role !== 'LAB_TECHNICIAN' &&
+      user.role !== 'PATHOLOGIST')
   ) {
     throw forbidden('This area is restricted to clinic accounts.');
   }

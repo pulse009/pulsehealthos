@@ -261,7 +261,7 @@ export const createStaffRoleSchema = z.object({
   username: z.string().trim().min(2).max(100).optional(),
   email: z.string().trim().toLowerCase().email().max(200).optional(),
   password: z.string().min(6).max(200),
-  role: z.enum(['COORDINATOR', 'RECEPTIONIST']).default('COORDINATOR'),
+  role: z.enum(['COORDINATOR', 'RECEPTIONIST', 'NURSE', 'MANAGER', 'PHARMACIST']).default('COORDINATOR'),
   doctorId: z.string().uuid().optional().nullable(),
   salary: z.coerce.number().min(0).optional().default(0),
   commissionPercent: z.coerce.number().min(0).max(100).optional().default(0),
@@ -359,9 +359,23 @@ export const createAppointmentSchema = z.object({
   patientPhone: optionalText(40),
   pendingPayment: optionalText(100),
   startsAt: z.coerce.date({ invalid_type_error: 'Valid appointment date and time required' }),
+  appointmentTypeId: z.string().trim().max(120).optional().nullable(),
   notes: optionalText(1_000),
   status: z.enum(['PENDING', 'CONFIRMED']).default('CONFIRMED'),
   idempotencyKey: z.string().max(200).optional(),
+});
+
+export const appointmentTypeSchema = z.object({
+  id: idSchema.optional(),
+  clinicId: idSchema.optional(),
+  serviceId: idSchema,
+  doctorId: idSchema.optional().nullable(),
+  name: trimmed(160).min(1, 'Appointment type name is required'),
+  durationMinutes: z.coerce.number().int().min(5).max(480).default(30),
+  price: z.coerce.number().min(0).max(1_000_000).optional().nullable(),
+  currency: z.string().trim().length(3).toUpperCase().optional().nullable().default('SAR'),
+  description: optionalText(2_000),
+  isActive: z.boolean().default(true),
 });
 
 export const rescheduleSchema = z.object({
@@ -407,7 +421,7 @@ export const leadListSchema = paginationSchema.extend({
 export const appointmentListSchema = paginationSchema.extend({
   clinicId: idSchema.optional(),
   status: z
-    .enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'RESCHEDULED', 'COMPLETED', 'NO_SHOW'])
+    .enum(['PENDING', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'RESCHEDULED', 'COMPLETED', 'NO_SHOW'])
     .optional(),
   doctorId: idSchema.optional(),
   from: dateKeySchema.optional(),

@@ -520,17 +520,17 @@ export function InventoryItemsView({
       {/* 4. MAIN ITEMS TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[900px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
-                <th className="py-2.5 px-6">Item &amp; SKU</th>
-                <th className="py-2.5 px-4">Category</th>
-                <th className="py-2.5 px-4">Unit</th>
-                <th className="py-2.5 px-4">Current Stock</th>
-                <th className="py-2.5 px-4">Min. Level</th>
-                <th className="py-2.5 px-4">Cost</th>
-                <th className="py-2.5 px-4">Status</th>
-                <th className="py-2.5 px-6 text-right">Actions</th>
+                <th className="py-2.5 px-6 whitespace-nowrap">Item &amp; SKU</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Category</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Unit</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Current Stock</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Min. Level</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Cost</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Status</th>
+                <th className="py-2.5 px-6 text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -559,10 +559,10 @@ export function InventoryItemsView({
                       className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
                       {/* Name & SKU */}
-                      <td className="py-3 px-6 font-medium text-slate-900 dark:text-white">
+                      <td className="py-3 px-6 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                         <Link
                           href={`/portal/inventory/items/${item.id}`}
-                          className="font-bold text-xs hover:text-[#0d6157] dark:hover:text-teal-300 transition-colors block"
+                          className="font-bold text-xs hover:text-[#0d6157] dark:hover:text-teal-300 transition-colors inline-block"
                         >
                           {item.name}
                         </Link>
@@ -573,7 +573,7 @@ export function InventoryItemsView({
                             </span>
                           )}
                           {item.trackExpiry && (
-                            <span className="text-[#0d6157] dark:text-teal-400 font-medium" title="Expiry tracking enabled">
+                            <span className="text-[#0d6157] dark:text-teal-400 font-medium whitespace-nowrap" title="Expiry tracking enabled">
                               • Expiry Tracked
                             </span>
                           )}
@@ -581,9 +581,9 @@ export function InventoryItemsView({
                       </td>
 
                       {/* Category */}
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                         {item.category ? (
-                          <span className="bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20 px-2 py-0.5 rounded-[6px] text-[11px] font-medium inline-block">
+                          <span className="bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:text-teal-300 border border-[#0d8276]/20 px-2 py-0.5 rounded-[6px] text-[11px] font-medium inline-block whitespace-nowrap">
                             {item.category.name}
                           </span>
                         ) : (
@@ -592,12 +592,12 @@ export function InventoryItemsView({
                       </td>
 
                       {/* Unit */}
-                      <td className="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300 text-[11px]">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300 text-[11px] whitespace-nowrap">
                         {item.unit}
                       </td>
 
                       {/* Current Stock */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <span
                           className={`font-black text-xs ${
                             isOutOfStock
@@ -612,39 +612,39 @@ export function InventoryItemsView({
                       </td>
 
                       {/* Minimum Stock */}
-                      <td className="py-3 px-4 text-slate-500 font-medium text-[11px]">
+                      <td className="py-3 px-4 text-slate-500 font-medium text-[11px] whitespace-nowrap">
                         {item.minimumStock}
                       </td>
 
                       {/* Cost */}
-                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium">
+                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
                         ${item.defaultCost ? item.defaultCost.toFixed(2) : '0.00'}
                       </td>
 
                       {/* Status Badge */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {isOutOfStock ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800 whitespace-nowrap">
                             Out of Stock
                           </span>
                         ) : isLowStock ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800 whitespace-nowrap">
                             Low Stock
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 whitespace-nowrap">
                             In Stock
                           </span>
                         )}
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-6 text-right">
+                      <td className="py-3 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleOpenReceiveModal(item)}
-                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer shadow-2xs"
+                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
                             title="Receive Stock"
                           >
                             Receive
@@ -652,14 +652,14 @@ export function InventoryItemsView({
                           <button
                             type="button"
                             onClick={() => handleOpenAdjustModal(item)}
-                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer shadow-2xs"
+                            className="px-2.5 py-1 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-[8px] transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
                             title="Adjust Stock"
                           >
                             Adjust
                           </button>
                           <Link
                             href={`/portal/inventory/items/${item.id}`}
-                            className="px-3 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all shadow-xs"
+                            className="px-3 py-1 text-[10px] font-semibold bg-[#0d6157] hover:bg-[#0a4e46] text-white rounded-[8px] transition-all shadow-xs whitespace-nowrap"
                           >
                             Detail
                           </Link>

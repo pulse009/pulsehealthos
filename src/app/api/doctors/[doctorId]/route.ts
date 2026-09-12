@@ -47,8 +47,8 @@ export async function DELETE(request: Request, context: Context) {
   try {
     limitByIp(request, 'api-write', RateLimits.API_WRITE);
     const { user, scope } = await requireScope();
-    if (user.role !== 'CLIENT' && user.role !== 'SUPER_ADMIN') {
-      throw forbidden('Only clinic administrators can delete doctors.');
+    if (user.role !== 'CLIENT' && user.role !== 'SUPER_ADMIN' && user.role !== 'MANAGER') {
+      throw forbidden('Only clinic administrators and managers can delete doctors.');
     }
     const { doctorId } = await context.params;
     const clinicId = scope.kind === 'CLINIC' ? scope.clinicId : (request.headers.get('x-clinic-id') || '');
