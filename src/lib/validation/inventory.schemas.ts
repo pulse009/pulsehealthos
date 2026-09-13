@@ -23,6 +23,7 @@ export const inventoryItemSchema = z.object({
   supplierId: z.string().uuid().optional().nullable().or(z.literal('')),
   unit: z.string().trim().min(1, 'Unit is required').max(50).default('PCS'),
   description: z.string().trim().max(1000).optional().nullable(),
+  inventoryScope: z.enum(['PHARMACY', 'CLINIC', 'LABORATORY', 'SHARED']).default('SHARED'),
   minimumStock: z.coerce.number().int().min(0, 'Minimum stock cannot be negative').default(0),
   defaultCost: z.coerce.number().min(0, 'Default cost cannot be negative').default(0),
   initialStock: z.coerce.number().int().min(0, 'Initial stock cannot be negative').default(0).optional(),
@@ -41,6 +42,7 @@ export const stockReceivingSchema = z.object({
   purchaseOrderId: z.string().uuid().optional().nullable(),
   batchNumber: z.string().trim().max(100).optional().nullable(),
   expiryDate: z.string().optional().nullable(), // ISO string or YYYY-MM-DD
+  inventoryScope: z.enum(['PHARMACY', 'CLINIC', 'LABORATORY', 'SHARED']).optional().nullable(),
   notes: z.string().trim().max(500).optional().nullable(),
 });
 
@@ -49,12 +51,14 @@ export const stockAdjustmentSchema = z.object({
   batchId: z.string().uuid().optional().nullable(),
   quantity: z.coerce.number().int().refine((val) => val !== 0, 'Quantity adjustment cannot be 0'),
   type: z.enum(['STOCK_ADJUSTMENT', 'STOCK_RETURN', 'STOCK_TRANSFER', 'STOCK_ISSUED']).default('STOCK_ADJUSTMENT'),
+  inventoryScope: z.enum(['PHARMACY', 'CLINIC', 'LABORATORY', 'SHARED']).optional().nullable(),
   notes: z.string().trim().min(1, 'Reason/notes required for adjustment').max(500),
 });
 
 export const createPurchaseOrderSchema = z.object({
   supplierId: z.string().uuid('Supplier is required'),
   poNumber: z.string().trim().max(100).optional(),
+  inventoryScope: z.enum(['PHARMACY', 'CLINIC', 'LABORATORY', 'SHARED']).optional().nullable(),
   expectedDate: z.string().optional().nullable(),
   notes: z.string().trim().max(1000).optional().nullable(),
   items: z
@@ -90,6 +94,7 @@ export const receivePurchaseOrderSchema = z.object({
 
 export const createItemRequestSchema = z.object({
   department: z.string().trim().max(100).optional().nullable(),
+  inventoryScope: z.enum(['PHARMACY', 'CLINIC', 'LABORATORY', 'SHARED']).optional().nullable(),
   notes: z.string().trim().max(1000).optional().nullable(),
   items: z
     .array(

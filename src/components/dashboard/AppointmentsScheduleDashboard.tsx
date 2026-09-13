@@ -32,6 +32,8 @@ import {
   ShieldCheck,
   Layers,
   HeartPulse,
+  Printer,
+  Pill,
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
@@ -56,6 +58,25 @@ export interface AppointmentItem {
   invoiceTotal?: number;
   invoiceDiscount?: number;
   invoiceStatus?: string;
+  encounterId?: string;
+  encounterStatus?: string;
+  primaryDiagnosis?: string;
+  patientAdvice?: string;
+  prescriptions?: Array<{
+    id?: string;
+    medicineName?: string;
+    name?: string;
+    dosage?: string;
+    frequency?: string;
+    duration?: string;
+    instructions?: string;
+  }>;
+  labOrders?: Array<{
+    id?: string;
+    testName?: string;
+    priority?: string;
+    instructions?: string;
+  }>;
 }
 
 export interface DashboardMetricsProps {
@@ -263,6 +284,10 @@ export function AppointmentsScheduleDashboard({
   const [isCompleting, setIsCompleting] = useState<boolean>(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
 
+  // Prescription Print Slip Modal State
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [prescriptionToPrint, setPrescriptionToPrint] = useState<AppointmentItem | null>(null);
+
   // Search Existing Patient by File Number
   const handleSearchPatient = async () => {
     if (!searchFileNumber.trim()) {
@@ -320,7 +345,7 @@ export function AppointmentsScheduleDashboard({
     return filtered.length > 0 ? filtered : servicesList;
   }, [selectedDoctorId, doctorsList, servicesList]);
 
-  // Compute effective slots: dynamic availability from API or standard clinic slots fallback
+  // Compute effective slots: dynamic availability from API
   const effectiveSlots = useMemo(() => {
     const nowTime = Date.now();
 
@@ -335,37 +360,13 @@ export function AppointmentsScheduleDashboard({
           const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           return {
             startsAt: s.startsAt,
-            label: `${timeStr} (Available)`,
+            label: s.label ? `${timeStr} (${s.label})` : `${timeStr} (Available)`,
           };
         });
     }
 
-    if (!selectedDate) return [];
-
-    return DEFAULT_DAILY_TIME_SLOTS
-      .map((t) => {
-        const iso = new Date(`${selectedDate}T${t}:00`).toISOString();
-        const slotMs = new Date(iso).getTime();
-        const [h, m] = t.split(':');
-        const hourNum = parseInt(h ?? '9', 10);
-        const ampm = hourNum >= 12 ? 'PM' : 'AM';
-        const displayHour = hourNum % 12 || 12;
-        const formatted = `${displayHour.toString().padStart(2, '0')}:${m} ${ampm}`;
-        return {
-          startsAt: iso,
-          slotMs,
-          label: `${formatted} (Available Slot)`,
-        };
-      })
-      .filter((slot) => {
-        // Exclude past slots
-        return slot.slotMs > nowTime;
-      })
-      .map(({ startsAt, label }) => ({
-        startsAt,
-        label,
-      }));
-  }, [availableSlots, selectedDate]);
+    return [];
+  }, [availableSlots]);
 
   // Ensure a valid future slot is selected whenever effectiveSlots updates
   useEffect(() => {
@@ -476,6 +477,7 @@ export function AppointmentsScheduleDashboard({
       doctorId: selectedDoctorId,
       fromDate: selectedDate,
       toDate: selectedDate,
+      ignoreMinAdvanceNotice: 'true',
     });
     if (clinicId) {
       queryParams.set('clinicId', clinicId);
@@ -686,7 +688,7 @@ export function AppointmentsScheduleDashboard({
   // Dynamic counts derived directly from live appointments state
   const totalCountDisplay = appointments.length;
   const bookedCountDisplay = appointments.filter(
-    (a) => a.status === 'Confirmed' || a.status === 'In Progress'
+    (a) => a.status === 'Confirmed' || a.status === 'In Progress' || a.status === 'Checked In'
   ).length;
   const pendingCountDisplay = appointments.filter((a) => a.status === 'Pending').length;
   const cancellationsCountDisplay = appointments.filter((a) => a.status === 'Cancelled').length;
@@ -810,7 +812,22 @@ export function AppointmentsScheduleDashboard({
   };
 
   // Status Badge Styling Helper with rounded-[8px]
-  const getStatusBadge = (status: AppointmentItem['status']) => {
+  const getStatusBadge = (status: AppointmentItem['status'], item?: AppointmentItem) => {
+    if (item?.encounterStatus === 'COMPLETED' && status !== 'Completed') {
+      return (
+        <div className="flex flex-col gap-1 items-start">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] text-[11px] font-bold bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/30">
+            <span className="size-1.5 rounded-full bg-[#0d8276] animate-ping" />
+            Checked In
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs">
+            <DollarSign className="size-3 text-amber-700 dark:text-amber-300 shrink-0" />
+            Pay at Reception
+          </span>
+        </div>
+      );
+    }
+
     switch (status) {
       case 'Confirmed':
         return (
@@ -859,6 +876,12 @@ export function AppointmentsScheduleDashboard({
     }
   };
 
+  const handleOpenPrescriptionModal = (item: AppointmentItem) => {
+    setActiveActionId(null);
+    setPrescriptionToPrint(item);
+    setIsPrescriptionModalOpen(true);
+  };
+
   const handleOpenCompleteModal = (item: AppointmentItem) => {
     setActiveActionId(null);
     setAppointmentToComplete(item);
@@ -875,7 +898,10 @@ export function AppointmentsScheduleDashboard({
     setIsCompleting(true);
     setCompleteError(null);
 
-    const basePrice = appointmentToComplete.servicePrice ?? 0;
+    const basePrice =
+      (appointmentToComplete.invoiceTotal !== undefined && appointmentToComplete.invoiceTotal > 0)
+        ? appointmentToComplete.invoiceTotal
+        : (appointmentToComplete.servicePrice ?? 0);
     const computedDiscount =
       discountType === 'PERCENT'
         ? Math.min(basePrice, (basePrice * (discountValue || 0)) / 100)
@@ -922,6 +948,8 @@ export function AppointmentsScheduleDashboard({
   };
 
   const handleUpdateStatus = async (id: string, newStatus: AppointmentItem['status']) => {
+    const previousAppointments = appointments;
+
     // 1. Immediately update UI state (re-renders table badge & stat cards instantly)
     setAppointments((prev) =>
       prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app))
@@ -943,13 +971,21 @@ export function AppointmentsScheduleDashboard({
           ? 'COMPLETED'
           : 'CONFIRMED';
 
-      await fetch(`/api/appointments/${id}`, {
+      const res = await fetch(`/api/appointments/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: dbStatus }),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error('Failed to update status on server:', data);
+        // Revert UI on failure
+        setAppointments(previousAppointments);
+      }
     } catch (err) {
       console.error('Failed to update appointment status in database:', err);
+      setAppointments(previousAppointments);
     }
   };
 
@@ -1447,7 +1483,7 @@ export function AppointmentsScheduleDashboard({
 
                       {/* 6. STATUS */}
                       <td className="py-2.5 px-4 whitespace-nowrap">
-                        {getStatusBadge(row.status)}
+                        {getStatusBadge(row.status, row)}
                       </td>
 
                       {/* 7. ACTION */}
@@ -1478,7 +1514,26 @@ export function AppointmentsScheduleDashboard({
                                 }}
                               />
 
-                                <div className="absolute right-0 top-full mt-1.5 z-50 w-52 bg-white dark:bg-slate-800 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                                <div className="absolute right-0 top-full mt-1.5 z-50 w-56 bg-white dark:bg-slate-800 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-700 py-1 text-left text-xs font-medium animate-in fade-in zoom-in-95 duration-100">
+                                  {row.encounterStatus === 'COMPLETED' && row.status !== 'Completed' ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenCompleteModal(row);
+                                      }}
+                                      className="w-full px-3.5 py-2.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white flex items-center justify-between font-bold cursor-pointer border-b border-teal-800 shadow-xs rounded-t-[7px]"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <DollarSign className="size-3.5 text-emerald-200" />
+                                        <span>Pay Service Fee &amp; Settle</span>
+                                      </div>
+                                      <span className="px-1.5 py-0.5 rounded bg-white/20 text-white text-[10px] font-mono font-bold">
+                                        SAR {((row.invoiceTotal !== undefined && row.invoiceTotal > 0) ? row.invoiceTotal : (row.servicePrice ?? 0)).toFixed(2)}
+                                      </span>
+                                    </button>
+                                  ) : null}
+
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -1510,17 +1565,32 @@ export function AppointmentsScheduleDashboard({
                                         <Stethoscope className="size-3.5 text-teal-600" />
                                         <span>Doctor Consultation Desk</span>
                                       </Link>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleOpenCompleteModal(row);
-                                        }}
-                                        className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 font-semibold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
-                                      >
-                                        <CheckCircle2 className="size-3.5 text-emerald-600" />
-                                        <span>Complete &amp; Apply Discount</span>
-                                      </button>
+                                      {row.encounterId && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenPrescriptionModal(row);
+                                          }}
+                                          className="w-full px-3.5 py-2 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-2 font-bold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                        >
+                                          <FileText className="size-3.5 text-indigo-600" />
+                                          <span>Print Prescription Slip (Rx)</span>
+                                        </button>
+                                      )}
+                                      {!(row.encounterStatus === 'COMPLETED' && row.status !== 'Completed') && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenCompleteModal(row);
+                                          }}
+                                          className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center gap-2 font-semibold cursor-pointer border-b border-slate-100 dark:border-slate-700/60"
+                                        >
+                                          <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                          <span>Complete &amp; Apply Discount</span>
+                                        </button>
+                                      )}
                                     </>
                                   )}
 
@@ -2267,7 +2337,10 @@ export function AppointmentsScheduleDashboard({
 
       {/* ─── 4. COMPLETE APPOINTMENT & DOCTOR DISCOUNT MODAL ─── */}
       {isCompleteModalOpen && appointmentToComplete && (() => {
-        const basePrice = appointmentToComplete.servicePrice ?? 0;
+        const basePrice =
+          (appointmentToComplete.invoiceTotal !== undefined && appointmentToComplete.invoiceTotal > 0)
+            ? appointmentToComplete.invoiceTotal
+            : (appointmentToComplete.servicePrice ?? 0);
         const computedDiscount =
           discountType === 'PERCENT'
             ? Math.min(basePrice, (basePrice * (discountValue || 0)) / 100)
@@ -2285,10 +2358,12 @@ export function AppointmentsScheduleDashboard({
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                      Complete Consultation
+                      {appointmentToComplete.encounterStatus === 'COMPLETED'
+                        ? 'Collect Service Fee & Finalize Checkout'
+                        : 'Complete Consultation & Invoice'}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Apply doctor discount and generate the final patient invoice
+                      Collect patient fee at reception desk and hand over completed prescription
                     </p>
                   </div>
                 </div>
@@ -2336,12 +2411,44 @@ export function AppointmentsScheduleDashboard({
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400 font-medium">Standard Price:</span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {appointmentToComplete.invoiceTotal !== undefined && appointmentToComplete.invoiceTotal > 0
+                        ? 'Invoice Service Fee Total:'
+                        : 'Standard Service Price:'}
+                    </span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
                       SAR {basePrice.toFixed(2)}
                     </span>
                   </div>
                 </div>
+
+                {/* Prescribed Medications (Rx) Preview Card */}
+                {appointmentToComplete.prescriptions && appointmentToComplete.prescriptions.length > 0 && (
+                  <div className="p-3.5 rounded-[8px] bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-indigo-900 dark:text-indigo-200 text-xs font-bold">
+                        <Pill className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <span>Prescribed Medicines ({appointmentToComplete.prescriptions.length} items)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPrescriptionModal(appointmentToComplete)}
+                        className="px-2.5 py-1 rounded-[6px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
+                      >
+                        <Printer className="size-3" />
+                        <span>Print Rx Slip</span>
+                      </button>
+                    </div>
+                    <div className="space-y-1.5 pt-1">
+                      {appointmentToComplete.prescriptions.map((rx, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-slate-700 dark:text-slate-300 text-xs pt-1 border-t border-indigo-100 dark:border-indigo-900/60">
+                          <span className="font-semibold text-[11px]">{idx + 1}. {rx.medicineName || rx.name} {rx.dosage ? `(${rx.dosage})` : ''}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[10px]">{rx.frequency || ''} {rx.duration ? `• ${rx.duration}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Discount Mode Selector */}
                 <div className="space-y-3">
@@ -2503,6 +2610,148 @@ export function AppointmentsScheduleDashboard({
           </div>
         );
       })()}
+
+      {/* ─── 5. PRESCRIPTION PRINT SLIP MODAL ─── */}
+      {isPrescriptionModalOpen && prescriptionToPrint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[12px] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-[8px] bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center">
+                  <FileText className="size-4.5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                    Medical Prescription Slip (Rx)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Official clinic prescription for pharmacy dispensing or outpatient purchase
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPrescriptionModalOpen(false);
+                  setPrescriptionToPrint(null);
+                }}
+                className="p-1.5 rounded-[8px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4.5" />
+              </button>
+            </div>
+
+            {/* Printable Content Body */}
+            <div className="p-6 space-y-5 overflow-y-auto print:p-0">
+              {/* Clinic & Doctor Letterhead */}
+              <div className="flex items-start justify-between border-b-2 border-slate-900 dark:border-slate-100 pb-3">
+                <div>
+                  <h2 className="text-lg font-black text-[#0d6157] dark:text-teal-300 tracking-tight">{clinicName}</h2>
+                  <p className="text-xs text-slate-500">Outpatient Clinical Prescription Slip</p>
+                </div>
+                <div className="text-right text-xs">
+                  <div className="font-bold text-slate-900 dark:text-white">{prescriptionToPrint.doctor}</div>
+                  <div className="text-slate-500">{prescriptionToPrint.department}</div>
+                </div>
+              </div>
+
+              {/* Patient Meta Strip */}
+              <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-[8px] text-xs border border-slate-200 dark:border-slate-700">
+                <div>
+                  <span className="text-slate-400 block text-[10px] font-bold uppercase">PATIENT NAME</span>
+                  <strong className="text-slate-900 dark:text-white">{prescriptionToPrint.patientName}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] font-bold uppercase">FILE / PHONE</span>
+                  <strong className="text-slate-900 dark:text-white">
+                    {prescriptionToPrint.fileNumber ? `File #${prescriptionToPrint.fileNumber}` : prescriptionToPrint.patientDetails}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] font-bold uppercase">DATE</span>
+                  <strong className="text-slate-900 dark:text-white">{new Date().toLocaleDateString()}</strong>
+                </div>
+              </div>
+
+              {/* Diagnosis */}
+              {prescriptionToPrint.primaryDiagnosis && (
+                <div className="text-xs p-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-[8px]">
+                  <span className="text-emerald-700 dark:text-emerald-400 block text-[10px] uppercase font-bold">Primary Diagnosis:</span>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">{prescriptionToPrint.primaryDiagnosis}</div>
+                </div>
+              )}
+
+              {/* Prescriptions Table */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-slate-900 dark:text-white block border-b border-slate-200 dark:border-slate-700 pb-1">
+                  ℞ Prescribed Medications
+                </span>
+                {prescriptionToPrint.prescriptions && prescriptionToPrint.prescriptions.length > 0 ? (
+                  prescriptionToPrint.prescriptions.map((rx, idx) => (
+                    <div key={idx} className="text-xs border-b border-slate-100 dark:border-slate-800 pb-2 flex items-start justify-between">
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-white text-xs">
+                          {idx + 1}. {rx.medicineName || rx.name} {rx.dosage ? `(${rx.dosage})` : ''}
+                        </div>
+                        {rx.instructions && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Note: {rx.instructions}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold text-xs whitespace-nowrap ml-4">
+                        {rx.frequency || ''} {rx.duration ? `• ${rx.duration}` : ''}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 italic py-2">No medication items recorded in this encounter.</p>
+                )}
+              </div>
+
+              {/* Patient Advice */}
+              {prescriptionToPrint.patientAdvice && (
+                <div className="text-xs p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-[8px]">
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">Doctor's Advice / Instructions:</span>
+                  <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">{prescriptionToPrint.patientAdvice}</p>
+                </div>
+              )}
+
+              {/* Footer Signature */}
+              <div className="pt-6 flex justify-between items-end border-t border-slate-200 dark:border-slate-700 text-xs">
+                <span className="text-slate-400 text-[10px]">Pulseware HealthOS Verified Prescription</span>
+                <div className="text-center">
+                  <div className="w-40 border-b border-slate-400 dark:border-slate-500 mb-1" />
+                  <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">{prescriptionToPrint.doctor}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5 bg-slate-50 dark:bg-slate-800/40">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPrescriptionModalOpen(false);
+                  setPrescriptionToPrint(null);
+                }}
+                className="px-4 py-2 rounded-[8px] text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-5 py-2 rounded-[8px] bg-[#0d6157] hover:bg-[#0a4e46] text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <Printer className="size-3.5" />
+                <span>Print Prescription</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -30,6 +30,7 @@ export const GET = withErrorHandling(async (request: Request) => {
     fromDateKey: query.fromDate,
     toDateKey: query.toDate,
     limit: query.limit ?? 100,
+    ignoreMinAdvanceNotice: query.ignoreMinAdvanceNotice ?? true,
   });
 
   return NextResponse.json({

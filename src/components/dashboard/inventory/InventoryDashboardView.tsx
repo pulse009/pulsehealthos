@@ -27,6 +27,13 @@ export interface InventoryMetricsData {
   expiringBatchesCount: number;
   pendingRequests: number;
   pendingPOs: number;
+  departmentCounts?: {
+    all: number;
+    pharmacy: number;
+    clinic: number;
+    laboratory: number;
+    shared: number;
+  };
   lowStockItems: Array<{
     id: string;
     name: string;
@@ -35,6 +42,7 @@ export interface InventoryMetricsData {
     currentStock: number;
     minimumStock: number;
     defaultCost: number | null;
+    inventoryScope?: string | null;
     category?: { name: string } | null;
   }>;
   recentMovements: Array<{
@@ -47,7 +55,8 @@ export interface InventoryMetricsData {
     referenceId: string | null;
     notes: string | null;
     createdAt: string | Date;
-    item: { id: string; name: string; sku: string | null; unit: string };
+    inventoryScope?: string | null;
+    item: { id: string; name: string; sku: string | null; unit: string; inventoryScope?: string | null };
     createdBy: { id: string; name: string } | null;
   }>;
 }
@@ -62,6 +71,41 @@ export function InventoryDashboardView({
   clinicName,
 }: InventoryDashboardViewProps) {
   const router = useRouter();
+
+  const getScopeBadge = (scope?: string | null) => {
+    switch (scope) {
+      case 'PHARMACY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 whitespace-nowrap">
+            Pharmacy
+          </span>
+        );
+      case 'CLINIC':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">
+            Clinic
+          </span>
+        );
+      case 'LABORATORY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+            Laboratory
+          </span>
+        );
+      case 'SHARED':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+            Shared
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            Shared
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-y-auto font-sans">
@@ -178,6 +222,48 @@ export function InventoryDashboardView({
         </div>
       </div>
 
+      {/* DEPARTMENT STOCK SUMMARY TILES */}
+      <div className="px-6 py-3 bg-slate-50/60 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto shrink-0">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+          Department Stocks:
+        </span>
+        <Link
+          href="/portal/inventory/items"
+          className="px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-[#0d8276] transition-all flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+        >
+          <span>All Items:</span>
+          <span className="font-bold font-mono">{metrics.departmentCounts?.all ?? metrics.totalItems}</span>
+        </Link>
+        <Link
+          href="/portal/inventory/items"
+          className="px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 hover:border-teal-400 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+        >
+          <span>Pharmacy Stock:</span>
+          <span className="font-bold font-mono">{metrics.departmentCounts?.pharmacy ?? 0}</span>
+        </Link>
+        <Link
+          href="/portal/inventory/items"
+          className="px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200 hover:border-indigo-400 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+        >
+          <span>Clinic Stock:</span>
+          <span className="font-bold font-mono">{metrics.departmentCounts?.clinic ?? 0}</span>
+        </Link>
+        <Link
+          href="/portal/inventory/items"
+          className="px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:border-amber-400 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+        >
+          <span>Laboratory Stock:</span>
+          <span className="font-bold font-mono">{metrics.departmentCounts?.laboratory ?? 0}</span>
+        </Link>
+        <Link
+          href="/portal/inventory/items"
+          className="px-2.5 py-1 rounded-[6px] text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:border-emerald-400 transition-all flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+        >
+          <span>Shared Stock:</span>
+          <span className="font-bold font-mono">{metrics.departmentCounts?.shared ?? 0}</span>
+        </Link>
+      </div>
+
       {/* 3. MAIN DASHBOARD CONTENT GRID */}
       <div className="p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -221,12 +307,15 @@ export function InventoryDashboardView({
                       className="px-5 py-3 flex items-center justify-between hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
                       <div className="min-w-0 pr-3">
-                        <Link
-                          href={`/portal/inventory/items/${item.id}`}
-                          className="font-bold text-xs text-slate-900 dark:text-white hover:text-[#0d6157] dark:hover:text-teal-300 truncate block"
-                        >
-                          {item.name}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/portal/inventory/items/${item.id}`}
+                            className="font-bold text-xs text-slate-900 dark:text-white hover:text-[#0d6157] dark:hover:text-teal-300 truncate block"
+                          >
+                            {item.name}
+                          </Link>
+                          {getScopeBadge(item.inventoryScope)}
+                        </div>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
                           {item.sku && <span>SKU: {item.sku}</span>}
                           {item.category && <span>• {item.category.name}</span>}
@@ -316,6 +405,7 @@ export function InventoryDashboardView({
                           >
                             {mov.item.name}
                           </Link>
+                          {getScopeBadge(mov.inventoryScope || mov.item.inventoryScope)}
                         </div>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 pl-4">
                           <span className="uppercase font-medium">

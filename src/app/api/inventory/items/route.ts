@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     const categoryId = url.searchParams.get('categoryId');
     const supplierId = url.searchParams.get('supplierId');
     const status = url.searchParams.get('status') as any;
+    const inventoryScope = url.searchParams.get('inventoryScope') as any;
     const search = url.searchParams.get('search');
     const activeOnly = url.searchParams.get('activeOnly');
 
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
       categoryId,
       supplierId,
       status,
+      inventoryScope,
       search,
       isActive: activeOnly === 'true' ? true : undefined,
     });

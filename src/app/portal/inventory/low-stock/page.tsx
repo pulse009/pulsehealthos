@@ -28,7 +28,7 @@ export default async function InventoryLowStockPage() {
       },
       include: {
         item: {
-          select: { id: true, name: true, sku: true, unit: true },
+          select: { id: true, name: true, sku: true, unit: true, inventoryScope: true },
         },
       },
       orderBy: { expiryDate: 'asc' },

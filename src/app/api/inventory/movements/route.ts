@@ -15,12 +15,14 @@ export async function GET(request: Request) {
 
     const itemId = url.searchParams.get('itemId');
     const type = url.searchParams.get('type') as any;
+    const inventoryScope = url.searchParams.get('inventoryScope') as any;
     const limitParam = url.searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 
     const movements = await listStockMovements(scope, user.clinicId, {
       itemId,
       type,
+      inventoryScope,
       limit,
     });
     return NextResponse.json({ ok: true, movements });

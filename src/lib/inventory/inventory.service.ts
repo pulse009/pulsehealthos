@@ -2,7 +2,7 @@ import 'server-only';
 import { prisma } from '@/lib/db/prisma';
 import { conflict, forbidden, notFound, validationError } from '@/lib/errors';
 import { assertOwned, clinicWhere, resolveClinicId, type TenantScope } from '@/lib/tenancy/scope';
-import type { StockMovementType, PurchaseOrderStatus, ItemRequestStatus } from '@prisma/client';
+import type { StockMovementType, PurchaseOrderStatus, ItemRequestStatus, InventoryScope } from '@prisma/client';
 import type {
   inventoryCategorySchema,
   supplierSchema,
@@ -20,12 +20,21 @@ import type { z } from 'zod';
 // Metrics & Overview
 // ===========================================================================
 
-export async function getInventoryMetrics(scope: TenantScope, clinicId?: string | null) {
+export async function getInventoryMetrics(
+  scope: TenantScope,
+  clinicId?: string | null,
+  filters?: { inventoryScope?: InventoryScope | 'ALL' | null },
+) {
   const resolvedClinicId = resolveClinicId(scope, clinicId);
 
-  const [items, pendingRequests, pendingPOs, recentMovements] = await Promise.all([
+  const itemWhere: any = { clinicId: resolvedClinicId, isActive: true };
+  if (filters?.inventoryScope && filters.inventoryScope !== 'ALL') {
+    itemWhere.inventoryScope = filters.inventoryScope;
+  }
+
+  const [items, allActiveItems, pendingRequests, pendingPOs, recentMovements] = await Promise.all([
     prisma.inventoryItem.findMany({
-      where: { clinicId: resolvedClinicId, isActive: true },
+      where: itemWhere,
       select: {
         id: true,
         name: true,
@@ -35,7 +44,14 @@ export async function getInventoryMetrics(scope: TenantScope, clinicId?: string 
         minimumStock: true,
         defaultCost: true,
         trackExpiry: true,
+        inventoryScope: true,
         category: { select: { name: true } },
+      },
+    }),
+    prisma.inventoryItem.findMany({
+      where: { clinicId: resolvedClinicId, isActive: true },
+      select: {
+        inventoryScope: true,
       },
     }),
     prisma.itemRequest.count({
@@ -52,7 +68,7 @@ export async function getInventoryMetrics(scope: TenantScope, clinicId?: string 
       orderBy: { createdAt: 'desc' },
       take: 6,
       include: {
-        item: { select: { id: true, name: true, sku: true, unit: true } },
+        item: { select: { id: true, name: true, sku: true, unit: true, inventoryScope: true } },
         createdBy: { select: { id: true, name: true } },
       },
     }),
@@ -78,6 +94,15 @@ export async function getInventoryMetrics(scope: TenantScope, clinicId?: string 
     }
   }
 
+  // Department counts
+  const departmentCounts = {
+    all: allActiveItems.length,
+    pharmacy: allActiveItems.filter((i) => i.inventoryScope === 'PHARMACY').length,
+    clinic: allActiveItems.filter((i) => i.inventoryScope === 'CLINIC').length,
+    laboratory: allActiveItems.filter((i) => i.inventoryScope === 'LABORATORY').length,
+    shared: allActiveItems.filter((i) => i.inventoryScope === 'SHARED').length,
+  };
+
   // Expiring soon check (batches within 60 days)
   const sixtyDaysFromNow = new Date();
   sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
@@ -99,6 +124,7 @@ export async function getInventoryMetrics(scope: TenantScope, clinicId?: string 
     expiringBatchesCount,
     pendingRequests,
     pendingPOs,
+    departmentCounts,
     lowStockItems: lowStockItems.slice(0, 10),
     recentMovements,
   };
@@ -248,6 +274,8 @@ export async function listInventoryItems(
     categoryId?: string | null;
     supplierId?: string | null;
     status?: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'ALL' | null;
+    inventoryScope?: InventoryScope | 'ALL' | null;
+    inventoryScopes?: InventoryScope[] | null;
     search?: string | null;
     isActive?: boolean | null;
   },
@@ -259,6 +287,14 @@ export async function listInventoryItems(
   if (filters?.supplierId) where.supplierId = filters.supplierId;
   if (filters?.isActive !== undefined && filters.isActive !== null) {
     where.isActive = filters.isActive;
+  }
+
+  if (filters?.inventoryScope && filters.inventoryScope !== 'ALL') {
+    where.inventoryScope = filters.inventoryScope;
+  }
+
+  if (filters?.inventoryScopes && filters.inventoryScopes.length > 0) {
+    where.inventoryScope = { in: filters.inventoryScopes };
   }
 
   if (filters?.search?.trim()) {
@@ -355,7 +391,7 @@ export async function createInventoryItem(
     }
   }
 
-  const initialStock = input.initialStock ?? 0;
+  const itemScope: InventoryScope = (input.inventoryScope as InventoryScope) || 'SHARED';
 
   return prisma.$transaction(async (tx) => {
     const item = await tx.inventoryItem.create({
@@ -367,7 +403,8 @@ export async function createInventoryItem(
         supplierId: input.supplierId || null,
         unit: input.unit.trim().toUpperCase(),
         description: input.description,
-        currentStock: initialStock,
+        inventoryScope: itemScope,
+        currentStock: 0, // Master catalog items strictly start with 0 stock until physically received via Receive Stock
         minimumStock: input.minimumStock ?? 0,
         defaultCost: input.defaultCost ?? 0,
         trackExpiry: input.trackExpiry,
@@ -379,24 +416,6 @@ export async function createInventoryItem(
         supplier: true,
       },
     });
-
-    // Record initial stock movement if stock > 0
-    if (initialStock > 0) {
-      await tx.inventoryStockMovement.create({
-        data: {
-          clinicId: resolvedClinicId,
-          itemId: item.id,
-          type: 'STOCK_RECEIVED',
-          quantity: initialStock,
-          previousStock: 0,
-          newStock: initialStock,
-          unitCost: input.defaultCost ?? 0,
-          referenceType: 'INITIAL_STOCK',
-          notes: 'Initial opening stock upon item creation',
-          createdById: userId || null,
-        },
-      });
-    }
 
     return item;
   });
@@ -437,6 +456,7 @@ export async function updateInventoryItem(
       supplierId: input.supplierId === '' ? null : input.supplierId,
       unit: input.unit?.trim().toUpperCase(),
       description: input.description,
+      inventoryScope: input.inventoryScope ? (input.inventoryScope as InventoryScope) : undefined,
       minimumStock: input.minimumStock,
       defaultCost: input.defaultCost,
       trackExpiry: input.trackExpiry,
@@ -491,11 +511,15 @@ export async function receiveStock(
 
     const previousStock = item.currentStock;
     const newStock = previousStock + input.quantity;
+    const movementScope: InventoryScope = (input.inventoryScope as InventoryScope) || item.inventoryScope || 'SHARED';
 
-    // Update item stock
+    // Update item stock & optionally inventoryScope if provided
     await tx.inventoryItem.update({
       where: { id: input.itemId },
-      data: { currentStock: newStock },
+      data: {
+        currentStock: newStock,
+        inventoryScope: input.inventoryScope ? (input.inventoryScope as InventoryScope) : undefined,
+      },
     });
 
     let batchId: string | null = null;
@@ -514,13 +538,14 @@ export async function receiveStock(
       batchId = batch.id;
     }
 
-    // Record immutable movement
+    // Record immutable movement with inventoryScope
     const movement = await tx.inventoryStockMovement.create({
       data: {
         clinicId: resolvedClinicId,
         itemId: input.itemId,
         batchId,
         type: 'STOCK_RECEIVED',
+        inventoryScope: movementScope,
         quantity: input.quantity,
         previousStock,
         newStock,
@@ -560,6 +585,8 @@ export async function adjustStock(
       );
     }
 
+    const movementScope: InventoryScope = (input.inventoryScope as InventoryScope) || item.inventoryScope || 'SHARED';
+
     await tx.inventoryItem.update({
       where: { id: input.itemId },
       data: { currentStock: newStock },
@@ -571,6 +598,7 @@ export async function adjustStock(
         itemId: input.itemId,
         batchId: input.batchId || null,
         type: (input.type as StockMovementType) || 'STOCK_ADJUSTMENT',
+        inventoryScope: movementScope,
         quantity: input.quantity,
         previousStock,
         newStock,
@@ -591,6 +619,7 @@ export async function listStockMovements(
   filters?: {
     itemId?: string | null;
     type?: StockMovementType | null;
+    inventoryScope?: InventoryScope | 'ALL' | null;
     limit?: number;
   },
 ) {
@@ -599,13 +628,19 @@ export async function listStockMovements(
 
   if (filters?.itemId) where.itemId = filters.itemId;
   if (filters?.type) where.type = filters.type;
+  if (filters?.inventoryScope && filters.inventoryScope !== 'ALL') {
+    where.OR = [
+      { inventoryScope: filters.inventoryScope },
+      { item: { inventoryScope: filters.inventoryScope } },
+    ];
+  }
 
   return prisma.inventoryStockMovement.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: filters?.limit || 100,
     include: {
-      item: { select: { id: true, name: true, sku: true, unit: true } },
+      item: { select: { id: true, name: true, sku: true, unit: true, inventoryScope: true } },
       batch: { select: { id: true, batchNumber: true, expiryDate: true } },
       createdBy: { select: { id: true, name: true } },
     },
@@ -622,6 +657,7 @@ export async function listPurchaseOrders(
   filters?: {
     supplierId?: string | null;
     status?: PurchaseOrderStatus | 'ALL' | null;
+    inventoryScope?: InventoryScope | 'ALL' | null;
   },
 ) {
   const resolvedClinicId = resolveClinicId(scope, clinicId);
@@ -629,6 +665,9 @@ export async function listPurchaseOrders(
 
   if (filters?.supplierId) where.supplierId = filters.supplierId;
   if (filters?.status && filters.status !== 'ALL') where.status = filters.status;
+  if (filters?.inventoryScope && filters.inventoryScope !== 'ALL') {
+    where.inventoryScope = filters.inventoryScope;
+  }
 
   return prisma.purchaseOrder.findMany({
     where,
@@ -638,7 +677,7 @@ export async function listPurchaseOrders(
       createdBy: { select: { id: true, name: true } },
       items: {
         include: {
-          item: { select: { id: true, name: true, sku: true, unit: true } },
+          item: { select: { id: true, name: true, sku: true, unit: true, inventoryScope: true } },
         },
       },
     },
@@ -650,12 +689,23 @@ export async function getPurchaseOrderDetail(scope: TenantScope, poId: string) {
     where: { id: poId },
     include: {
       supplier: true,
-      createdBy: { select: { id: true, name: true, email: true } },
+      createdBy: { select: { id: true, name: true } },
       items: {
         include: {
-          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true } },
+          item: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              unit: true,
+              currentStock: true,
+              minimumStock: true,
+              inventoryScope: true,
+            },
+          },
         },
       },
+      bills: true,
     },
   });
 
@@ -698,6 +748,7 @@ export async function createPurchaseOrder(
       clinicId: resolvedClinicId,
       supplierId: input.supplierId,
       poNumber,
+      inventoryScope: (input.inventoryScope as InventoryScope) || null,
       expectedDate: input.expectedDate ? new Date(input.expectedDate) : null,
       notes: input.notes,
       totalAmount,
@@ -740,7 +791,7 @@ export async function updatePurchaseOrderStatus(
       createdBy: { select: { id: true, name: true } },
       items: {
         include: {
-          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true } },
+          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true, inventoryScope: true } },
         },
       },
     },
@@ -800,12 +851,13 @@ export async function receivePurchaseOrderGoods(
       // 3. Create batch if specified
       let batchId: string | null = null;
       if (recItem.batchNumber?.trim()) {
+        const expiry = recItem.expiryDate ? new Date(recItem.expiryDate) : null;
         const batch = await tx.inventoryBatch.create({
           data: {
             clinicId: po.clinicId,
             itemId: recItem.itemId,
             batchNumber: recItem.batchNumber.trim(),
-            expiryDate: recItem.expiryDate ? new Date(recItem.expiryDate) : null,
+            expiryDate: expiry,
             quantity: recItem.quantityToReceive,
             unitCost: poItem.unitCost,
           },
@@ -813,13 +865,14 @@ export async function receivePurchaseOrderGoods(
         batchId = batch.id;
       }
 
-      // 4. Create Stock Movement
+      // 4. Create Stock Movement with inventoryScope
       await tx.inventoryStockMovement.create({
         data: {
           clinicId: po.clinicId,
           itemId: recItem.itemId,
           batchId,
           type: 'STOCK_RECEIVED',
+          inventoryScope: item.inventoryScope || po.inventoryScope || 'SHARED',
           quantity: recItem.quantityToReceive,
           previousStock,
           newStock,
@@ -854,7 +907,7 @@ export async function receivePurchaseOrderGoods(
         createdBy: { select: { id: true, name: true } },
         items: {
           include: {
-            item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true } },
+            item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true, inventoryScope: true } },
           },
         },
       },
@@ -899,7 +952,7 @@ export async function listItemRequests(
       releasedBy: { select: { id: true, name: true } },
       items: {
         include: {
-          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true } },
+          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true, inventoryScope: true } },
         },
       },
     },
@@ -915,7 +968,7 @@ export async function getItemRequestDetail(scope: TenantScope, requestId: string
       releasedBy: { select: { id: true, name: true } },
       items: {
         include: {
-          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true, minimumStock: true } },
+          item: { select: { id: true, name: true, sku: true, unit: true, currentStock: true, minimumStock: true, inventoryScope: true } },
         },
       },
     },
@@ -1064,12 +1117,13 @@ export async function releaseItemRequest(
         data: { releasedQuantity: reqItem.requestedQuantity },
       });
 
-      // Create Stock Movement record (STOCK_ISSUED)
+      // Create Stock Movement record (STOCK_ISSUED) with inventoryScope
       await tx.inventoryStockMovement.create({
         data: {
           clinicId: req.clinicId,
           itemId: reqItem.itemId,
           type: 'STOCK_ISSUED',
+          inventoryScope: reqItem.item.inventoryScope || 'SHARED',
           quantity: -reqItem.requestedQuantity,
           previousStock,
           newStock,

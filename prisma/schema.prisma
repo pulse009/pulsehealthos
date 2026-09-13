@@ -40,6 +40,9 @@ enum LabOrderStatus {
   ORDERED
   SAMPLE_COLLECTED
   IN_PROGRESS
+  RESULT_READY
+  EXTERNAL_RESULT_UPLOADED
+  REVIEWED
   COMPLETED
   CANCELLED
 }
@@ -930,6 +933,13 @@ model SystemLog {
 // Inventory & Supply Chain Enums
 // ---------------------------------------------------------------------------
 
+enum InventoryScope {
+  PHARMACY
+  CLINIC
+  LABORATORY
+  SHARED
+}
+
 enum StockMovementType {
   STOCK_RECEIVED
   STOCK_ISSUED
@@ -997,25 +1007,26 @@ model Supplier {
 }
 
 model InventoryItem {
-  id           String   @id @default(uuid())
-  clinicId     String
-  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  categoryId   String?
-  category     InventoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  supplierId   String?
-  supplier     Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  name         String
-  sku          String?
-  unit         String   @default("PCS")
-  description  String?
-  currentStock Int      @default(0)
-  minimumStock Int      @default(0)
-  defaultCost  Float?   @default(0)
-  trackExpiry  Boolean  @default(false)
-  trackBatch   Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  id             String         @id @default(uuid())
+  clinicId       String
+  clinic         Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       InventoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  supplierId     String?
+  supplier       Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  name           String
+  sku            String?
+  unit           String         @default("PCS")
+  description    String?
+  currentStock   Int            @default(0)
+  minimumStock   Int            @default(0)
+  defaultCost    Float?         @default(0)
+  inventoryScope InventoryScope @default(SHARED)
+  trackExpiry    Boolean        @default(false)
+  trackBatch     Boolean        @default(false)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
 
   movements    InventoryStockMovement[]
   batches      InventoryBatch[]
@@ -1027,6 +1038,7 @@ model InventoryItem {
   @@index([clinicId])
   @@index([categoryId])
   @@index([supplierId])
+  @@index([inventoryScope])
   @@index([isActive])
 }
 
@@ -1052,24 +1064,25 @@ model InventoryBatch {
 }
 
 model InventoryStockMovement {
-  id            String            @id @default(uuid())
-  clinicId      String
-  clinic        Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  itemId        String
-  item          InventoryItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  batchId       String?
-  batch         InventoryBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
-  type          StockMovementType
-  quantity      Int
-  previousStock Int
-  newStock      Int
-  unitCost      Float?
-  referenceType String?
-  referenceId   String?
-  notes         String?
-  createdById   String?
-  createdBy     User?             @relation("StockMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  id             String            @id @default(uuid())
+  clinicId       String
+  clinic         Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           InventoryItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  batchId        String?
+  batch          InventoryBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  type           StockMovementType
+  inventoryScope InventoryScope?
+  quantity       Int
+  previousStock  Int
+  newStock       Int
+  unitCost       Float?
+  referenceType  String?
+  referenceId    String?
+  notes          String?
+  createdById    String?
+  createdBy      User?             @relation("StockMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
 
   @@index([clinicId, createdAt])
   @@index([itemId])
@@ -1078,21 +1091,22 @@ model InventoryStockMovement {
 }
 
 model PurchaseOrder {
-  id           String              @id @default(uuid())
-  clinicId     String
-  clinic       Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  supplierId   String
-  supplier     Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  poNumber     String
-  orderDate    DateTime            @default(now()) @db.Timestamptz(3)
-  expectedDate DateTime?           @db.Timestamptz(3)
-  status       PurchaseOrderStatus @default(DRAFT)
-  totalAmount  Float               @default(0)
-  notes        String?
-  createdById  String?
-  createdBy    User?               @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt    DateTime            @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime            @updatedAt @db.Timestamptz(3)
+  id             String              @id @default(uuid())
+  clinicId       String
+  clinic         Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  supplierId     String
+  supplier       Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  poNumber       String
+  inventoryScope InventoryScope?
+  orderDate      DateTime            @default(now()) @db.Timestamptz(3)
+  expectedDate   DateTime?           @db.Timestamptz(3)
+  status         PurchaseOrderStatus @default(DRAFT)
+  totalAmount    Float               @default(0)
+  notes          String?
+  createdById    String?
+  createdBy      User?               @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime            @updatedAt @db.Timestamptz(3)
 
   items PurchaseOrderItem[]
   bills SupplierBill[]
@@ -1482,26 +1496,31 @@ model ClinicalEncounter {
 // ---------------------------------------------------------------------------
 
 model LabTestCatalog {
-  id              String   @id @default(uuid())
-  clinicId        String
-  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  code            String
-  name            String
-  category        String   @default("Biochemistry") // Hematology, Biochemistry, Microbiology, Immunology, Radiology, Pathology
-  sampleType      String   @default("Blood")        // Blood, Serum, Plasma, Urine, Stool, Swab, Sputum, Tissue
-  containerType   String?  @default("Lavender (EDTA)") // Tube cap color / container
-  normalRange     String?  // Text description or JSON range
-  unit            String?
-  parametersJson  Json?    // Array of sub-parameters with units and reference ranges e.g. [{ name: "WBC", unit: "10^3/uL", min: 4.5, max: 11.0 }]
-  turnaroundHours Int      @default(24)
-  price           Float    @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  id                 String      @id @default(uuid())
+  clinicId           String
+  clinic             Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  code               String
+  name               String
+  category           String      @default("Biochemistry") // Hematology, Biochemistry, Microbiology, Immunology, Radiology, Pathology, Cardiology, Other
+  description        String?
+  sampleType         String      @default("Blood")        // Blood, Serum, Plasma, Urine, Stool, Swab, Sputum, Tissue, None
+  containerType      String?     @default("Lavender (EDTA)") // Tube cap color / container
+  normalRange        String?     // Text description or JSON range
+  unit               String?
+  parametersJson     Json?       // Array of sub-parameters with units and reference ranges e.g. [{ name: "WBC", unit: "10^3/uL", min: 4.5, max: 11.0 }]
+  turnaroundHours    Int         @default(24)
+  price              Float       @default(0)
+  isActive           Boolean     @default(true)
+  isFavorite         Boolean     @default(false)
+  defaultPriority    LabPriority @default(ROUTINE)
+  defaultFulfillment String      @default("IN_HOUSE") // IN_HOUSE, EXTERNAL, UNDECIDED
+  createdAt          DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime    @updatedAt @db.Timestamptz(3)
 
   @@unique([clinicId, code])
   @@index([clinicId, category])
   @@index([clinicId, isActive])
+  @@index([clinicId, isFavorite])
 }
 
 model LabOrder {
@@ -1521,6 +1540,7 @@ model LabOrder {
 
   status              LabOrderStatus     @default(ORDERED)
   priority            LabPriority        @default(ROUTINE)
+  fulfillmentLocation String             @default("IN_HOUSE") // IN_HOUSE, EXTERNAL, UNDECIDED
 
   testName            String
   category            String             @default("Biochemistry")
@@ -1530,6 +1550,11 @@ model LabOrder {
 
   clinicalNotes       String?
   instructions        String?
+
+  // External result details
+  externalReportUrl   String?
+  externalResultNotes String?
+  externalResultDate  DateTime?          @db.Timestamptz(3)
 
   collectedAt         DateTime?          @db.Timestamptz(3)
   collectedById       String?
@@ -1553,6 +1578,7 @@ model LabOrder {
   @@unique([clinicId, orderNumber])
   @@index([clinicId, status])
   @@index([clinicId, priority])
+  @@index([clinicId, fulfillmentLocation])
   @@index([clinicId, createdAt])
   @@index([patientId])
   @@index([doctorId])

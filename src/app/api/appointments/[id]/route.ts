@@ -89,16 +89,35 @@ export async function PATCH(request: Request, context: Context) {
 
     // 1. Direct status update
     if (body.status) {
-      const validStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'RESCHEDULED', 'COMPLETED', 'NO_SHOW'];
+      const validStatuses = ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'RESCHEDULED', 'COMPLETED', 'NO_SHOW'];
       const targetStatus = body.status.toUpperCase();
       if (!validStatuses.includes(targetStatus)) {
         return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
       }
 
-      const whereClause = scope.kind === 'CLINIC' ? { id, clinicId: scope.clinicId } : { id };
+      const targetAppointment = await prisma.appointment.findFirst({
+        where: scope.kind === 'CLINIC' ? { id, clinicId: scope.clinicId } : { id },
+        select: { id: true, status: true, confirmedAt: true },
+      });
+
+      if (!targetAppointment) {
+        return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+      }
+
+      const updateData: any = { status: targetStatus };
+      if (targetStatus === 'CONFIRMED' && !targetAppointment.confirmedAt) {
+        updateData.confirmedAt = new Date();
+      } else if (targetStatus === 'CANCELLED') {
+        updateData.cancelledAt = new Date();
+      } else if (targetStatus === 'COMPLETED') {
+        updateData.completedAt = new Date();
+      } else if (targetStatus === 'NO_SHOW') {
+        updateData.noShowAt = new Date();
+      }
+
       const updated = await prisma.appointment.update({
-        where: whereClause,
-        data: { status: targetStatus as any },
+        where: { id: targetAppointment.id },
+        data: updateData,
       });
 
       // Automation: If appointment is completed, generate invoice (with optional doctor discount) and send WhatsApp billing notice

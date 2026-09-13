@@ -72,6 +72,16 @@ export default async function PortalAppointmentsPage() {
         doctor: { select: { id: true, name: true, specialty: true } },
         service: { select: { id: true, name: true, priceMinor: true } },
         patient: { select: { id: true, name: true, phone: true, email: true, fileNumber: true } },
+        encounter: {
+          select: {
+            id: true,
+            status: true,
+            primaryDiagnosis: true,
+            prescriptionsJson: true,
+            labOrdersJson: true,
+            patientAdvice: true,
+          },
+        },
         invoice: {
           select: {
             id: true,
@@ -194,6 +204,20 @@ export default async function PortalAppointmentsPage() {
       invoiceTotal: app.invoice?.totalAmount,
       invoiceDiscount: app.invoice?.discountAmount,
       invoiceStatus: app.invoice?.status,
+      encounterId: app.encounter?.id,
+      encounterStatus: app.encounter?.status,
+      primaryDiagnosis: app.encounter?.primaryDiagnosis || undefined,
+      patientAdvice: app.encounter?.patientAdvice || undefined,
+      prescriptions: Array.isArray(app.encounter?.prescriptionsJson)
+        ? app.encounter.prescriptionsJson
+        : typeof app.encounter?.prescriptionsJson === 'string'
+        ? JSON.parse(app.encounter.prescriptionsJson)
+        : undefined,
+      labOrders: Array.isArray(app.encounter?.labOrdersJson)
+        ? app.encounter.labOrdersJson
+        : typeof app.encounter?.labOrdersJson === 'string'
+        ? JSON.parse(app.encounter.labOrdersJson)
+        : undefined,
     };
   });
 

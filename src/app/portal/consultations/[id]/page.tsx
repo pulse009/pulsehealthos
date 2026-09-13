@@ -126,6 +126,7 @@ export default async function ClinicalEncounterPage(props: {
       clinicName={clinic?.name || 'Clinic'}
       previousEncounters={previousEncounters}
       pharmacyItems={pharmacyItems}
+      userRole={user.role}
     />
   );
 }

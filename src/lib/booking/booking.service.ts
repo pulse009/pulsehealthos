@@ -265,6 +265,7 @@ export async function createAppointment(
     serviceId: service.id,
     start: startsAt,
     now,
+    ignoreMinAdvanceNotice: isStaffBooking,
   });
   if (!available) {
     return fail('OUTSIDE_AVAILABILITY', 'That time is not available.');
@@ -641,6 +642,7 @@ export async function rescheduleAppointment(
     start: startsAt,
     now,
     excludeAppointmentId: original.id,
+    ignoreMinAdvanceNotice: true,
   });
   if (!available) {
     return buildFailure('OUTSIDE_AVAILABILITY', 'That time is not available.');

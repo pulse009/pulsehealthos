@@ -40,6 +40,8 @@ export interface SlotQuery {
   limit?: number;
   /** Injected for deterministic tests. */
   now?: Date;
+  /** Allow staff bookings / admin lookups to include immediate or same-day slots without minimum advance notice filter */
+  ignoreMinAdvanceNotice?: boolean;
 }
 
 export interface ResolvedSlot {
@@ -242,10 +244,13 @@ export async function getAvailableSlots(
     busyByDoctor.set(a.doctorId, list);
   }
 
-  const earliestStart = new Date(now.getTime() + config.settings.minAdvanceBookingMinutes * 60_000);
+  const earliestStart = query.ignoreMinAdvanceNotice
+    ? (query.now ? new Date(query.now.getTime() - 5 * 60_000) : new Date(Date.now() - 5 * 60_000))
+    : new Date(now.getTime() + config.settings.minAdvanceBookingMinutes * 60_000);
   const latestStart = endOfLocalDay(horizonKey, timezone);
 
   const results: ResolvedSlot[] = [];
+  const hasConfiguredClinicHours = clinicHours.length > 0;
 
   for (const dateKey of dateKeys) {
     const weekday = weekdayOf(dateKey, timezone);
@@ -264,16 +269,23 @@ export async function getAvailableSlots(
       .filter((c) => c.startMinute !== null && c.endMinute !== null)
       .map((c) => ({ startMinute: c.startMinute!, endMinute: c.endMinute! }));
 
-    const clinicWindows: LocalWindow[] = clinicHours
-      .filter((h) => h.weekday === weekday && !h.isClosed)
-      .map((h) => ({ startMinute: h.startMinute, endMinute: h.endMinute }));
+    const clinicWindows: LocalWindow[] = hasConfiguredClinicHours
+      ? clinicHours
+          .filter((h) => h.weekday === weekday && !h.isClosed)
+          .map((h) => ({ startMinute: h.startMinute, endMinute: h.endMinute }))
+      : [{ startMinute: 0, endMinute: 24 * 60 }];
 
     for (const doctor of doctors) {
       const { durationMinutes, bufferMinutes } = resolveDurations(config, service, doctor);
 
-      const doctorWindows: LocalWindow[] = doctor.schedules
-        .filter((s) => s.weekday === weekday)
-        .map((s) => ({ startMinute: s.startMinute, endMinute: s.endMinute }));
+      const hasDoctorSchedules = doctor.schedules.length > 0;
+      const doctorWindows: LocalWindow[] = hasDoctorSchedules
+        ? doctor.schedules
+            .filter((s) => s.weekday === weekday)
+            .map((s) => ({ startMinute: s.startMinute, endMinute: s.endMinute }))
+        : clinicWindows.length > 0
+          ? clinicWindows
+          : [{ startMinute: 9 * 60, endMinute: 18 * 60 }];
 
       const breakWindows: LocalWindow[] = doctor.breaks
         .filter((b) => b.weekday === weekday)
@@ -339,6 +351,7 @@ export async function isSlotStillAvailable(
     now?: Date;
     /** Ignore this appointment when checking (used when rescheduling). */
     excludeAppointmentId?: string;
+    ignoreMinAdvanceNotice?: boolean;
   },
   db: DbClient = prisma,
 ): Promise<boolean> {
@@ -354,11 +367,12 @@ export async function isSlotStillAvailable(
       fromDateKey: dateKey,
       toDateKey: dateKey,
       now: params.now,
+      ignoreMinAdvanceNotice: params.ignoreMinAdvanceNotice ?? true,
     },
     db,
   );
 
-  if (slots.some((s) => s.start.getTime() === params.start.getTime())) return true;
+  if (slots.some((s) => Math.abs(s.start.getTime() - params.start.getTime()) < 60_000)) return true;
 
   // When rescheduling, the appointment being moved still occupies its own slot.
   // Treat "the only thing in the way is me" as available.
@@ -371,7 +385,7 @@ export async function isSlotStillAvailable(
       self &&
       self.clinicId === config.clinicId &&
       self.doctorId === params.doctorId &&
-      self.startsAt.getTime() === params.start.getTime()
+      Math.abs(self.startsAt.getTime() - params.start.getTime()) < 60_000
     ) {
       return true;
     }

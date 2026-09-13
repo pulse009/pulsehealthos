@@ -23,10 +23,12 @@ export async function GET(request: Request) {
 
     const supplierId = url.searchParams.get('supplierId');
     const status = url.searchParams.get('status') as any;
+    const inventoryScope = url.searchParams.get('inventoryScope') as any;
 
     const purchaseOrders = await listPurchaseOrders(scope, user.clinicId, {
       supplierId,
       status,
+      inventoryScope,
     });
     return NextResponse.json({ ok: true, purchaseOrders });
   } catch (error) {
@@ -59,13 +61,16 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-    if (!body.id || !body.status) {
-      return NextResponse.json({ error: 'Purchase Order ID and status required' }, { status: 400 });
+    const url = new URL(request.url);
+    const poId = url.searchParams.get('poId');
+    if (!poId) {
+      return NextResponse.json({ error: 'Missing poId in query parameter' }, { status: 400 });
     }
 
-    const purchaseOrder = await updatePurchaseOrderStatus(scope, body.id, body.status, body.notes);
-    return NextResponse.json({ ok: true, purchaseOrder });
+    const body = await parseJson(request, updatePurchaseOrderStatusSchema);
+    const updated = await updatePurchaseOrderStatus(scope, poId, body.status, body.notes);
+
+    return NextResponse.json({ ok: true, purchaseOrder: updated });
   } catch (error) {
     return errorResponse(error);
   }

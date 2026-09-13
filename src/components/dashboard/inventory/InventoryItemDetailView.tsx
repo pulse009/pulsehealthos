@@ -35,6 +35,7 @@ export interface ItemDetailData {
   trackBatch: boolean;
   isActive: boolean;
   createdAt: string | Date;
+  inventoryScope?: string | null;
   category?: { id: string; name: string } | null;
   supplier?: { id: string; name: string; phone: string | null; email: string | null } | null;
   batches: Array<{
@@ -85,6 +86,41 @@ export function InventoryItemDetailView({
   const router = useRouter();
   const [item, setItem] = useState<ItemDetailData>(initialItem);
   const [activeTab, setActiveTab] = useState<'overview' | 'batches' | 'movements' | 'purchases'>('overview');
+
+  const getScopeBadge = (scope?: string | null) => {
+    switch (scope) {
+      case 'PHARMACY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 whitespace-nowrap">
+            Pharmacy
+          </span>
+        );
+      case 'CLINIC':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">
+            Clinic
+          </span>
+        );
+      case 'LABORATORY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+            Laboratory
+          </span>
+        );
+      case 'SHARED':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+            Shared
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            Shared
+          </span>
+        );
+    }
+  };
 
   // Modals
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -211,6 +247,7 @@ export function InventoryItemDetailView({
               <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                 {item.name}
               </h1>
+              {getScopeBadge(item.inventoryScope)}
               {item.sku && (
                 <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-[8px] text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                   {item.sku}
@@ -405,6 +442,10 @@ export function InventoryItemDetailView({
                 <div className="flex justify-between">
                   <span className="text-slate-400">SKU / Code:</span>
                   <span className="font-mono text-slate-800 dark:text-white">{item.sku || 'None'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Stock For (Department):</span>
+                  <span>{getScopeBadge(item.inventoryScope)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Category:</span>

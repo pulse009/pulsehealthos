@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
   Plus,
   ArrowRight,
   CheckCircle2,
+  Filter,
 } from 'lucide-react';
 
 export interface LowStockItemRow {
@@ -22,6 +23,7 @@ export interface LowStockItemRow {
   currentStock: number;
   minimumStock: number;
   defaultCost: number | null;
+  inventoryScope?: string | null;
   category?: { name: string } | null;
   supplier?: { id: string; name: string } | null;
 }
@@ -31,7 +33,13 @@ export interface ExpiringBatchRow {
   batchNumber: string;
   expiryDate: string | Date | null;
   quantity: number;
-  item: { id: string; name: string; sku: string | null; unit: string };
+  item: {
+    id: string;
+    name: string;
+    sku: string | null;
+    unit: string;
+    inventoryScope?: string | null;
+  };
   receivedDate: string | Date;
 }
 
@@ -41,14 +49,66 @@ interface InventoryLowStockViewProps {
   clinicName: string;
 }
 
+type DepartmentScope = 'ALL' | 'PHARMACY' | 'CLINIC' | 'LABORATORY' | 'SHARED';
+
 export function InventoryLowStockView({
   lowStockItems,
   expiringBatches,
   clinicName,
 }: InventoryLowStockViewProps) {
   const [activeTab, setActiveTab] = useState<'low-stock' | 'expiring'>('low-stock');
+  const [selectedDept, setSelectedDept] = useState<DepartmentScope>('ALL');
 
   const now = new Date();
+
+  const getScopeBadge = (scope?: string | null) => {
+    switch (scope) {
+      case 'PHARMACY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 whitespace-nowrap">
+            Pharmacy
+          </span>
+        );
+      case 'CLINIC':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">
+            Clinic
+          </span>
+        );
+      case 'LABORATORY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+            Laboratory
+          </span>
+        );
+      case 'SHARED':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+            Shared
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            Shared
+          </span>
+        );
+    }
+  };
+
+  const filteredLowStock = useMemo(() => {
+    if (selectedDept === 'ALL') return lowStockItems;
+    return lowStockItems.filter(
+      (item) => (item.inventoryScope || 'SHARED') === selectedDept,
+    );
+  }, [lowStockItems, selectedDept]);
+
+  const filteredExpiring = useMemo(() => {
+    if (selectedDept === 'ALL') return expiringBatches;
+    return expiringBatches.filter(
+      (b) => (b.item.inventoryScope || 'SHARED') === selectedDept,
+    );
+  }, [expiringBatches, selectedDept]);
 
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-y-auto font-sans">
@@ -83,7 +143,7 @@ export function InventoryLowStockView({
               Low Stock Warnings
             </span>
             <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
-              {lowStockItems.length}
+              {filteredLowStock.length}
             </div>
             <div className="pt-0.5">
               <span className="bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-amber-100 dark:border-amber-900/50 inline-block">
@@ -102,7 +162,7 @@ export function InventoryLowStockView({
               Batches Expiring Soon
             </span>
             <div className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
-              {expiringBatches.length}
+              {filteredExpiring.length}
             </div>
             <div className="pt-0.5">
               <span className="bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 text-[10px] font-semibold px-2 py-0.5 rounded-[8px] border border-purple-100 dark:border-purple-900/50 inline-block">
@@ -116,7 +176,37 @@ export function InventoryLowStockView({
         </div>
       </div>
 
-      {/* 3. TABS */}
+      {/* 3. DEPARTMENT FILTER BAR */}
+      <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 flex items-center gap-2 overflow-x-auto shrink-0">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 shrink-0">
+          <Filter className="size-3" />
+          Department:
+        </span>
+        {(
+          [
+            { id: 'ALL', label: 'All Departments' },
+            { id: 'PHARMACY', label: 'Pharmacy' },
+            { id: 'CLINIC', label: 'Clinic' },
+            { id: 'LABORATORY', label: 'Laboratory' },
+            { id: 'SHARED', label: 'Shared' },
+          ] as const
+        ).map((dept) => (
+          <button
+            key={dept.id}
+            type="button"
+            onClick={() => setSelectedDept(dept.id)}
+            className={`px-3 py-1 rounded-[6px] text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              selectedDept === dept.id
+                ? 'bg-[#0d6157] text-white shadow-2xs'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-300'
+            }`}
+          >
+            {dept.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 4. TYPE TABS */}
       <div className="px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-1 shrink-0">
         <button
           type="button"
@@ -127,7 +217,7 @@ export function InventoryLowStockView({
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          Low Stock Items ({lowStockItems.length})
+          Low Stock Items ({filteredLowStock.length})
         </button>
         <button
           type="button"
@@ -138,18 +228,19 @@ export function InventoryLowStockView({
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          Expiring Batches ({expiringBatches.length})
+          Expiring Batches ({filteredExpiring.length})
         </button>
       </div>
 
-      {/* 4. CONTENT */}
+      {/* 5. CONTENT */}
       <div className="p-6">
         {activeTab === 'low-stock' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse min-w-[750px]">
+            <table className="w-full text-left text-xs border-collapse min-w-[850px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="py-2.5 px-6 whitespace-nowrap">Item Name</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Stock For</th>
                   <th className="py-2.5 px-4 whitespace-nowrap">Category</th>
                   <th className="py-2.5 px-4 whitespace-nowrap">Current Stock</th>
                   <th className="py-2.5 px-4 whitespace-nowrap">Min. Threshold</th>
@@ -158,20 +249,20 @@ export function InventoryLowStockView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {lowStockItems.length === 0 ? (
+                {filteredLowStock.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-slate-400">
+                    <td colSpan={7} className="py-16 text-center text-slate-400">
                       <CheckCircle2 className="size-8 text-emerald-500 mx-auto mb-2" />
                       <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                         No low stock items!
                       </p>
                       <p className="text-[11px] text-slate-400 mt-1">
-                        All supplies and consumables meet or exceed minimum safety levels.
+                        All supplies and consumables in this view meet or exceed minimum safety levels.
                       </p>
                     </td>
                   </tr>
                 ) : (
-                  lowStockItems.map((item) => {
+                  filteredLowStock.map((item) => {
                     const isZero = item.currentStock <= 0;
                     const deficit = item.minimumStock - item.currentStock;
 
@@ -192,6 +283,10 @@ export function InventoryLowStockView({
                               {item.sku}
                             </span>
                           )}
+                        </td>
+
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {getScopeBadge(item.inventoryScope)}
                         </td>
 
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -239,10 +334,11 @@ export function InventoryLowStockView({
 
         {activeTab === 'expiring' && (
           <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse min-w-[750px]">
+            <table className="w-full text-left text-xs border-collapse min-w-[850px]">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="py-2.5 px-6 whitespace-nowrap">Item Name</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Stock For</th>
                   <th className="py-2.5 px-4 whitespace-nowrap">Batch / Lot #</th>
                   <th className="py-2.5 px-4 whitespace-nowrap">Batch Quantity</th>
                   <th className="py-2.5 px-4 whitespace-nowrap">Expiry Date</th>
@@ -250,9 +346,9 @@ export function InventoryLowStockView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {expiringBatches.length === 0 ? (
+                {filteredExpiring.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-16 text-center text-slate-400">
+                    <td colSpan={6} className="py-16 text-center text-slate-400">
                       <CheckCircle2 className="size-8 text-emerald-500 mx-auto mb-2" />
                       <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                         No expiring batches found!
@@ -263,7 +359,7 @@ export function InventoryLowStockView({
                     </td>
                   </tr>
                 ) : (
-                  expiringBatches.map((b) => {
+                  filteredExpiring.map((b) => {
                     const expiryDate = b.expiryDate ? new Date(b.expiryDate) : null;
                     const isExpired = expiryDate ? expiryDate < now : false;
 
@@ -281,6 +377,10 @@ export function InventoryLowStockView({
                           </Link>
                         </td>
 
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          {getScopeBadge(b.item.inventoryScope)}
+                        </td>
+
                         <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                           {b.batchNumber}
                         </td>
@@ -290,11 +390,13 @@ export function InventoryLowStockView({
                         </td>
 
                         <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                          {expiryDate ? expiryDate.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          }) : 'N/A'}
+                          {expiryDate
+                            ? expiryDate.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'N/A'}
                         </td>
 
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -320,3 +422,4 @@ export function InventoryLowStockView({
     </div>
   );
 }
+

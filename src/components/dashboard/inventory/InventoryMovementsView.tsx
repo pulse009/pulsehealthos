@@ -25,11 +25,13 @@ export interface MovementRow {
   referenceId: string | null;
   notes: string | null;
   createdAt: string | Date;
+  inventoryScope?: string | null;
   item: {
     id: string;
     name: string;
     sku: string | null;
     unit: string;
+    inventoryScope?: string | null;
   };
   createdBy: {
     id: string;
@@ -49,10 +51,48 @@ export function InventoryMovementsView({
   const [movements] = useState<MovementRow[]>(initialMovements);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('ALL');
+  const [selectedScope, setSelectedScope] = useState<string>('ALL');
+
+  const getScopeBadge = (scope?: string | null) => {
+    switch (scope) {
+      case 'PHARMACY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 whitespace-nowrap">
+            Pharmacy
+          </span>
+        );
+      case 'CLINIC':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">
+            Clinic
+          </span>
+        );
+      case 'LABORATORY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+            Laboratory
+          </span>
+        );
+      case 'SHARED':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+            Shared
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            Shared
+          </span>
+        );
+    }
+  };
 
   const filteredMovements = useMemo(() => {
     return movements.filter((m) => {
       if (selectedType !== 'ALL' && m.type !== selectedType) return false;
+      const effectiveScope = m.inventoryScope || m.item.inventoryScope || 'SHARED';
+      if (selectedScope !== 'ALL' && effectiveScope !== selectedScope) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -63,7 +103,7 @@ export function InventoryMovementsView({
         (m.createdBy && m.createdBy.name.toLowerCase().includes(q))
       );
     });
-  }, [movements, searchQuery, selectedType]);
+  }, [movements, searchQuery, selectedType, selectedScope]);
 
   const receivedCount = useMemo(
     () => movements.filter((m) => m.type === 'STOCK_RECEIVED').length,
@@ -83,6 +123,7 @@ export function InventoryMovementsView({
     const headers = [
       'Date & Time',
       'Item Name',
+      'Stock For',
       'SKU',
       'Movement Type',
       'Quantity',
@@ -97,6 +138,7 @@ export function InventoryMovementsView({
     const rows = filteredMovements.map((m) => [
       new Date(m.createdAt).toISOString(),
       `"${m.item.name.replace(/"/g, '""')}"`,
+      m.inventoryScope || m.item.inventoryScope || 'SHARED',
       m.item.sku || '',
       m.type,
       m.quantity,
@@ -232,6 +274,18 @@ export function InventoryMovementsView({
       <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-2">
           <select
+            value={selectedScope}
+            onChange={(e) => setSelectedScope(e.target.value)}
+            className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:border-[#0d8276] focus:ring-2 focus:ring-[#0d8276]/10 cursor-pointer shadow-2xs"
+          >
+            <option value="ALL">All Departments</option>
+            <option value="PHARMACY">Pharmacy</option>
+            <option value="CLINIC">Clinic</option>
+            <option value="LABORATORY">Laboratory</option>
+            <option value="SHARED">Shared</option>
+          </select>
+
+          <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
             className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:border-[#0d8276] focus:ring-2 focus:ring-[#0d8276]/10 cursor-pointer shadow-2xs"
@@ -259,11 +313,12 @@ export function InventoryMovementsView({
       {/* 4. TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse min-w-[900px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[950px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
                 <th className="py-2.5 px-6 whitespace-nowrap">Date &amp; Time</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Item Name</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Stock For</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Movement Type</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Quantity</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Stock Ledger</th>
@@ -274,7 +329,7 @@ export function InventoryMovementsView({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-400">
+                  <td colSpan={8} className="py-16 text-center text-slate-400">
                     <Activity className="size-8 mx-auto mb-2 opacity-40 text-slate-400" />
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                       No stock movements found.
@@ -305,7 +360,7 @@ export function InventoryMovementsView({
                       key={m.id}
                       className="hover:bg-[#f0f9f7]/60 dark:hover:bg-[#0d6157]/10 transition-colors"
                     >
-                      {/* Date & Time formatted with dot separator without line break */}
+                      {/* Date & Time */}
                       <td className="py-3 px-6 text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
                           {formattedDate}
@@ -316,7 +371,7 @@ export function InventoryMovementsView({
                         </span>
                       </td>
 
-                      {/* Item Name with SKU formatted on single line or clean badge */}
+                      {/* Item Name with SKU */}
                       <td className="py-3 px-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <Link
@@ -331,6 +386,11 @@ export function InventoryMovementsView({
                             </span>
                           )}
                         </div>
+                      </td>
+
+                      {/* Stock For */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {getScopeBadge(m.inventoryScope || m.item.inventoryScope)}
                       </td>
 
                       {/* Movement Type */}
@@ -371,7 +431,7 @@ export function InventoryMovementsView({
                         {m.createdBy?.name || 'System Auto'}
                       </td>
 
-                      {/* Reference / Reason formatted cleanly without awkward line breaks */}
+                      {/* Reference / Reason */}
                       <td className="py-3 px-6 text-slate-600 dark:text-slate-400 text-xs">
                         <div className="flex items-center gap-2 flex-wrap">
                           {m.referenceId && (
@@ -393,3 +453,4 @@ export function InventoryMovementsView({
     </div>
   );
 }
+

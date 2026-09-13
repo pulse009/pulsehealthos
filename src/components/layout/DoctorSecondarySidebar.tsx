@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   LuHouse as Home,
+  LuLayoutGrid as LayoutGrid,
   LuCreditCard as CreditCard,
   LuWrench as Wrench,
   LuChevronRight as ChevronRight,
@@ -750,14 +751,17 @@ export function DoctorSecondarySidebar({
             </FastLink>
           ) : (
             <FastLink
-              href="/portal/doctors"
+              href="/portal"
               onNavigate={handleNavigate}
-              active={activePath === '/portal/doctors' || activePath === '/portal/doctors/create' || activePath === '/portal'}
+              active={activePath === '/portal'}
               activeClassName="bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 border border-[#0d8276]/25 font-bold"
               inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] hover:bg-[#f0f9f7] dark:hover:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 font-medium"
               className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-2xs cursor-pointer"
             >
-              <span>All Doctors</span>
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="size-4 text-[#0d6157] dark:text-teal-300" />
+                <span>Dashboard</span>
+              </div>
             </FastLink>
           )}
         </div>
@@ -1334,6 +1338,18 @@ export function DoctorSecondarySidebar({
           ) : (
             /* All Doctors List with Instant Previews */
             <div className="space-y-0.5">
+              <FastLink
+                href="/portal/doctors"
+                onNavigate={handleNavigate}
+                active={activePath === '/portal/doctors' || activePath === '/portal/doctors/create'}
+                activeClassName="font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/25 border border-[#0d8276]/20 shadow-2xs"
+                inactiveClassName="text-slate-700 dark:text-slate-300 hover:text-[#0d5c56] dark:hover:text-teal-300 hover:bg-[#f0f9f7] dark:hover:bg-[#0d6157]/15"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors"
+              >
+                <span>All Doctors</span>
+                <ChevronRight className="size-3.5 text-slate-400 shrink-0" />
+              </FastLink>
+
               {isLoading && doctors.length === 0 ? (
                 <div className="p-2 text-center text-slate-400 text-xs italic">
                   Loading doctors...

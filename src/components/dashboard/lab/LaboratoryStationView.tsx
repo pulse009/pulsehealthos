@@ -52,8 +52,17 @@ export interface LabOrderItem {
   sampleType: string;
   tubeType?: string | null;
   specimenId?: string | null;
-  priority: 'ROUTINE' | 'URGENT' | 'STAT_EMERGENCY';
-  status: 'ORDERED' | 'SAMPLE_COLLECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  priority: 'ROUTINE' | 'URGENT' | 'STAT_EMERGENCY' | 'STAT';
+  status:
+    | 'ORDERED'
+    | 'SAMPLE_COLLECTED'
+    | 'IN_PROGRESS'
+    | 'RESULT_READY'
+    | 'EXTERNAL_RESULT_UPLOADED'
+    | 'REVIEWED'
+    | 'COMPLETED'
+    | 'CANCELLED';
+  fulfillmentLocation?: 'IN_HOUSE' | 'EXTERNAL' | 'UNDECIDED' | string | null;
   instructions?: string | null;
   clinicalNotes?: string | null;
   price: number;
@@ -217,9 +226,9 @@ export function LaboratoryStationView({
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       if (activeTab === 'COLLECTION' && order.status !== 'ORDERED') return false;
-      if (activeTab === 'TESTING' && order.status !== 'SAMPLE_COLLECTED' && order.status !== 'IN_PROGRESS') return false;
-      if (activeTab === 'COMPLETED' && order.status !== 'COMPLETED') return false;
-      if (activeTab === 'ACTIVE' && (order.status === 'COMPLETED' || order.status === 'CANCELLED')) return false;
+      if (activeTab === 'TESTING' && order.status !== 'SAMPLE_COLLECTED' && order.status !== 'IN_PROGRESS' && order.status !== 'RESULT_READY') return false;
+      if (activeTab === 'COMPLETED' && order.status !== 'COMPLETED' && order.status !== 'REVIEWED' && order.status !== 'EXTERNAL_RESULT_UPLOADED') return false;
+      if (activeTab === 'ACTIVE' && (order.status === 'COMPLETED' || order.status === 'CANCELLED' || order.status === 'REVIEWED')) return false;
 
       if (priorityFilter !== 'ALL' && order.priority !== priorityFilter) return false;
       if (categoryFilter !== 'ALL' && order.category !== categoryFilter) return false;
@@ -257,9 +266,9 @@ export function LaboratoryStationView({
   // Statistics
   const stats = useMemo(() => {
     const pendingCollection = orders.filter((o) => o.status === 'ORDERED').length;
-    const inTesting = orders.filter((o) => o.status === 'SAMPLE_COLLECTED' || o.status === 'IN_PROGRESS').length;
+    const inTesting = orders.filter((o) => o.status === 'SAMPLE_COLLECTED' || o.status === 'IN_PROGRESS' || o.status === 'RESULT_READY').length;
     const abnormalCount = orders.filter((o) => o.hasAbnormalResults || o.priority === 'STAT_EMERGENCY').length;
-    const completedCount = orders.filter((o) => o.status === 'COMPLETED').length;
+    const completedCount = orders.filter((o) => o.status === 'COMPLETED' || o.status === 'REVIEWED' || o.status === 'EXTERNAL_RESULT_UPLOADED').length;
 
     return { pendingCollection, inTesting, abnormalCount, completedCount };
   }, [orders]);
@@ -1146,6 +1155,18 @@ export function LaboratoryStationView({
                           ) : order.status === 'IN_PROGRESS' ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800/40">
                               In Testing
+                            </span>
+                          ) : order.status === 'RESULT_READY' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/40">
+                              Result Ready
+                            </span>
+                          ) : order.status === 'EXTERNAL_RESULT_UPLOADED' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:border-purple-800/40">
+                              Ext. Uploaded
+                            </span>
+                          ) : order.status === 'REVIEWED' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/40 dark:border-teal-800/40">
+                              Reviewed
                             </span>
                           ) : order.status === 'COMPLETED' ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[8px] text-[11px] font-semibold bg-[#e6f6f3] text-[#0d6157] border border-[#0d8276]/30 dark:bg-teal-950/40 dark:border-teal-700/50">

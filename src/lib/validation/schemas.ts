@@ -393,6 +393,7 @@ export const availabilityQuerySchema = z.object({
   fromDate: dateKeySchema,
   toDate: dateKeySchema.optional(),
   limit: z.coerce.number().int().min(1).max(200).optional(),
+  ignoreMinAdvanceNotice: z.coerce.boolean().optional(),
 });
 
 // --- Patients & leads ------------------------------------------------------

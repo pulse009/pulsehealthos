@@ -31,6 +31,7 @@ export interface PurchaseOrderRow {
   totalAmount: number;
   notes: string | null;
   createdAt: string | Date;
+  inventoryScope?: string | null;
   supplier: { id: string; name: string; phone: string | null; email: string | null };
   createdBy: { id: string; name: string };
   items: Array<{
@@ -40,7 +41,7 @@ export interface PurchaseOrderRow {
     receivedQuantity: number;
     unitCost: number;
     totalCost: number;
-    item: { id: string; name: string; sku: string | null; unit: string; currentStock: number };
+    item: { id: string; name: string; sku: string | null; unit: string; currentStock: number; inventoryScope?: string | null };
   }>;
 }
 
@@ -56,6 +57,7 @@ export interface ItemOption {
   unit: string;
   defaultCost: number | null;
   supplierId: string | null;
+  inventoryScope?: string | null;
 }
 
 interface InventoryPurchaseOrdersViewProps {
@@ -76,6 +78,7 @@ export function InventoryPurchaseOrdersView({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedSupplier, setSelectedSupplier] = useState<string>('ALL');
+  const [selectedScope, setSelectedScope] = useState<string>('ALL');
 
   // Modals
   const [isNewPOModalOpen, setIsNewPOModalOpen] = useState(false);
@@ -85,11 +88,47 @@ export function InventoryPurchaseOrdersView({
 
   // New PO Form State
   const [supplierId, setSupplierId] = useState(suppliers[0]?.id || '');
+  const [poScope, setPoScope] = useState<'PHARMACY' | 'CLINIC' | 'LABORATORY' | 'SHARED'>('PHARMACY');
   const [expectedDate, setExpectedDate] = useState('');
   const [poNotes, setPoNotes] = useState('');
   const [poItems, setPoItems] = useState<
     Array<{ itemId: string; quantity: number; unitCost: number }>
   >([{ itemId: availableItems[0]?.id || '', quantity: 10, unitCost: availableItems[0]?.defaultCost || 0 }]);
+
+  const getScopeBadge = (scope?: string | null) => {
+    switch (scope) {
+      case 'PHARMACY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800 whitespace-nowrap">
+            Pharmacy
+          </span>
+        );
+      case 'CLINIC':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 whitespace-nowrap">
+            Clinic
+          </span>
+        );
+      case 'LABORATORY':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+            Laboratory
+          </span>
+        );
+      case 'SHARED':
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+            Shared
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+            Shared
+          </span>
+        );
+    }
+  };
 
   // Receive Goods Form State (Multi-item received)
   const [receiveItems, setReceiveItems] = useState<
@@ -114,6 +153,7 @@ export function InventoryPurchaseOrdersView({
     return purchaseOrders.filter((po) => {
       if (selectedStatus !== 'ALL' && po.status !== selectedStatus) return false;
       if (selectedSupplier !== 'ALL' && po.supplier?.id !== selectedSupplier) return false;
+      if (selectedScope !== 'ALL' && (po.inventoryScope || 'SHARED') !== selectedScope) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -122,7 +162,7 @@ export function InventoryPurchaseOrdersView({
         po.items.some((i) => i.item.name.toLowerCase().includes(q))
       );
     });
-  }, [purchaseOrders, searchQuery, selectedStatus, selectedSupplier]);
+  }, [purchaseOrders, searchQuery, selectedStatus, selectedSupplier, selectedScope]);
 
   const issuedCount = useMemo(
     () => purchaseOrders.filter((po) => po.status === 'ISSUED' || po.status === 'DRAFT').length,
@@ -189,6 +229,7 @@ export function InventoryPurchaseOrdersView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           supplierId,
+          inventoryScope: poScope,
           expectedDate: expectedDate || undefined,
           notes: poNotes.trim() || undefined,
           items: poItems.map((pi) => ({
@@ -358,6 +399,7 @@ export function InventoryPurchaseOrdersView({
           type="button"
           onClick={() => {
             setSupplierId(suppliers[0]?.id || '');
+            setPoScope('PHARMACY');
             setExpectedDate('');
             setPoNotes('');
             setPoItems([
@@ -468,6 +510,18 @@ export function InventoryPurchaseOrdersView({
       <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-2">
           <select
+            value={selectedScope}
+            onChange={(e) => setSelectedScope(e.target.value)}
+            className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276] cursor-pointer shadow-2xs"
+          >
+            <option value="ALL">All Departments</option>
+            <option value="PHARMACY">Pharmacy</option>
+            <option value="CLINIC">Clinic</option>
+            <option value="LABORATORY">Laboratory</option>
+            <option value="SHARED">Shared</option>
+          </select>
+
+          <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-[8px] px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-[#0d8276]/10 focus:border-[#0d8276] cursor-pointer shadow-2xs"
@@ -508,10 +562,11 @@ export function InventoryPurchaseOrdersView({
       {/* 4. TABLE */}
       <div className="w-full flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="flex-1 overflow-auto min-h-0">
-          <table className="w-full text-left text-xs border-collapse min-w-[900px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[950px]">
             <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800 z-10">
               <tr>
                 <th className="py-2.5 px-6 whitespace-nowrap">PO Number</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Stock For</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Supplier</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Order Date</th>
                 <th className="py-2.5 px-4 whitespace-nowrap">Items Summary</th>
@@ -523,7 +578,7 @@ export function InventoryPurchaseOrdersView({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredPOs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-slate-400">
+                  <td colSpan={8} className="py-16 text-center text-slate-400">
                     <FileText className="size-8 mx-auto mb-2 opacity-40 text-[#0d6157]" />
                     <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                       No purchase orders found.
@@ -548,6 +603,10 @@ export function InventoryPurchaseOrdersView({
                     >
                       <td className="py-3 px-6 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         #{po.poNumber}
+                      </td>
+
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {getScopeBadge(po.inventoryScope)}
                       </td>
 
                       <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
@@ -674,6 +733,35 @@ export function InventoryPurchaseOrdersView({
                   <span>{errorMsg}</span>
                 </div>
               )}
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Stock For / Department *
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(
+                    [
+                      { id: 'PHARMACY', label: 'Pharmacy' },
+                      { id: 'CLINIC', label: 'Clinic' },
+                      { id: 'LABORATORY', label: 'Laboratory' },
+                      { id: 'SHARED', label: 'Shared' },
+                    ] as const
+                  ).map((dept) => (
+                    <button
+                      key={dept.id}
+                      type="button"
+                      onClick={() => setPoScope(dept.id)}
+                      className={`px-2 py-1.5 rounded-[8px] text-xs font-bold border transition-all cursor-pointer ${
+                        poScope === dept.id
+                          ? 'bg-[#0d6157] text-white border-[#0d6157] shadow-2xs'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      {dept.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -966,8 +1054,9 @@ export function InventoryPurchaseOrdersView({
                   <FileText className="size-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Purchase Order #{selectedPO.poNumber}
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Purchase Order #{selectedPO.poNumber}</span>
+                    {getScopeBadge(selectedPO.inventoryScope)}
                   </h3>
                   <p className="text-[11px] text-slate-500">
                     Supplier: {selectedPO.supplier?.name || 'Supplier'} • Status: {selectedPO.status}

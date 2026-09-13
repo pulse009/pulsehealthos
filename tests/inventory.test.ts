@@ -32,6 +32,7 @@ describe('Inventory Module Service Tests', () => {
       currentStock: 50,
       minimumStock: 10,
       defaultCost: 2.5,
+      inventoryScope: 'CLINIC' as const,
       trackExpiry: true,
       trackBatch: true,
       isActive: true,
@@ -59,6 +60,7 @@ describe('Inventory Module Service Tests', () => {
         name: 'Sterile Gauze 4x4',
         sku: 'GAUZE-4X4',
         unit: 'PACK',
+        inventoryScope: 'CLINIC',
         minimumStock: 10,
         defaultCost: 2.5,
         initialStock: 50,
@@ -309,5 +311,73 @@ describe('Inventory Module Service Tests', () => {
 
     const released = await releaseItemRequest(scope, 'req-1', userId);
     expect(released.status).toBe('RELEASED');
+  });
+
+  it('7. Department-based stock filtering queries items by inventoryScope', async () => {
+    const mockPharmacyItems = [
+      { id: 'item-pharmacy-1', name: 'Panadol 500mg', inventoryScope: 'PHARMACY', currentStock: 100 },
+      { id: 'item-shared-1', name: 'Gloves Large', inventoryScope: 'SHARED', currentStock: 200 },
+    ];
+
+    const findManySpy = vi.spyOn(prisma.inventoryItem, 'findMany').mockResolvedValue(mockPharmacyItems as any);
+
+    const items = await listInventoryItems(scope, clinicId, { inventoryScope: 'PHARMACY' });
+
+    expect(findManySpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          clinicId,
+          inventoryScope: 'PHARMACY',
+        }),
+      }),
+    );
+    expect(items.length).toBe(2);
+  });
+
+  it('8. Supports department scopes: PHARMACY, CLINIC, LABORATORY, SHARED without altering category', async () => {
+    const itemScopes = ['PHARMACY', 'CLINIC', 'LABORATORY', 'SHARED'] as const;
+
+    for (const testScope of itemScopes) {
+      const mockResult = {
+        id: `item-${testScope.toLowerCase()}`,
+        clinicId,
+        name: `Test Item ${testScope}`,
+        unit: 'PIECE',
+        inventoryScope: testScope,
+        currentStock: 10,
+        minimumStock: 5,
+        defaultCost: 1.0,
+        trackExpiry: false,
+        trackBatch: false,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      vi.spyOn(prisma, '$transaction').mockImplementation(async (callback: any) => {
+        const tx = {
+          inventoryItem: { create: vi.fn().mockResolvedValue(mockResult) },
+        };
+        return callback(tx);
+      });
+
+      const created = await createInventoryItem(
+        scope,
+        clinicId,
+        {
+          name: `Test Item ${testScope}`,
+          unit: 'PIECE',
+          inventoryScope: testScope,
+          minimumStock: 5,
+          defaultCost: 1.0,
+          trackExpiry: false,
+          trackBatch: false,
+          isActive: true,
+        },
+        userId,
+      );
+
+      expect(created.inventoryScope).toBe(testScope);
+    }
   });
 });

@@ -209,7 +209,6 @@ export function ClinicPortalSidebarNav({
                   { href: '/portal/consultations', label: 'Consult Desk', icon: Stethoscope },
                   { href: '/portal/doctors', label: 'Doctors', icon: Users2 },
                   ...(!isCoordinator ? [{ href: '/portal/services', label: 'Services', icon: ClipboardList }] : []),
-                  ...(isOwnerOrAdmin ? [{ href: '/portal/roles', label: 'Roles', icon: UserCog }] : []),
                   ...(isOwnerOrAdmin ? [{ href: '/portal/nurse', label: 'Nurse Stn', icon: HeartPulse }] : []),
                   ...(isOwnerOrAdmin ? [{ href: '/portal/laboratory', label: 'Laboratory', icon: FlaskConical }] : []),
                   ...(isOwnerOrAdmin ? [{ href: '/portal/pharmacy', label: 'Pharmacy', icon: Pill }] : []),
