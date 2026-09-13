@@ -66,6 +66,14 @@ export interface SupplierOption {
   name: string;
 }
 
+function extractErrorMessage(data: any, fallback: string): string {
+  if (!data) return fallback;
+  if (typeof data.error === 'string') return data.error;
+  if (data.error && typeof data.error.message === 'string') return data.error.message;
+  if (typeof data.message === 'string') return data.message;
+  return fallback;
+}
+
 interface InventoryItemsViewProps {
   initialItems: InventoryItemRow[];
   categories: CategoryOption[];
@@ -152,7 +160,7 @@ export function InventoryItemsView({
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to create category');
+        throw new Error(extractErrorMessage(data, 'Failed to create category'));
       }
       const created = data.category;
       setCategoryList((prev) => [...prev, { id: created.id, name: created.name }]);
@@ -185,7 +193,7 @@ export function InventoryItemsView({
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to create supplier');
+        throw new Error(extractErrorMessage(data, 'Failed to create supplier'));
       }
       const created = data.supplier;
       setSupplierList((prev) => [...prev, { id: created.id, name: created.name }]);
@@ -354,7 +362,7 @@ export function InventoryItemsView({
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to create item.');
+        throw new Error(extractErrorMessage(data, 'Failed to create item.'));
       }
 
       setItems((prev) => [data.item, ...prev]);
@@ -410,7 +418,7 @@ export function InventoryItemsView({
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to receive stock.');
+        throw new Error(extractErrorMessage(data, 'Failed to receive stock.'));
       }
 
       // Update local state
@@ -469,7 +477,7 @@ export function InventoryItemsView({
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to adjust stock.');
+        throw new Error(extractErrorMessage(data, 'Failed to adjust stock.'));
       }
 
       setItems((prev) =>
@@ -505,7 +513,7 @@ export function InventoryItemsView({
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to cancel/remove item.');
+        throw new Error(extractErrorMessage(data, 'Failed to cancel/remove item.'));
       }
 
       setItems((prev) => prev.filter((i) => i.id !== selectedItem.id));
