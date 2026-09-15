@@ -96,6 +96,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       patientId,
+      customerType,
+      patientName,
+      patientPhone,
+      patientGender,
       doctorId,
       encounterId,
       testName,
@@ -108,43 +112,148 @@ export async function POST(request: Request) {
       price,
       resultsJson,
       specimenId,
+      tests, // Array<{ testCode?: string; testName: string; category?: string; sampleType?: string; tubeType?: string; price?: number }>
     } = body;
 
-    if (!patientId || !testName) {
-      throw badRequest('patientId and testName are required');
+    // Normalize tests to create (either array from multi-test selector or single test)
+    let testsToCreate: Array<{
+      testCode?: string;
+      testName: string;
+      category?: string;
+      sampleType?: string;
+      tubeType?: string;
+      price?: number;
+    }> = [];
+
+    if (Array.isArray(tests) && tests.length > 0) {
+      testsToCreate = tests
+        .filter((t) => t && t.testName && t.testName.trim().length > 0)
+        .map((t) => ({
+          testCode: t.testCode,
+          testName: t.testName.trim(),
+          category: t.category || category || 'Biochemistry',
+          sampleType: t.sampleType || sampleType || 'Blood',
+          tubeType: t.tubeType || tubeType || null,
+          price: t.price !== undefined ? Number(t.price) : Number(price) || 0,
+        }));
+    } else if (testName && testName.trim()) {
+      testsToCreate = [
+        {
+          testName: testName.trim(),
+          category: category || 'Biochemistry',
+          sampleType: sampleType || 'Blood',
+          tubeType: tubeType || null,
+          price: price ? Number(price) : 0,
+        },
+      ];
     }
 
-    // Generate sequential order number
-    const count = await prisma.labOrder.count({ where: { clinicId } });
-    const orderNumber = `LAB-${String(count + 1).padStart(4, '0')}`;
+    if (testsToCreate.length === 0) {
+      throw badRequest('Please provide at least one diagnostic test name');
+    }
 
-    const newOrder = await prisma.labOrder.create({
-      data: {
-        clinicId,
-        orderNumber,
-        patientId,
-        doctorId: doctorId || null,
-        encounterId: encounterId || null,
-        testName,
-        category: category || 'Biochemistry',
-        sampleType: sampleType || 'Blood',
-        tubeType: tubeType || null,
-        priority: priority || 'ROUTINE',
-        status: 'ORDERED',
-        instructions: instructions || null,
-        clinicalNotes: clinicalNotes || null,
-        price: price ? Number(price) : 0,
-        specimenId: specimenId || null,
-        resultsJson: resultsJson || null,
-      },
-      include: {
-        patient: true,
-        doctor: true,
-        encounter: true,
-      },
-    });
+    const isWalkIn = customerType === 'WALK_IN' || (!patientId && Boolean(patientName));
+    let resolvedPatientId = patientId;
 
-    return NextResponse.json({ order: newOrder }, { status: 201 });
+    if (isWalkIn) {
+      const rawName = (patientName || '').trim() || 'Walk-in Customer';
+      const rawPhone = (patientPhone || '').trim();
+      const rawGender = patientGender || null;
+
+      if (rawPhone && rawPhone !== 'N/A' && rawPhone !== '0000000000') {
+        let existingPatient = await prisma.patient.findFirst({
+          where: {
+            clinicId: clinicId!,
+            phone: rawPhone,
+          },
+        });
+
+        if (existingPatient) {
+          if (rawName !== 'Walk-in Customer' && (existingPatient.name === 'Walk-in Customer' || !existingPatient.name)) {
+            existingPatient = await prisma.patient.update({
+              where: { id: existingPatient.id },
+              data: {
+                name: rawName,
+                gender: rawGender || existingPatient.gender,
+              },
+            });
+          }
+          resolvedPatientId = existingPatient.id;
+        } else {
+          const newPatient = await prisma.patient.create({
+            data: {
+              clinicId: clinicId!,
+              name: rawName,
+              phone: rawPhone,
+              gender: rawGender,
+              fileNumber: null,
+              tags: ['WALK_IN_CUSTOMER', 'LAB_WALK_IN'],
+            },
+          });
+          resolvedPatientId = newPatient.id;
+        }
+      } else {
+        const uniquePhoneKey = `walkin-lab-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+        const newPatient = await prisma.patient.create({
+          data: {
+            clinicId: clinicId!,
+            name: rawName,
+            phone: uniquePhoneKey,
+            gender: rawGender,
+            fileNumber: null,
+            tags: ['WALK_IN_CUSTOMER', 'LAB_WALK_IN'],
+          },
+        });
+        resolvedPatientId = newPatient.id;
+      }
+    } else {
+      if (!resolvedPatientId) {
+        throw badRequest('Please select a clinic patient or provide walk-in customer details');
+      }
+    }
+
+    // Generate sequential order numbers and create orders in transaction
+    const startCount = await prisma.labOrder.count({ where: { clinicId } });
+
+    const createdOrders = await prisma.$transaction(
+      testsToCreate.map((t, idx) => {
+        const orderNumber = `LAB-${String(startCount + idx + 1).padStart(4, '0')}`;
+        return prisma.labOrder.create({
+          data: {
+            clinicId: clinicId!,
+            orderNumber,
+            patientId: resolvedPatientId,
+            doctorId: doctorId || null,
+            encounterId: encounterId || null,
+            testName: t.testName,
+            category: t.category || 'Biochemistry',
+            sampleType: t.sampleType || 'Blood',
+            tubeType: t.tubeType || null,
+            priority: priority || 'ROUTINE',
+            status: 'ORDERED',
+            instructions: instructions || null,
+            clinicalNotes: clinicalNotes || null,
+            price: t.price !== undefined ? Number(t.price) : 0,
+            specimenId: specimenId || null,
+            resultsJson: resultsJson || null,
+          },
+          include: {
+            patient: true,
+            doctor: true,
+            encounter: true,
+          },
+        });
+      })
+    );
+
+    return NextResponse.json(
+      {
+        orders: createdOrders,
+        order: createdOrders[0],
+        count: createdOrders.length,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     return errorResponse(error);
   }

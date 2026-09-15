@@ -41,6 +41,16 @@ export interface LabOrderParameter {
   remarks?: string;
 }
 
+export interface SelectedLabTestItem {
+  id: string;
+  testCode?: string;
+  testName: string;
+  category: string;
+  sampleType: string;
+  tubeType?: string;
+  price: number;
+}
+
 export interface LabOrderItem {
   id: string;
   orderNumber: string;
@@ -188,7 +198,23 @@ export function LaboratoryStationView({
   const [resultParameters, setResultParameters] = useState<LabOrderParameter[]>([]);
   const [resultSummaryNotes, setResultSummaryNotes] = useState('');
 
-  // New Order Form State
+  // New Order Form State & Customer Type (Walk-in vs Clinic Patient)
+  const [labCustomerType, setLabCustomerType] = useState<'WALK_IN' | 'CLINIC_PATIENT'>('WALK_IN');
+  const [walkInName, setWalkInName] = useState('');
+  const [walkInPhone, setWalkInPhone] = useState('');
+  const [walkInGender, setWalkInGender] = useState<'MALE' | 'FEMALE' | 'OTHER' | ''>('');
+  const [walkInAge, setWalkInAge] = useState('');
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const [isPatientDropdownOpen, setIsPatientDropdownOpen] = useState(false);
+  const [selectedClinicPatient, setSelectedClinicPatient] = useState<{ id: string; name: string; phone: string; fileNumber?: number | null; gender?: string | null } | null>(null);
+  const patientDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Multi-Test Attachment State for Requisitions
+  const [selectedTestsList, setSelectedTestsList] = useState<SelectedLabTestItem[]>([]);
+  const [testSearchTerm, setTestSearchTerm] = useState('');
+  const [isTestDropdownOpen, setIsTestDropdownOpen] = useState(false);
+  const testDropdownRef = useRef<HTMLDivElement>(null);
+
   const [newOrderData, setNewOrderData] = useState({
     patientId: '',
     doctorId: '',
@@ -207,7 +233,7 @@ export function LaboratoryStationView({
     setTimeout(() => setToastMsg(null), 4000);
   };
 
-  // Keyboard Shortcuts (Esc to close drawers)
+  // Keyboard Shortcuts (Esc to close drawers) and click outside
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -218,9 +244,150 @@ export function LaboratoryStationView({
         setIsCatalogModalOpen(false);
       }
     };
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (patientDropdownRef.current && !patientDropdownRef.current.contains(e.target as Node)) {
+        setIsPatientDropdownOpen(false);
+      }
+      if (testDropdownRef.current && !testDropdownRef.current.contains(e.target as Node)) {
+        setIsTestDropdownOpen(false);
+      }
+    };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
   }, []);
+
+  // Filtered Clinic Patients for Searchable Lookup
+  const filteredClinicPatients = useMemo(() => {
+    if (!patientSearchTerm.trim()) return allPatients.slice(0, 15);
+    const q = patientSearchTerm.toLowerCase().trim();
+    return allPatients.filter((p) => {
+      const matchName = p.name.toLowerCase().includes(q);
+      const matchPhone = p.phone.toLowerCase().includes(q);
+      const matchMRN = p.fileNumber ? String(p.fileNumber).includes(q) : false;
+      return matchName || matchPhone || matchMRN;
+    }).slice(0, 20);
+  }, [allPatients, patientSearchTerm]);
+
+  // Filtered Test Catalog for Multi-Test Picker
+  const filteredCatalogTests = useMemo(() => {
+    if (!testSearchTerm.trim()) return catalogList.slice(0, 15);
+    const q = testSearchTerm.toLowerCase().trim();
+    return catalogList.filter((t) => {
+      const matchName = t.name.toLowerCase().includes(q);
+      const matchCode = t.code ? t.code.toLowerCase().includes(q) : false;
+      const matchCat = t.category ? t.category.toLowerCase().includes(q) : false;
+      return matchName || matchCode || matchCat;
+    }).slice(0, 20);
+  }, [catalogList, testSearchTerm]);
+
+  // Total Requisition Pricing & Required Containers
+  const totalRequisitionPrice = useMemo(() => {
+    return selectedTestsList.reduce((sum, t) => sum + (Number(t.price) || 0), 0);
+  }, [selectedTestsList]);
+
+  const requiredSpecimenTypes = useMemo(() => {
+    const set = new Set<string>();
+    selectedTestsList.forEach((t) => {
+      const label = t.tubeType || t.sampleType || 'Specimen';
+      if (label) set.add(label);
+    });
+    return Array.from(set);
+  }, [selectedTestsList]);
+
+  // Helper to add test from catalog with duplicate prevention
+  const handleAddTestToRequisition = (test: LabCatalogItem) => {
+    const isDuplicate = selectedTestsList.some(
+      (t) =>
+        (t.testCode && test.code && t.testCode.toLowerCase() === test.code.toLowerCase()) ||
+        t.testName.toLowerCase().trim() === test.name.toLowerCase().trim()
+    );
+    if (isDuplicate) {
+      showToast(`Test "${test.name}" is already attached.`);
+      return;
+    }
+    setSelectedTestsList((prev) => [
+      ...prev,
+      {
+        id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        testCode: test.code,
+        testName: test.name,
+        category: test.category || 'Biochemistry',
+        sampleType: test.sampleType || 'Blood',
+        tubeType: test.containerType || undefined,
+        price: Number(test.price) || 0,
+      },
+    ]);
+    setTestSearchTerm('');
+    setIsTestDropdownOpen(false);
+  };
+
+  // Helper to add custom / free-text test with duplicate prevention
+  const handleAddCustomTestToRequisition = (customName?: string) => {
+    const nameToAdd = (customName || testSearchTerm).trim();
+    if (!nameToAdd) return;
+    const isDuplicate = selectedTestsList.some(
+      (t) => t.testName.toLowerCase().trim() === nameToAdd.toLowerCase().trim()
+    );
+    if (isDuplicate) {
+      showToast(`Test "${nameToAdd}" is already attached.`);
+      return;
+    }
+    setSelectedTestsList((prev) => [
+      ...prev,
+      {
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        testCode: '',
+        testName: nameToAdd,
+        category: 'Biochemistry',
+        sampleType: 'Blood',
+        tubeType: 'Lavender (EDTA) - Hematology/CBC',
+        price: 0,
+      },
+    ]);
+    setTestSearchTerm('');
+    setIsTestDropdownOpen(false);
+  };
+
+  const handleRemoveTestFromRequisition = (id: string) => {
+    setSelectedTestsList((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleUpdateTestItem = (id: string, updates: Partial<SelectedLabTestItem>) => {
+    setSelectedTestsList((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    );
+  };
+
+  const handleOpenNewOrderDrawer = () => {
+    setLabCustomerType('WALK_IN');
+    setWalkInName('');
+    setWalkInPhone('');
+    setWalkInGender('');
+    setWalkInAge('');
+    setPatientSearchTerm('');
+    setSelectedClinicPatient(null);
+    setTestSearchTerm('');
+    setIsPatientDropdownOpen(false);
+    setIsTestDropdownOpen(false);
+    setSelectedTestsList([]);
+    setNewOrderData({
+      patientId: '',
+      doctorId: '',
+      testCode: '',
+      testName: '',
+      category: 'Biochemistry',
+      sampleType: 'Blood',
+      priority: 'ROUTINE',
+      price: 0,
+      instructions: '',
+      clinicalNotes: '',
+    });
+    setIsNewOrderDrawerOpen(true);
+  };
 
   // Filtered Orders
   const filteredOrders = useMemo(() => {
@@ -441,38 +608,72 @@ export function LaboratoryStationView({
     }
   };
 
-  // 4. Create New Direct Order
+  // 4. Create New Direct Order (Walk-in Customer or Clinic Patient)
   const handleCreateNewOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newOrderData.patientId || !newOrderData.testName) {
-      alert('Please select patient and test');
+
+    if (labCustomerType === 'WALK_IN') {
+      if (!walkInName.trim()) {
+        alert('Please enter the walk-in customer name.');
+        return;
+      }
+    } else {
+      if (!newOrderData.patientId) {
+        alert('Please select a registered clinic patient.');
+        return;
+      }
+    }
+
+    if (selectedTestsList.length === 0) {
+      alert('Please add at least one diagnostic test to the requisition.');
       return;
     }
+
     setIsActionLoading(true);
 
     try {
+      const payload: any = {
+        customerType: labCustomerType,
+        doctorId: newOrderData.doctorId || undefined,
+        priority: newOrderData.priority,
+        instructions: newOrderData.instructions.trim() || undefined,
+        clinicalNotes: newOrderData.clinicalNotes.trim() || undefined,
+        tests: selectedTestsList.map((t) => ({
+          testCode: t.testCode,
+          testName: t.testName,
+          category: t.category,
+          sampleType: t.sampleType,
+          tubeType: t.tubeType,
+          price: Number(t.price) || 0,
+        })),
+      };
+
+      if (labCustomerType === 'WALK_IN') {
+        payload.patientName = walkInName.trim();
+        payload.patientPhone = walkInPhone.trim() || undefined;
+        payload.patientGender = walkInGender || undefined;
+      } else {
+        payload.patientId = newOrderData.patientId;
+      }
+
       const res = await fetch('/api/lab/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: newOrderData.patientId,
-          doctorId: newOrderData.doctorId || undefined,
-          testName: newOrderData.testName,
-          category: newOrderData.category,
-          sampleType: newOrderData.sampleType,
-          priority: newOrderData.priority,
-          price: newOrderData.price,
-          instructions: newOrderData.instructions,
-          clinicalNotes: newOrderData.clinicalNotes,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to create lab order');
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || (typeof data.error === 'string' ? data.error : 'Failed to create lab order'));
+      }
 
-      setOrders((prev) => [data.order, ...prev]);
+      const createdList: LabOrderItem[] = Array.isArray(data.orders) ? data.orders : [data.order];
+      setOrders((prev) => [...createdList, ...prev]);
       setIsNewOrderDrawerOpen(false);
-      showToast(`New lab order ${data.order.orderNumber} created successfully!`);
+      const patientName = createdList[0]?.patient?.name || (labCustomerType === 'WALK_IN' ? walkInName : 'Patient');
+      showToast(
+        `${createdList.length} diagnostic ${createdList.length === 1 ? 'requisition' : 'requisitions'} created for ${patientName}!`
+      );
     } catch (err: any) {
       alert(err.message || 'Error creating order');
     } finally {
@@ -695,7 +896,7 @@ export function LaboratoryStationView({
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             type="button"
-            onClick={() => setIsNewOrderDrawerOpen(true)}
+            onClick={handleOpenNewOrderDrawer}
             className="inline-flex items-center justify-center gap-1.5 bg-[#0d6157] hover:bg-[#0a4e46] text-white font-bold text-xs px-3.5 py-1.5 rounded-[8px] shadow-xs transition-all cursor-pointer whitespace-nowrap"
           >
             <Plus className="size-3.5" />
@@ -1018,7 +1219,7 @@ export function LaboratoryStationView({
                               {test.normalRange || 'Standard'}
                             </td>
                             <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-slate-900 dark:text-white">
-                              ${test.price}
+                              SAR {test.price}
                             </td>
                             <td className="py-3 px-4 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-1.5">
@@ -1095,11 +1296,27 @@ export function LaboratoryStationView({
                               {(order.patient?.name || 'P').charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                                {order.patient?.name || 'Unnamed Patient'} {order.patient?.gender && <span className="font-normal text-slate-400 text-[10px]">({order.patient.gender})</span>}
-                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                                  {order.patient?.name || 'Unnamed Patient'}
+                                </p>
+                                {order.patient?.gender && (
+                                  <span className="font-normal text-slate-400 text-[10px]">
+                                    ({order.patient.gender})
+                                  </span>
+                                )}
+                                {order.patient?.tags?.includes('WALK_IN_CUSTOMER') || !order.patient?.fileNumber ? (
+                                  <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    Walk-in
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-teal-50 dark:bg-teal-950/60 text-[#0d6157] dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                                    Clinic
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono whitespace-nowrap">
-                                MRN #{order.patient?.fileNumber || '---'} • {order.patient?.phone || 'No phone'}
+                                {order.patient?.fileNumber ? `MRN #${order.patient.fileNumber}` : 'Walk-in (No MRN)'} • {order.patient?.phone && !order.patient.phone.startsWith('walkin-') ? order.patient.phone : 'Direct Retail'}
                               </p>
                             </div>
                           </div>
@@ -1271,55 +1488,57 @@ export function LaboratoryStationView({
                 </button>
               </div>
 
-              <form onSubmit={handleSaveSampleCollection} className="flex-1 overflow-y-auto p-6 space-y-4">
-                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[8px] space-y-1 text-xs">
-                  <p className="text-slate-500">Patient: <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.patient.name}</span> (MRN #{selectedOrder.patient.fileNumber || '---'})</p>
-                  <p className="text-slate-500">Test: <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.testName}</span> ({selectedOrder.category})</p>
-                  <p className="text-slate-500">Required Sample: <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.sampleType}</span></p>
+              <form onSubmit={handleSaveSampleCollection} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[8px] space-y-1 text-xs">
+                    <p className="text-slate-500">Patient: <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.patient.name}</span> (MRN #{selectedOrder.patient.fileNumber || '---'})</p>
+                    <p className="text-slate-500">Test: <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.testName}</span> ({selectedOrder.category})</p>
+                    <p className="text-slate-500">Required Sample: <span className="font-bold text-slate-800 dark:text-slate-200">{selectedOrder.sampleType}</span></p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      Specimen Barcode / Sample ID
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={collectFormData.specimenId}
+                      onChange={(e) => setCollectFormData({ ...collectFormData, specimenId: e.target.value })}
+                      className="w-full text-xs font-mono font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      Sample Container / Collection Tube
+                    </label>
+                    <select
+                      value={collectFormData.tubeType}
+                      onChange={(e) => setCollectFormData({ ...collectFormData, tubeType: e.target.value })}
+                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white"
+                    >
+                      {CONTAINER_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      Phlebotomy / Collection Notes (Optional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="e.g. Venipuncture performed on left antecubital vein. Fasting confirmed..."
+                      value={collectFormData.clinicalNotes}
+                      onChange={(e) => setCollectFormData({ ...collectFormData, clinicalNotes: e.target.value })}
+                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Specimen Barcode / Sample ID
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={collectFormData.specimenId}
-                    onChange={(e) => setCollectFormData({ ...collectFormData, specimenId: e.target.value })}
-                    className="w-full text-xs font-mono font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Sample Container / Collection Tube
-                  </label>
-                  <select
-                    value={collectFormData.tubeType}
-                    onChange={(e) => setCollectFormData({ ...collectFormData, tubeType: e.target.value })}
-                    className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white"
-                  >
-                    {CONTAINER_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Phlebotomy / Collection Notes (Optional)
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="e.g. Venipuncture performed on left antecubital vein. Fasting confirmed..."
-                    value={collectFormData.clinicalNotes}
-                    onChange={(e) => setCollectFormData({ ...collectFormData, clinicalNotes: e.target.value })}
-                    className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2.5">
+                <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 shrink-0 flex items-center justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setIsCollectDrawerOpen(false)}
@@ -1556,116 +1775,496 @@ export function LaboratoryStationView({
                 </button>
               </div>
 
-              <form onSubmit={handleCreateNewOrder} className="flex-1 overflow-y-auto p-6 space-y-4">
-                {/* Select Patient */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Select Patient *
-                  </label>
-                  <select
-                    required
-                    value={newOrderData.patientId}
-                    onChange={(e) => setNewOrderData({ ...newOrderData, patientId: e.target.value })}
-                    className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white font-medium"
-                  >
-                    <option value="">-- Choose Patient --</option>
-                    {allPatients.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (MRN #{p.fileNumber || '---'}) - {p.phone}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <form onSubmit={handleCreateNewOrder} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {/* 1. Customer / Patient Type Selector (Walk-in vs Clinic Patient) */}
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-[10px] border border-slate-200 dark:border-slate-700 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80 dark:border-slate-700/80">
+                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      Customer / Patient Type *
+                    </span>
+                    <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabCustomerType('WALK_IN');
+                          setNewOrderData((prev) => ({ ...prev, patientId: '' }));
+                        }}
+                        className={cn(
+                          "px-3 py-1 rounded-[6px] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                          labCustomerType === 'WALK_IN'
+                            ? "bg-[#0d6157] text-white shadow-2xs"
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                        )}
+                      >
+                        <User className="size-3.5" />
+                        <span>Walk-in Customer (Retail)</span>
+                      </button>
 
-                {/* Quick Catalog Pick */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Select Test From Catalog *
-                  </label>
-                  <select
-                    value={newOrderData.testCode}
-                    onChange={(e) => handleTestCatalogSelect(e.target.value)}
-                    className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2.5 text-slate-900 dark:text-white font-medium"
-                  >
-                    <option value="">
-                      {catalogList.length === 0
-                        ? '-- No catalog tests saved yet (Type test name below) --'
-                        : '-- Pick from Saved Test Catalog (Or type below) --'}
-                    </option>
-                    {catalogList.map((t) => (
-                      <option key={t.id || t.code} value={t.code}>
-                        {t.code} - {t.name} (${t.price}) • {t.category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Test Name & Category */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      Test Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Complete Blood Count (CBC)"
-                      value={newOrderData.testName}
-                      onChange={(e) => setNewOrderData({ ...newOrderData, testName: e.target.value })}
-                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white"
-                    />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabCustomerType('CLINIC_PATIENT');
+                          setIsPatientDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "px-3 py-1 rounded-[6px] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
+                          labCustomerType === 'CLINIC_PATIENT'
+                            ? "bg-[#0d6157] text-white shadow-2xs"
+                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                        )}
+                      >
+                        <Stethoscope className="size-3.5" />
+                        <span>Clinic Registered Patient</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      Department / Category
-                    </label>
-                    <select
-                      value={newOrderData.category}
-                      onChange={(e) => setNewOrderData({ ...newOrderData, category: e.target.value })}
-                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white"
+                  {/* Mode 1: Walk-in Customer Fields */}
+                  {labCustomerType === 'WALK_IN' ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                            Customer / Patient Name *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Zeeshan Tariq"
+                            value={walkInName}
+                            onChange={(e) => setWalkInName(e.target.value)}
+                            className="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                            Contact Phone Number
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 0501234567 or +966..."
+                            value={walkInPhone}
+                            onChange={(e) => setWalkInPhone(e.target.value)}
+                            className="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                            Gender
+                          </label>
+                          <select
+                            value={walkInGender}
+                            onChange={(e) => setWalkInGender(e.target.value as any)}
+                            className="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white"
+                          >
+                            <option value="">Unspecified</option>
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
+                            <option value="OTHER">Other</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                            Age / Notes (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 32 yrs"
+                            value={walkInAge}
+                            onChange={(e) => setWalkInAge(e.target.value)}
+                            className="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                        ⚡ Direct walk-in diagnostic order. Customer profile is saved automatically without requiring prior clinic registration.
+                      </p>
+                    </div>
+                  ) : (
+                    /* Mode 2: Clinic Registered Patient */
+                    <div className="space-y-3" ref={patientDropdownRef}>
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10.5px] font-bold text-slate-700 dark:text-slate-300">
+                            Search Clinic Patient (Name, Phone, MRN / File #) *
+                          </label>
+                          {selectedClinicPatient && (
+                            <span className="text-[10.5px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                              <CheckCircle2 className="size-3" /> Patient Selected
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder="Click or type to search clinic patient name, phone, or MRN..."
+                            value={patientSearchTerm}
+                            onClick={() => setIsPatientDropdownOpen(true)}
+                            onFocus={() => setIsPatientDropdownOpen(true)}
+                            onChange={(e) => {
+                              setPatientSearchTerm(e.target.value);
+                              setIsPatientDropdownOpen(true);
+                            }}
+                            className="w-full pl-8.5 pr-8 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d8276]"
+                          />
+                          {patientSearchTerm && (
+                            <button
+                              type="button"
+                              onClick={() => setPatientSearchTerm('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Floating Dropdown list of matching patients */}
+                        {isPatientDropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1.5 max-h-52 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] shadow-xl divide-y divide-slate-100 dark:divide-slate-800 z-50">
+                            {filteredClinicPatients.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-slate-400">
+                                No registered clinic patients matching "{patientSearchTerm}"
+                              </div>
+                            ) : (
+                              filteredClinicPatients.map((p) => {
+                                const isSelected = selectedClinicPatient?.id === p.id;
+                                return (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedClinicPatient(p);
+                                      setNewOrderData((prev) => ({ ...prev, patientId: p.id }));
+                                      setIsPatientDropdownOpen(false);
+                                      setPatientSearchTerm('');
+                                    }}
+                                    className={cn(
+                                      "w-full text-left px-3 py-2.5 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                                      isSelected
+                                        ? "bg-teal-50 dark:bg-teal-950/40 text-[#0d6157] dark:text-teal-300 font-bold"
+                                        : "hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                                    )}
+                                  >
+                                    <div>
+                                      <p className="font-semibold">{p.name}</p>
+                                      <p className="text-[10px] text-slate-400 font-mono">
+                                        MRN #{p.fileNumber || '---'} • {p.phone} {p.gender ? `(${p.gender})` : ''}
+                                      </p>
+                                    </div>
+                                    {isSelected && <Check className="size-4 text-[#0d6157]" />}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selected Patient Details Banner */}
+                      {selectedClinicPatient && (
+                        <div className="p-2.5 bg-white dark:bg-slate-900 rounded-[8px] border border-teal-200 dark:border-teal-800/60 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="size-7 rounded-[6px] bg-[#0d6157]/10 text-[#0d6157] dark:text-teal-300 font-bold flex items-center justify-center text-xs">
+                              {selectedClinicPatient.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">
+                                {selectedClinicPatient.name}
+                              </p>
+                              <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono">
+                                MRN #{selectedClinicPatient.fileNumber || '---'} • {selectedClinicPatient.phone}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950 text-[#0d6157] dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                            Verified Patient
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Diagnostic Tests Attachment Section */}
+                <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/60 rounded-[10px] border border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <TestTube className="size-4 text-[#0d6157]" />
+                        <span>Attach Diagnostic Tests</span>
+                        <span className="ml-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#0d6157]/10 text-[#0d6157] dark:text-teal-400">
+                          {selectedTestsList.length} {selectedTestsList.length === 1 ? 'Test' : 'Tests'} Attached
+                        </span>
+                      </h3>
+                      <p className="text-[10.5px] text-slate-500">
+                        Search catalog or add tests. You can attach multiple tests for this patient.
+                      </p>
+                    </div>
+
+                    {/* Create Catalog Test Button in Header */}
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateCatalog}
+                      className="px-2.5 py-1 text-[11px] font-bold text-[#0d6157] dark:text-teal-300 bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 rounded-[6px] hover:bg-teal-50 dark:hover:bg-slate-800 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                     >
-                      <option value="Hematology">Hematology</option>
-                      <option value="Biochemistry">Biochemistry</option>
-                      <option value="Immunology">Immunology</option>
-                      <option value="Microbiology">Microbiology</option>
-                      <option value="Pathology">Pathology</option>
-                    </select>
+                      <Plus className="size-3" />
+                      <span>+ Create Catalog Test</span>
+                    </button>
                   </div>
+
+                  {/* Search / Add Test Bar */}
+                  <div className="relative" ref={testDropdownRef}>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search test catalog by name or code (e.g. CBC, Lipid, Liver, Glucose)..."
+                        value={testSearchTerm}
+                        onClick={() => setIsTestDropdownOpen(true)}
+                        onFocus={() => setIsTestDropdownOpen(true)}
+                        onChange={(e) => {
+                          setTestSearchTerm(e.target.value);
+                          setIsTestDropdownOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (filteredCatalogTests[0]) {
+                              handleAddTestToRequisition(filteredCatalogTests[0]);
+                            } else if (testSearchTerm.trim()) {
+                              handleAddCustomTestToRequisition(testSearchTerm);
+                            }
+                          }
+                        }}
+                        className="w-full pl-8.5 pr-8 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d8276]"
+                      />
+                      {testSearchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setTestSearchTerm('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Floating Test Search Dropdown - max 5 items visible height with scrollbar */}
+                    {isTestDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[8px] shadow-xl divide-y divide-slate-100 dark:divide-slate-800 z-50">
+                        {filteredCatalogTests.length > 0 ? (
+                          filteredCatalogTests.map((t) => {
+                            const isAlreadyAdded = selectedTestsList.some(
+                              (s) =>
+                                (s.testCode && t.code && s.testCode.toLowerCase() === t.code.toLowerCase()) ||
+                                s.testName.toLowerCase().trim() === t.name.toLowerCase().trim()
+                            );
+                            return isAlreadyAdded ? (
+                              <div
+                                key={t.id || t.code}
+                                className="w-full text-left px-3.5 py-2 text-xs flex items-center justify-between bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 cursor-not-allowed select-none"
+                              >
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-500 dark:text-slate-400 line-through">{t.name}</span>
+                                    {t.code && (
+                                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 text-slate-500">
+                                        {t.code}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10.5px] text-slate-400 font-mono">
+                                    {t.category} • {t.sampleType || 'Blood'}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-mono text-slate-400">
+                                    SAR {(Number(t.price) || 0).toFixed(2)}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                    <Check className="size-3" /> Added
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                key={t.id || t.code}
+                                type="button"
+                                onClick={() => handleAddTestToRequisition(t)}
+                                className="w-full text-left px-3.5 py-2 text-xs transition-colors flex items-center justify-between hover:bg-teal-50/60 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 cursor-pointer"
+                              >
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-slate-900 dark:text-white">{t.name}</span>
+                                    {t.code && (
+                                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                        {t.code}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10.5px] text-slate-400 font-mono">
+                                    {t.category} • Specimen: {t.sampleType || 'Blood'} {t.containerType ? `(${t.containerType})` : ''}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-[#0d6157] dark:text-teal-400 font-mono">
+                                    SAR {(Number(t.price) || 0).toFixed(2)}
+                                  </span>
+                                  <span className="p-1 px-2 rounded bg-[#0d6157]/10 text-[#0d6157] dark:text-teal-300 text-[10px] font-bold flex items-center gap-1">
+                                    <Plus className="size-3" /> Add
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="p-3 text-center text-xs text-slate-400">
+                            No catalog tests matching "{testSearchTerm}"
+                          </div>
+                        )}
+
+                        {/* Option to add custom test from typed query */}
+                        {testSearchTerm.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => handleAddCustomTestToRequisition(testSearchTerm)}
+                            className="w-full text-left px-3.5 py-2.5 text-xs bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-semibold flex items-center justify-between cursor-pointer border-t border-slate-100 dark:border-slate-800"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Plus className="size-3.5" />
+                              <span>Add "<strong>{testSearchTerm}</strong>" as custom test</span>
+                            </span>
+                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-600 text-white">
+                              Add Custom
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Option to create new test in catalog permanently */}
+                        <div className="p-2 bg-slate-50 dark:bg-slate-850 border-t border-slate-200 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsTestDropdownOpen(false);
+                              handleOpenCreateCatalog();
+                            }}
+                            className="w-full py-1.5 px-3 text-xs font-bold text-[#0d6157] dark:text-teal-300 bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800/80 rounded-[6px] hover:bg-teal-50 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="size-3.5" />
+                            <span>+ Create New Test in Catalog</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Empty state when no tests attached */}
+                  {selectedTestsList.length === 0 && (
+                    <div className="py-4 px-3 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-[8px] text-slate-400 dark:text-slate-500 text-xs">
+                      No tests attached yet. Search test catalog above to attach diagnostic tests.
+                    </div>
+                  )}
+
+                  {/* Attached Tests Table / Itemized List */}
+                  {selectedTestsList.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="border border-slate-200 dark:border-slate-700 rounded-[8px] overflow-hidden bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
+                        {selectedTestsList.map((test, index) => (
+                          <div
+                            key={test.id}
+                            className="p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <span className="size-5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                                {index + 1}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                    {test.testName}
+                                  </span>
+                                  {test.testCode && (
+                                    <span className="text-[9.5px] font-mono px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                      {test.testCode}
+                                    </span>
+                                  )}
+                                  <span className="text-[9.5px] font-semibold px-1.5 py-0.2 rounded bg-teal-50 dark:bg-teal-950 text-[#0d6157] dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/60">
+                                    {test.category}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                  Sample: {test.sampleType || 'Blood'} {test.tubeType ? `• ${test.tubeType}` : ''}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Price edit and remove action */}
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10.5px] font-mono font-bold text-slate-500">SAR</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={test.price}
+                                  onChange={(e) =>
+                                    handleUpdateTestItem(test.id, { price: parseFloat(e.target.value) || 0 })
+                                  }
+                                  className="w-20 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[6px] p-1 text-slate-900 dark:text-white text-right"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTestFromRequisition(test.id)}
+                                title="Remove test"
+                                className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                              >
+                                <X className="size-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Summary Banner */}
+                      <div className="p-3 bg-[#0d6157]/5 dark:bg-teal-950/30 rounded-[8px] border border-[#0d6157]/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                            <span>Requisition Summary ({selectedTestsList.length} Tests)</span>
+                          </div>
+                          {requiredSpecimenTypes.length > 0 && (
+                            <div className="flex items-center gap-1 text-[10.5px] text-slate-500 dark:text-slate-400 flex-wrap">
+                              <span>Containers needed:</span>
+                              {requiredSpecimenTypes.map((spec) => (
+                                <span key={spec} className="px-1.5 py-0.2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-mono text-slate-700 dark:text-slate-300">
+                                  {spec}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">Total Amount</span>
+                          <span className="text-base font-extrabold text-[#0d6157] dark:text-teal-400 font-mono">
+                            SAR {totalRequisitionPrice.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Sample Type & Priority */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      Sample Specimen Type
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Blood, Serum, Urine..."
-                      value={newOrderData.sampleType}
-                      onChange={(e) => setNewOrderData({ ...newOrderData, sampleType: e.target.value })}
-                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      Priority Level
-                    </label>
-                    <select
-                      value={newOrderData.priority}
-                      onChange={(e) => setNewOrderData({ ...newOrderData, priority: e.target.value as any })}
-                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white font-bold"
-                    >
-                      <option value="ROUTINE">Routine</option>
-                      <option value="URGENT">Urgent</option>
-                      <option value="STAT_EMERGENCY">🚨 STAT Emergency</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Ordering Doctor & Price */}
+                {/* 3. Ordering Doctor & Priority */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
@@ -1687,14 +2286,17 @@ export function LaboratoryStationView({
 
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      Test Price ($)
+                      Priority Level
                     </label>
-                    <input
-                      type="number"
-                      value={newOrderData.price}
-                      onChange={(e) => setNewOrderData({ ...newOrderData, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white font-mono"
-                    />
+                    <select
+                      value={newOrderData.priority}
+                      onChange={(e) => setNewOrderData({ ...newOrderData, priority: e.target.value as any })}
+                      className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white font-bold"
+                    >
+                      <option value="ROUTINE">Routine</option>
+                      <option value="URGENT">Urgent</option>
+                      <option value="STAT_EMERGENCY">🚨 STAT Emergency</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1711,8 +2313,18 @@ export function LaboratoryStationView({
                     className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] p-2 text-slate-900 dark:text-white"
                   />
                 </div>
+              </div>
 
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2.5">
+              {/* Fixed Footer */}
+              <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 shrink-0 flex items-center justify-between z-10">
+                <div className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+                  {selectedTestsList.length > 0 ? (
+                    <span>{selectedTestsList.length} {selectedTestsList.length === 1 ? 'Test' : 'Tests'} • Total: <strong className="text-[#0d6157] dark:text-teal-400">SAR {totalRequisitionPrice.toFixed(2)}</strong></span>
+                  ) : (
+                    <span className="text-slate-400">No tests attached</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2.5">
                   <button
                     type="button"
                     onClick={() => setIsNewOrderDrawerOpen(false)}
@@ -1722,14 +2334,19 @@ export function LaboratoryStationView({
                   </button>
                   <button
                     type="submit"
-                    disabled={isActionLoading}
-                    className="px-5 py-2 text-xs font-bold text-white bg-[#0d6157] hover:bg-[#0a4e46] rounded-[8px] shadow-xs flex items-center gap-1.5"
+                    disabled={isActionLoading || selectedTestsList.length === 0}
+                    className="px-5 py-2 text-xs font-bold text-white bg-[#0d6157] hover:bg-[#0a4e46] rounded-[8px] shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isActionLoading ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-                    <span>Create Lab Requisition</span>
+                    <span>
+                      {selectedTestsList.length <= 1
+                        ? 'Create Lab Requisition'
+                        : `Create Lab Requisition (${selectedTestsList.length} Tests)`}
+                    </span>
                   </button>
                 </div>
-              </form>
+              </div>
+            </form>
             </div>
           </div>
         </div>
@@ -1791,12 +2408,19 @@ export function LaboratoryStationView({
               {/* Patient & Doctor Demographics */}
               <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-[6px] border border-slate-200 text-xs">
                 <div className="space-y-1">
-                  <p><span className="text-slate-500 font-medium">Patient Name:</span> <span className="font-bold text-slate-900">{selectedOrder.patient.name}</span></p>
-                  <p><span className="text-slate-500 font-medium">MRN / File #:</span> <span className="font-mono font-bold">{selectedOrder.patient.fileNumber || '---'}</span></p>
-                  <p><span className="text-slate-500 font-medium">Gender / Phone:</span> {selectedOrder.patient.gender || 'N/A'} • {selectedOrder.patient.phone}</p>
+                  <p>
+                    <span className="text-slate-500 font-medium">Patient Name:</span> <span className="font-bold text-slate-900">{selectedOrder.patient.name}</span>
+                    {selectedOrder.patient.tags?.includes('WALK_IN_CUSTOMER') || !selectedOrder.patient.fileNumber ? (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Walk-in</span>
+                    ) : (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-[#0d6157]">Clinic Patient</span>
+                    )}
+                  </p>
+                  <p><span className="text-slate-500 font-medium">MRN / File #:</span> <span className="font-mono font-bold">{selectedOrder.patient.fileNumber ? `MRN #${selectedOrder.patient.fileNumber}` : 'Walk-in (No MRN)'}</span></p>
+                  <p><span className="text-slate-500 font-medium">Gender / Phone:</span> {selectedOrder.patient.gender || 'N/A'} • {selectedOrder.patient.phone && !selectedOrder.patient.phone.startsWith('walkin-') ? selectedOrder.patient.phone : 'Direct Retail'}</p>
                 </div>
                 <div className="space-y-1 text-right sm:text-left">
-                  <p><span className="text-slate-500 font-medium">Referring Doctor:</span> <span className="font-bold text-slate-900">{selectedOrder.doctor ? `Dr. ${selectedOrder.doctor.name}` : 'General OPD'}</span></p>
+                  <p><span className="text-slate-500 font-medium">Referring Doctor:</span> <span className="font-bold text-slate-900">{selectedOrder.doctor ? `Dr. ${selectedOrder.doctor.name}` : 'Direct / Self Walk-in'}</span></p>
                   <p><span className="text-slate-500 font-medium">Sample Collected:</span> {selectedOrder.collectedAt ? new Date(selectedOrder.collectedAt).toLocaleString() : 'N/A'}</p>
                   <p><span className="text-slate-500 font-medium">Report Released:</span> {selectedOrder.verifiedAt ? new Date(selectedOrder.verifiedAt).toLocaleString() : 'N/A'}</p>
                 </div>
@@ -1912,8 +2536,9 @@ export function LaboratoryStationView({
                 </button>
               </div>
 
-              <form onSubmit={handleSaveCatalogTest} className="flex-1 overflow-y-auto p-6 space-y-4">
-                <div className="grid grid-cols-3 gap-3">
+              <form onSubmit={handleSaveCatalogTest} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
                       Test Code *
@@ -2008,7 +2633,7 @@ export function LaboratoryStationView({
 
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      Price ($)
+                      Price (SAR)
                     </label>
                     <input
                       type="number"
@@ -2138,8 +2763,10 @@ export function LaboratoryStationView({
                     ))}
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2.5">
+                {/* Fixed Drawer Footer */}
+                <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 shrink-0 flex items-center justify-end gap-2.5 z-10">
                   <button
                     type="button"
                     onClick={() => setIsCatalogModalOpen(false)}
