@@ -114,6 +114,7 @@ export interface DoctorDetailProps {
     bufferMinutes: number | null;
     coordinatorId: string | null;
     coordinator?: { id: string; name: string; username?: string | null; email: string } | null;
+    user?: { id: string; username: string | null; email: string } | null;
     clinic: { id: string; name: string; timezone: string };
     services: Array<{
       serviceId: string;
@@ -222,6 +223,71 @@ export function DoctorDetailPortalView({
       setDeleteDoctorError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsDeletingDoctor(false);
+    }
+  };
+
+  // Doctor Reset Password Modal State
+  const [isDoctorResetPasswordModalOpen, setIsDoctorResetPasswordModalOpen] = useState(false);
+  const [newDoctorPassword, setNewDoctorPassword] = useState('');
+  const [showDoctorPassword, setShowDoctorPassword] = useState(false);
+  const [isResettingDoctorPassword, setIsResettingDoctorPassword] = useState(false);
+  const [doctorResetPasswordError, setDoctorResetPasswordError] = useState<string | null>(null);
+  const [doctorResetPasswordSuccess, setDoctorResetPasswordSuccess] = useState<string | null>(null);
+  const [doctorUser, setDoctorUser] = useState(doctor.user);
+  const [copiedDoctorCreds, setCopiedDoctorCreds] = useState(false);
+
+  const handleGenerateRandomDoctorPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+    let pwd = 'Dr!';
+    for (let i = 0; i < 8; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewDoctorPassword(pwd);
+  };
+
+  const handleCopyDoctorCreds = () => {
+    const username = doctorUser?.username || doctorName.toLowerCase().replace(/[^a-z0-9]/g, '.');
+    const text = `Doctor: ${doctorName}\nUsername: ${username}\nPassword: ${newDoctorPassword}`;
+    navigator.clipboard.writeText(text);
+    setCopiedDoctorCreds(true);
+    setTimeout(() => setCopiedDoctorCreds(false), 2500);
+  };
+
+  const handleConfirmDoctorResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDoctorPassword.trim() || newDoctorPassword.trim().length < 6) {
+      setDoctorResetPasswordError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setIsResettingDoctorPassword(true);
+    setDoctorResetPasswordError(null);
+
+    try {
+      const res = await fetch(`/api/doctors/${doctor.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newDoctorPassword.trim() }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        setDoctorUser({
+          id: doctorUser?.id || 'linked-user',
+          username: data.username || doctorUser?.username || null,
+          email: data.email || doctorUser?.email || '',
+        });
+        setIsDoctorResetPasswordModalOpen(false);
+        setNewDoctorPassword('');
+        setDoctorResetPasswordSuccess('Doctor password updated successfully.');
+        setTimeout(() => setDoctorResetPasswordSuccess(null), 4000);
+      } else {
+        setDoctorResetPasswordError(data.error || 'Failed to reset password.');
+      }
+    } catch (err: any) {
+      setDoctorResetPasswordError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsResettingDoctorPassword(false);
     }
   };
 
@@ -1100,25 +1166,47 @@ export function DoctorDetailPortalView({
             </span>
           )}
 
-          {/* Create Appointment Type Button */}
-          <button
-            type="button"
-            onClick={() => setIsAddServiceModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer"
-          >
-            <Plus className="size-3.5 stroke-[2.5]" />
-            <span>Create Appointment Type</span>
-          </button>
+          {/* Create Appointment Type Button - only visible on Appointment Types tab */}
+          {activeTab === 'appointment-types' && (
+            <button
+              type="button"
+              onClick={() => setIsAddServiceModalOpen(true)}
+              className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer animate-in fade-in duration-100"
+            >
+              <Plus className="size-3.5 stroke-[2.5]" />
+              <span>Create Appointment Type</span>
+            </button>
+          )}
 
-          {/* Add Blocked Period Button */}
-          <button
-            type="button"
-            onClick={() => setIsBlockedModalOpen(true)}
-            className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer"
-          >
-            <Plus className="size-3.5 stroke-[2.5]" />
-            <span>Add Blocked Period</span>
-          </button>
+          {/* Add Blocked Period Button - only visible on Blocked Periods tab */}
+          {activeTab === 'blocked' && (
+            <button
+              type="button"
+              onClick={() => setIsBlockedModalOpen(true)}
+              className="inline-flex items-center gap-1.5 bg-[#e6f6f3]/80 hover:bg-[#e6f6f3] text-[#0d5c56] dark:bg-[#0d6157]/20 dark:hover:bg-[#0d6157]/30 dark:text-teal-300 border border-[#0d8276]/25 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer animate-in fade-in duration-100"
+            >
+              <Plus className="size-3.5 stroke-[2.5]" />
+              <span>Add Blocked Period</span>
+            </button>
+          )}
+
+          {/* Reset Password Button */}
+          {userRole !== 'DOCTOR' && (
+            <button
+              type="button"
+              onClick={() => {
+                setNewDoctorPassword('');
+                setDoctorResetPasswordError(null);
+                setShowDoctorPassword(false);
+                setCopiedDoctorCreds(false);
+                setIsDoctorResetPasswordModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all cursor-pointer"
+            >
+              <Key className="size-3.5 stroke-[2.5]" />
+              <span>Reset Password</span>
+            </button>
+          )}
 
           {/* Delete Doctor Button */}
           {userRole !== 'DOCTOR' && (
@@ -1844,6 +1932,50 @@ export function DoctorDetailPortalView({
                     onChange={(e) => setDoctorDescription(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276] resize-none leading-relaxed"
                   />
+                </div>
+
+                <div className="col-span-2 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <RiShieldCheckLine className="size-4 text-[#0d6157] dark:text-teal-400" />
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                          Doctor Portal Login Credentials
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Assigned Username:{' '}
+                        <span className="font-mono font-bold text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/20 px-1.5 py-0.5 rounded border border-[#0d8276]/20">
+                          @{doctorUser?.username || doctorName.toLowerCase().replace(/[^a-z0-9]/g, '.')}
+                        </span>
+                        {doctorUser?.email && (
+                          <span className="ml-2 font-mono text-[10px] text-slate-400">({doctorUser.email})</span>
+                        )}
+                      </p>
+                      {doctorResetPasswordSuccess && (
+                        <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {doctorResetPasswordSuccess}
+                        </p>
+                      )}
+                    </div>
+
+                    {userRole !== 'DOCTOR' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewDoctorPassword('');
+                          setDoctorResetPasswordError(null);
+                          setShowDoctorPassword(false);
+                          setCopiedDoctorCreds(false);
+                          setIsDoctorResetPasswordModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#e6f6f3] dark:bg-[#0d6157]/20 text-[#0d5c56] dark:text-teal-300 hover:bg-[#d5f0eb] border border-[#0d8276]/25 font-semibold text-xs transition-colors cursor-pointer shrink-0 shadow-2xs"
+                      >
+                        <Key className="size-3.5" />
+                        <span>Reset Doctor Password</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {userRole !== 'DOCTOR' && (
@@ -3174,6 +3306,154 @@ export function DoctorDetailPortalView({
                 <span>{isDeletingDoctor ? 'Deleting...' : 'Delete Doctor'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESET DOCTOR PASSWORD MODAL */}
+      {isDoctorResetPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-md w-full p-5 relative text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-[#0d6157] dark:text-teal-400 font-bold text-sm">
+                <Key className="size-5 shrink-0" />
+                <span>Reset Doctor Password</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isResettingDoctorPassword) {
+                    setIsDoctorResetPasswordModalOpen(false);
+                    setDoctorResetPasswordError(null);
+                  }
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Doctor Info Summary Card */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800 mb-4 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400 text-xs">Doctor Name:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{doctorName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400 text-xs">Login Username:</span>
+                <span className="font-mono font-bold text-xs text-[#0d5c56] dark:text-teal-300 bg-[#e6f6f3] dark:bg-[#0d6157]/20 px-2 py-0.5 rounded-md border border-[#0d8276]/20">
+                  @{doctorUser?.username || doctorName.toLowerCase().replace(/[^a-z0-9]/g, '.')}
+                </span>
+              </div>
+              {doctorUser?.email && (
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-slate-400 text-xs">Login Email:</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-mono text-[11px] truncate max-w-[200px]">
+                    {doctorUser.email}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleConfirmDoctorResetPassword} className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    New Password <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateRandomDoctorPassword}
+                    className="text-[11px] font-semibold text-[#0d6157] dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="size-3" />
+                    <span>Generate Strong Password</span>
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                  <input
+                    type={showDoctorPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Enter new password (min 6 chars)"
+                    value={newDoctorPassword}
+                    onChange={(e) => setNewDoctorPassword(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-10 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDoctorPassword(!showDoctorPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
+                  >
+                    {showDoctorPassword ? <X className="size-3.5" /> : <Lock className="size-3.5" />}
+                  </button>
+                </div>
+
+                {newDoctorPassword.length > 0 && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">
+                      Password length:{' '}
+                      <span
+                        className={
+                          newDoctorPassword.length >= 6
+                            ? 'text-emerald-500 font-bold'
+                            : 'text-rose-500 font-bold'
+                        }
+                      >
+                        {newDoctorPassword.length} chars
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyDoctorCreds}
+                      className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-[#0d6157] dark:hover:text-teal-300 flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedDoctorCreds ? (
+                        <>
+                          <Check className="size-3 text-emerald-500 stroke-[3]" />
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="size-3" />
+                          <span>Copy Credentials</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {doctorResetPasswordError && (
+                <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium leading-relaxed">
+                  {doctorResetPasswordError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  disabled={isResettingDoctorPassword}
+                  onClick={() => {
+                    setIsDoctorResetPasswordModalOpen(false);
+                    setDoctorResetPasswordError(null);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResettingDoctorPassword || !newDoctorPassword.trim()}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#0d6157] hover:bg-[#0a4e46] text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Key className="size-3.5" />
+                  <span>{isResettingDoctorPassword ? 'Resetting...' : 'Reset Password'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

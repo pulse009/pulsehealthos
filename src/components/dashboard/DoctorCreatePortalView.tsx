@@ -72,16 +72,28 @@ export function DoctorCreatePortalView({
   const [servicesList, setServicesList] = useState(initialServices);
   const [staffList, setStaffList] = useState(initialStaff);
 
-  // Form State
   const [name, setName] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [email, setEmail] = useState('');
+  const [customUsername, setCustomUsername] = useState('');
   const [password, setPassword] = useState('');
   const [description, setDescription] = useState('');
   const [slotDuration, setSlotDuration] = useState(30);
   const [bufferMinutes, setBufferMinutes] = useState(0);
   const [coordinatorId, setCoordinatorId] = useState('');
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
+  // Auto-calculated clean doctor username preview
+  const previewUsername = useMemo(() => {
+    let clean = (customUsername.trim() || name)
+      .toLowerCase()
+      .trim()
+      .replace(/^(dr\.?|doctor)\s*/i, '')
+      .trim()
+      .replace(/[^a-z0-9]+/g, '.')
+      .replace(/^\.+|\.+$/g, '');
+    return clean ? `dr.${clean}` : 'dr.doctor';
+  }, [name, customUsername]);
 
   // Status (Only 2 Statuses: ACTIVE & INACTIVE)
   const [doctorStatus, setDoctorStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
@@ -351,6 +363,7 @@ export function DoctorCreatePortalView({
       name: name.trim(),
       specialty: specialty.trim() || undefined,
       email: email.trim() || undefined,
+      username: customUsername.trim() || undefined,
       password: password.trim() || undefined,
       description: description.trim() || undefined,
       isActive: isDoctorActive,
@@ -488,37 +501,65 @@ export function DoctorCreatePortalView({
               </div>
             </div>
 
-            {/* ROW 2: Login Credentials (Email & Password) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Doctor Login Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
-                  <input
-                    type="email"
-                    placeholder="doctor@clinic.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
-                  />
-                </div>
+            {/* ROW 2: Login Credentials (Username, Email & Password) */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <ShieldCheck className="size-4 text-[#0d6157] dark:text-teal-400" />
+                  <span>Doctor Portal Login Credentials</span>
+                </span>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  Auto Username: <span className="font-bold text-[#0d5c56] dark:text-teal-300">@{previewUsername}</span>
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Doctor Login Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
-                  <input
-                    type="password"
-                    placeholder="Defaults to Doctor123!"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Login Username
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">@</span>
+                    <input
+                      type="text"
+                      placeholder={previewUsername.replace(/^dr\./, '')}
+                      value={customUsername}
+                      onChange={(e) => setCustomUsername(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ''))}
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-7 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Doctor Login Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                    <input
+                      type="email"
+                      placeholder={`${previewUsername}@clinic.internal`}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Doctor Login Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                    <input
+                      type="password"
+                      placeholder="Defaults to Doctor123!"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8.5 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0d8276]/20 focus:border-[#0d8276]"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

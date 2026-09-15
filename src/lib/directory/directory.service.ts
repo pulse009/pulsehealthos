@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db/prisma';
 import { conflict, forbidden, notFound } from '@/lib/errors';
 import { recordAudit } from '@/lib/audit';
 import { hashPassword } from '@/lib/auth/password';
+import { generateDoctorUsername } from '@/lib/auth/username.service';
 import { assertOwned, assertPlatformScope, clinicWhere, resolveClinicId, type TenantScope } from '@/lib/tenancy/scope';
 import type {
   doctorSchema,
@@ -54,6 +55,8 @@ export async function listDoctors(
       appointmentMinutes: true,
       bufferMinutes: true,
       clinic: { select: { id: true, name: true, timezone: true } },
+      coordinator: { select: { id: true, name: true, email: true } },
+      user: { select: { id: true, username: true, email: true } },
       services: { select: { service: { select: { id: true, name: true } } } },
       schedules: { select: { weekday: true, startMinute: true, endMinute: true } },
       _count: { select: { appointments: true } },
@@ -65,6 +68,8 @@ export async function getDoctor(scope: TenantScope, doctorId: string) {
   const doctor = await prisma.doctor.findUnique({
     where: { id: doctorId },
     include: {
+      user: { select: { id: true, username: true, email: true } },
+      coordinator: { select: { id: true, name: true, username: true, email: true } },
       services: { select: { serviceId: true } },
       schedules: { orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }] },
       breaks: { orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }] },
@@ -99,6 +104,94 @@ export async function saveDoctor(
     }
   }
 
+  let assignedUserId: string | null = null;
+
+  // Determine unique username and user account
+  let existingDoctor: { id: string; userId: string | null; name: string } | null = null;
+  if (doctorId) {
+    existingDoctor = await prisma.doctor.findFirst({
+      where: { id: doctorId, clinicId: id },
+      select: { id: true, userId: true, name: true },
+    });
+    if (!existingDoctor) throw notFound('Doctor not found.');
+    assignedUserId = existingDoctor.userId;
+  }
+
+  // If user account is not yet linked or new doctor is being created:
+  if (!assignedUserId) {
+    let candidateUsername = input.username?.trim().toLowerCase();
+    if (!candidateUsername) {
+      candidateUsername = await generateDoctorUsername(input.name, prisma);
+    } else {
+      // Verify custom username uniqueness or make unique
+      const existingUserWithUsername = await prisma.user.findFirst({
+        where: { OR: [{ username: candidateUsername }, { username: candidateUsername.toUpperCase() }] },
+        select: { id: true },
+      });
+      if (existingUserWithUsername) {
+        candidateUsername = await generateDoctorUsername(input.name, prisma);
+      }
+    }
+
+    const userEmail = input.email?.trim().toLowerCase() || `${candidateUsername}@clinic.internal`;
+    const passwordHash = await hashPassword(input.password?.trim() || 'Doctor123!');
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userEmail },
+      select: { id: true, role: true, username: true },
+    });
+
+    if (existingUser) {
+      assignedUserId = existingUser.id;
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          role: existingUser.role === 'SUPER_ADMIN' ? existingUser.role : 'DOCTOR',
+          clinicId: id,
+          username: existingUser.username || candidateUsername,
+          ...(input.password?.trim() ? { passwordHash, sessionVersion: { increment: 1 } } : {}),
+        },
+      });
+    } else {
+      const newUser = await prisma.user.create({
+        data: {
+          email: userEmail,
+          username: candidateUsername,
+          name: input.name.trim(),
+          passwordHash,
+          role: 'DOCTOR',
+          clinicId: id,
+          isActive: input.isActive ?? true,
+        },
+        select: { id: true },
+      });
+      assignedUserId = newUser.id;
+    }
+  } else {
+    // Existing doctor with linked user: update linked user details if requested
+    const updateUserData: any = {};
+    if (input.name) updateUserData.name = input.name.trim();
+    if (input.email?.trim()) {
+      const emailClash = await prisma.user.findFirst({
+        where: { email: input.email.trim().toLowerCase(), NOT: { id: assignedUserId } },
+        select: { id: true },
+      });
+      if (!emailClash) {
+        updateUserData.email = input.email.trim().toLowerCase();
+      }
+    }
+    if (input.password?.trim() && input.password.trim().length >= 6) {
+      updateUserData.passwordHash = await hashPassword(input.password.trim());
+      updateUserData.sessionVersion = { increment: 1 };
+    }
+    if (Object.keys(updateUserData).length > 0) {
+      await prisma.user.update({
+        where: { id: assignedUserId },
+        data: updateUserData,
+      });
+    }
+  }
+
   const base = {
     name: input.name,
     specialty: input.specialty ?? null,
@@ -108,6 +201,7 @@ export async function saveDoctor(
     appointmentMinutes: input.appointmentMinutes ?? null,
     bufferMinutes: input.bufferMinutes ?? null,
     coordinatorId: input.coordinatorId ?? null,
+    userId: assignedUserId,
   };
 
   const doctor = await prisma.$transaction(async (tx) => {
@@ -153,35 +247,21 @@ export async function saveDoctor(
       });
     }
 
-    return row;
-  });
-
-  if (input.email) {
-    const existing = await prisma.user.findUnique({
-      where: { email: input.email },
-      select: { id: true, clinicId: true },
+    return tx.doctor.findUnique({
+      where: { id: row.id },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+        clinic: { select: { id: true, name: true, timezone: true } },
+      },
     });
-    if (!existing) {
-      const passwordHash = await hashPassword(input.password || 'Doctor123!');
-      await prisma.user.create({
-        data: {
-          email: input.email,
-          name: input.name,
-          passwordHash,
-          role: 'CLIENT',
-          clinicId: id,
-          isActive: true,
-        },
-      });
-    }
-  }
+  });
 
   await recordAudit(scope, {
     action: doctorId ? 'doctor.update' : 'doctor.create',
     entityType: 'Doctor',
-    entityId: doctor.id,
+    entityId: doctor?.id || doctorId || '',
     clinicId: id,
-    metadata: { name: input.name, services: input.serviceIds.length },
+    metadata: { name: input.name, services: input.serviceIds.length, userId: assignedUserId },
   });
   return doctor;
 }
@@ -237,6 +317,7 @@ export async function getClinicDoctorDetail(scope: TenantScope, doctorId: string
   const doctor = await prisma.doctor.findUnique({
     where: { id: doctorId },
     include: {
+      user: { select: { id: true, username: true, email: true } },
       clinic: { select: { id: true, name: true, timezone: true } },
       coordinator: { select: { id: true, name: true, username: true, email: true } },
       services: {
@@ -1114,4 +1195,63 @@ export async function deleteClinicStaff(
   });
 
   return { ok: true };
+}
+
+export async function resetDoctorPassword(
+  scope: TenantScope,
+  clinicId: string,
+  doctorId: string,
+  newPassword: string,
+) {
+  const id = resolveClinicId(scope, clinicId);
+  const doctor = await prisma.doctor.findFirst({
+    where: { id: doctorId, clinicId: id },
+    include: {
+      user: true,
+    },
+  });
+  if (!doctor) throw notFound('Doctor not found.');
+
+  const passwordHash = await hashPassword(newPassword);
+
+  let user = doctor.user;
+  if (!user) {
+    // If doctor has no linked User yet (legacy record), create one and link it
+    const uniqueUsername = await generateDoctorUsername(doctor.name, prisma);
+    const email = `${uniqueUsername}@clinic.internal`;
+    user = await prisma.user.create({
+      data: {
+        email,
+        username: uniqueUsername,
+        name: doctor.name,
+        passwordHash,
+        role: 'DOCTOR',
+        clinicId: id,
+        isActive: doctor.isActive,
+      },
+    });
+
+    await prisma.doctor.update({
+      where: { id: doctorId },
+      data: { userId: user.id },
+    });
+  } else {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        sessionVersion: { increment: 1 },
+      },
+    });
+  }
+
+  await recordAudit(scope, {
+    action: 'doctor.reset_password',
+    entityType: 'Doctor',
+    entityId: doctorId,
+    clinicId: id,
+    metadata: { doctorName: doctor.name, username: user.username, email: user.email },
+  });
+
+  return { ok: true, username: user.username, email: user.email };
 }

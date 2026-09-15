@@ -160,6 +160,7 @@ export const doctorSchema = z.object({
   specialty: optionalText(160),
   description: optionalText(2_000),
   email: z.string().trim().toLowerCase().email().max(200).optional().or(z.literal('')),
+  username: z.string().trim().max(80).optional().or(z.literal('')),
   password: z.string().min(6).max(200).optional().or(z.literal('')),
   imageUrl: z.string().trim().url().max(500).optional().or(z.literal('')),
   isActive: z.boolean().default(true),

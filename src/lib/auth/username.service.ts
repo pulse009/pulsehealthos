@@ -64,3 +64,46 @@ export async function generateUniqueUsername(
     nextNum++;
   }
 }
+
+export async function generateDoctorUsername(
+  name: string,
+  db: DbClient = prisma,
+): Promise<string> {
+  // Strip common prefixes like 'Dr.', 'Doctor', 'Dr '
+  let cleanName = name
+    .toLowerCase()
+    .trim()
+    .replace(/^(dr\.?|doctor)\s*/i, '')
+    .trim()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '');
+
+  if (!cleanName || cleanName.length < 2) {
+    cleanName = 'doctor';
+  }
+
+  const baseUsername = `dr.${cleanName}`;
+  let uniqueUsername = baseUsername;
+  let attempt = 0;
+
+  while (true) {
+    const candidate = attempt === 0 ? baseUsername : `${baseUsername}${Math.floor(10 + Math.random() * 90)}`;
+    const existing = await db.user.findFirst({
+      where: {
+        OR: [{ username: candidate }, { username: candidate.toUpperCase() }],
+      },
+      select: { id: true },
+    });
+    if (!existing) {
+      uniqueUsername = candidate;
+      break;
+    }
+    attempt++;
+    if (attempt > 20) {
+      uniqueUsername = `${baseUsername}${Date.now().toString().slice(-4)}`;
+      break;
+    }
+  }
+
+  return uniqueUsername;
+}
