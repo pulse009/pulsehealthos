@@ -25,7 +25,7 @@ import {
   LuLock as Lock,
   LuSearch as Search,
   LuChevronDown as ChevronDown,
-  LuSparkles as Sparkles,
+  LuBot as Bot,
   LuImage as ImageIcon,
   LuFlag as Flag,
   LuCalendarDays as CalendarDays,
@@ -1108,7 +1108,7 @@ export function DoctorCreatePortalView({
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
             <div className="p-3.5 rounded-xl bg-[#e6f6f3]/60 dark:bg-[#0d6157]/10 border border-[#0d8276]/20 space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
               <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="size-3.5 text-[#0d6157]" />
+                <Bot className="size-3.5 text-[#0d6157]" />
                 <span>WhatsApp AI Booking</span>
               </div>
               <p className="text-[11px] leading-relaxed">

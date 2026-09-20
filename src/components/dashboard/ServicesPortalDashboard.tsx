@@ -18,7 +18,6 @@ import {
   LuSave as Save,
   LuCheck as Check,
   LuChevronDown as ChevronDown,
-  LuSparkles as Sparkles,
   LuLayers as Layers,
   LuDollarSign as DollarSign,
 } from 'react-icons/lu';

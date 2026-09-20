@@ -14,7 +14,6 @@ import {
   Lock,
   Stethoscope,
   ClipboardList,
-  Sparkles,
   CheckCircle2,
   ArrowLeft,
   Calendar,

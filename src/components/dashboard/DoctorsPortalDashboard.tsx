@@ -29,7 +29,7 @@ import {
   LuCopy as Copy,
   LuEye as Eye,
   LuEyeOff as EyeOff,
-  LuSparkles as Sparkles,
+  LuRefreshCw as RefreshCw,
   LuCheck as Check,
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
@@ -981,7 +981,7 @@ export function DoctorsPortalDashboard({
                     onClick={generateRandomPassword}
                     className="text-[11px] font-semibold text-[#0d6157] dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Sparkles className="size-3" />
+                    <RefreshCw className="size-3" />
                     <span>Generate Strong Password</span>
                   </button>
                 </div>

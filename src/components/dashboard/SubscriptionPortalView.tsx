@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   LuCheck as Check,
   LuCircleCheck as CheckCircle2,
-  LuSparkles as Sparkles,
   LuZap as Zap,
   LuShieldCheck as ShieldCheck,
   LuArrowRight as ArrowRight,
@@ -151,7 +150,7 @@ export function SubscriptionPortalView({ clinic }: SubscriptionPortalViewProps) 
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               <div className="size-5 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <Sparkles className="size-3.5" />
+                <Zap className="size-3.5" />
               </div>
               <span>CURRENT SUBSCRIPTION &amp; QUOTA CAPACITY</span>
             </div>
@@ -518,7 +517,7 @@ export function SubscriptionPortalView({ clinic }: SubscriptionPortalViewProps) 
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <div className="size-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  <Sparkles className="size-4" />
+                  <Zap className="size-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Switch to {selectedPlanModal}

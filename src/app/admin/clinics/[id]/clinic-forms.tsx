@@ -13,7 +13,7 @@ import {
   addHolidayAction,
   upsertFaqAction,
 } from '@/app/admin/clinics/actions';
-import { LuSparkles as Sparkles } from 'react-icons/lu';
+import { LuBot as Bot } from 'react-icons/lu';
 
 /**
  * Configuration forms.
@@ -437,7 +437,7 @@ export function AiForm({ clinicId, config }: { clinicId: string; config: AiConfi
           <div className="sm:col-span-2 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="size-4 text-[#0d6157] dark:text-teal-400" />
+                <Bot className="size-4 text-[#0d6157] dark:text-teal-400" />
                 <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   WhatsApp &amp; AI Chatbot Interaction Mode
                 </span>

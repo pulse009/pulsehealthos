@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   ArrowRight,
   Building2,
@@ -16,8 +15,9 @@ import {
   PhoneCall,
   Send,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
+import { PublicNavbar } from '@/components/layout/PublicNavbar';
+import { PublicFooter } from '@/components/layout/PublicFooter';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -36,19 +36,19 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white text-slate-900 font-sans antialiased selection:bg-teal-600 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#0d8276] selection:text-white relative overflow-x-hidden">
       
       {/* ─── HERO CARD (Meditech Theme) ─── */}
       <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3 pb-8 sm:pb-12">
-        <div className="relative w-full overflow-hidden rounded-[28px] sm:rounded-[40px] border-[3px] sm:border-[5px] border-white shadow-[0_12px_40px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d8f2ee] via-[#edf9f6] to-[#cdeee8] pb-14 sm:pb-20">
+        <div className="relative w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_12px_45px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d5f1ec] via-[#edf9f6] to-[#c6ece4] pb-14 sm:pb-20">
           
           {/* Vertical Fluted / Slat Texture Overlay */}
           <div
-            className="absolute inset-0 pointer-events-none opacity-80"
+            className="absolute inset-0 pointer-events-none opacity-75"
             style={{
               backgroundImage: `repeating-linear-gradient(
                 90deg,
-                rgba(255, 255, 255, 0.25) 0px,
+                rgba(255, 255, 255, 0.3) 0px,
                 rgba(255, 255, 255, 0) 36px,
                 rgba(13, 92, 86, 0.025) 72px,
                 rgba(255, 255, 255, 0.6) 72px,
@@ -62,59 +62,8 @@ export default function ContactPage() {
           {/* Soft Center Lighting */}
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-white/40 blur-[100px] rounded-full pointer-events-none" />
 
-          {/* ─── Top Floating Pill Navbar ─── */}
-          <div className="relative z-20 px-3 sm:px-6 lg:px-8 pt-3 sm:pt-4">
-            <div className="w-full max-w-7xl mx-auto rounded-full bg-white shadow-[0_2px_12px_rgba(13,92,86,0.05)] px-4 sm:px-8 py-2.5 sm:py-3 flex items-center justify-between">
-              
-              {/* Brand Logo */}
-              <Link href="/" className="flex items-center group shrink-0">
-                <Image
-                  src="/logo.png"
-                  alt="Pulseware"
-                  width={140}
-                  height={35}
-                  className="h-7 sm:h-8 w-auto object-contain"
-                  priority
-                />
-              </Link>
-
-              {/* Center Navigation Links */}
-              <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-[13.5px] font-medium text-slate-600">
-                <Link href="/" className="hover:text-slate-900 transition-colors">
-                  Home
-                </Link>
-                <Link href="/about" className="hover:text-slate-900 transition-colors">
-                  About
-                </Link>
-                <Link href="/features" className="hover:text-slate-900 transition-colors">
-                  Features
-                </Link>
-                <Link href="/pricing" className="hover:text-slate-900 transition-colors">
-                  Pricing
-                </Link>
-                <Link href="/contact" className="flex items-center gap-1.5 text-[#0d8276] hover:text-[#0a5c53] font-semibold transition-colors">
-                  <span className="size-1.5 rounded-full bg-[#0d8276]" />
-                  <span>Contact Us</span>
-                </Link>
-              </nav>
-
-              {/* Right CTA Button */}
-              <div className="flex items-center gap-2.5 shrink-0">
-                <Link
-                  href="/login"
-                  className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white text-slate-900 text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md border border-slate-200/80 transition-all hover:scale-105 active:scale-95"
-                >
-                  Request Demo
-                </Link>
-              </div>
-            </div>
-          </div>
+          {/* Unified Floating Pill Navbar */}
+          <PublicNavbar activePage="contact" />
 
           {/* ─── Header Copy ─── */}
           <div className="relative z-10 px-5 sm:px-10 pt-12 sm:pt-16 pb-6 text-center max-w-4xl mx-auto flex flex-col items-center">
@@ -353,10 +302,8 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="border-t border-slate-200/80 bg-white py-12 px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
-        <p>© 2026 PULSEware. The intelligent operating system for modern healthcare.</p>
-      </footer>
+      {/* ─── UNIFIED PUBLIC FOOTER ─── */}
+      <PublicFooter />
 
     </div>
   );

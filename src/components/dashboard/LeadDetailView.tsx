@@ -17,7 +17,7 @@ import {
   ExternalLink,
   Bot,
   User,
-  Sparkles,
+  TrendingUp,
   Save,
   Check,
   Send,
@@ -389,7 +389,7 @@ export function LeadDetailView({
           {/* Funnel Progress Stepper */}
           <div className="bg-white dark:bg-slate-900 rounded-[8px] border border-slate-200 dark:border-slate-800 p-3.5 space-y-3 shadow-2xs">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-amber-500" />
+              <TrendingUp className="size-3.5 text-teal-600" />
               <span>Funnel Stage</span>
             </h3>
 

@@ -19,7 +19,6 @@ import {
   X,
   Phone,
   Calendar,
-  Sparkles,
   ExternalLink,
   ChevronRight,
 } from 'lucide-react';

@@ -16,7 +16,6 @@ import {
   LuColumns2,
   LuEllipsis,
   LuSend,
-  LuSparkles,
   LuPhone,
   LuCalendar,
   LuExternalLink,

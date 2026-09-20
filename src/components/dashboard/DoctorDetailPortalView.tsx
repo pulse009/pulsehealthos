@@ -20,7 +20,7 @@ import {
   LuSearch as Search,
   LuCoffee as Coffee,
   LuCoins as Coins,
-  LuSparkles as Sparkles,
+  LuRefreshCw as RefreshCw,
   LuLayers as Layers,
   LuChevronRight as ChevronRight,
   LuChevronDown as ChevronDown,
@@ -3366,7 +3366,7 @@ export function DoctorDetailPortalView({
                     onClick={handleGenerateRandomDoctorPassword}
                     className="text-[11px] font-semibold text-[#0d6157] dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Sparkles className="size-3" />
+                    <RefreshCw className="size-3" />
                     <span>Generate Strong Password</span>
                   </button>
                 </div>
