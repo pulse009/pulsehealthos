@@ -336,7 +336,7 @@ export default function AboutPage() {
           </p>
           <div className="pt-2 flex justify-center gap-4">
             <Link
-              href="/login"
+              href="/contact"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-[#0b544b] text-sm font-semibold shadow-md hover:bg-slate-100 transition-all hover:scale-105 active:scale-95"
             >
               <span>Schedule a Demo</span>

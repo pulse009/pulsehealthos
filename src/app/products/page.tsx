@@ -253,7 +253,7 @@ export default async function ProductsPage() {
 
             <div className="pt-4 flex flex-wrap items-center gap-3">
               <Link
-                href="/pricing"
+                href="/contact"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
               >
                 <span>Get Pulse Now (499 SAR/mo)</span>
@@ -308,7 +308,7 @@ export default async function ProductsPage() {
                   <PhoneCall className="size-4" />
                 </Link>
                 <Link
-                  href="/pricing"
+                  href="/contact"
                   className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold transition-all"
                 >
                   <span>Custom Telephony Setup</span>

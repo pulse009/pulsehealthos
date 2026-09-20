@@ -1107,7 +1107,7 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
 
             <div className="mt-9">
               <Link
-                href="/pricing"
+                href="/contact"
                 className="w-full py-3.5 px-6 rounded-full border border-slate-200 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-900 text-sm font-semibold text-center block transition-all shadow-xs"
               >
                 Choose Pulse Now
@@ -1167,7 +1167,7 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
 
             <div className="mt-9">
               <Link
-                href="/pricing"
+                href="/contact"
                 className="w-full py-3.5 px-6 rounded-full bg-white hover:bg-slate-100 text-[#0b544b] text-sm font-semibold text-center block transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
               >
                 Get Started with HealthOS

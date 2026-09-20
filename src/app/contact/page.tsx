@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Clock,
   Globe2,
-  Mail,
   MapPin,
   MessageSquare,
   Phone,
@@ -24,7 +23,6 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: '',
-    email: '',
     phone: '',
     clinicName: '',
     clinicType: 'Hospital / Multi-Specialty Network',
@@ -81,7 +79,7 @@ export default function ContactPage() {
             </h1>
 
             <p className="mt-5 text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl mx-auto font-normal">
-              Whether you want a personalized demo, custom multi-branch pricing, or technical migration assistance, our team is here to assist.
+              Whether you want a personalized demo, custom multi-branch pricing, or technical migration assistance, our team is ready to connect with you.
             </p>
           </div>
         </div>
@@ -100,7 +98,7 @@ export default function ContactPage() {
                 </div>
                 <h3 className="text-2xl font-semibold text-slate-900">Thank you, {form.name || 'Doctor'}!</h3>
                 <p className="text-sm text-slate-600 max-w-md mx-auto">
-                  We have received your message. Our clinical specialist will contact you via WhatsApp and email within 2 business hours.
+                  We have received your message. Our clinical specialist will contact you via WhatsApp and phone (+966 556322688) within 2 business hours.
                 </p>
                 <div className="pt-4">
                   <button
@@ -140,22 +138,6 @@ export default function ContactPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Work Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="sarah@hospital.com"
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Phone Number / WhatsApp *
                     </label>
                     <input
@@ -163,11 +145,13 @@ export default function ContactPage() {
                       required
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder="+966 50 123 4567"
+                      placeholder="+966 55 632 2688"
                       className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                       Clinic / Hospital Name *
@@ -181,23 +165,23 @@ export default function ContactPage() {
                       className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                    Facility Type
-                  </label>
-                  <select
-                    value={form.clinicType}
-                    onChange={(e) => setForm({ ...form, clinicType: e.target.value })}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
-                  >
-                    <option>Hospital / Multi-Specialty Network</option>
-                    <option>Dermatology &amp; Aesthetic Clinic</option>
-                    <option>Dental Practice</option>
-                    <option>General Practice &amp; Family Medicine</option>
-                    <option>Specialty Surgery Center</option>
-                  </select>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Facility Type
+                    </label>
+                    <select
+                      value={form.clinicType}
+                      onChange={(e) => setForm({ ...form, clinicType: e.target.value })}
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all"
+                    >
+                      <option>Hospital / Multi-Specialty Network</option>
+                      <option>Dermatology &amp; Aesthetic Clinic</option>
+                      <option>Dental Practice</option>
+                      <option>General Practice &amp; Family Medicine</option>
+                      <option>Specialty Surgery Center</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
@@ -209,7 +193,7 @@ export default function ContactPage() {
                     required
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    placeholder="Tell us about your clinic setup, current software, and what features you are looking for..."
+                    placeholder="Tell us about your clinic setup, current operations, and what modules you want to explore..."
                     className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6157]/20 focus:border-[#0d6157] transition-all resize-none"
                   />
                 </div>
@@ -227,50 +211,52 @@ export default function ContactPage() {
             )}
           </div>
 
-          {/* Right Column: Direct Channels & Offices */}
+          {/* Right Column: Direct Phone, WhatsApp & Regional Offices */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Direct WhatsApp Channel */}
-            <div className="p-7 rounded-[28px] bg-[#eef9f6] border border-[#d2eee5] space-y-3">
+            {/* Direct Phone & WhatsApp Support */}
+            <div className="p-7 rounded-[28px] bg-[#eef9f6] border border-[#d2eee5] space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
-                  <MessageSquare className="size-5" />
+                  <PhoneCall className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-slate-900">Direct WhatsApp Inquiries</h3>
-                  <div className="text-xs text-emerald-700 font-medium">Instant automated &amp; human support</div>
+                  <h3 className="text-base font-semibold text-slate-900">Direct Phone &amp; WhatsApp</h3>
+                  <div className="text-xs text-emerald-700 font-medium">Available for clinics 24/7</div>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Want to test the AI Fast Router live? Message our official WhatsApp hotline to experience the booking flow firsthand.
-              </p>
-              <div className="pt-2">
+              
+              <div className="bg-white p-4 rounded-2xl border border-emerald-200/80 space-y-2">
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Direct Hotline</div>
+                <div className="text-lg sm:text-xl font-bold text-slate-900 font-mono tracking-wide">
+                  +966 556322688
+                </div>
+                <div className="text-xs text-slate-500">Call directly or start a chat on WhatsApp</div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <a
-                  href="https://wa.me/966500000000"
+                  href="https://wa.me/966556322688"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all hover:scale-105 active:scale-95"
                 >
+                  <MessageSquare className="size-3.5" />
                   <span>Chat on WhatsApp</span>
-                  <ArrowRight className="size-3.5" />
+                </a>
+                <a
+                  href="tel:+966556322688"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold border border-slate-200/80 shadow-xs transition-all hover:scale-105 active:scale-95"
+                >
+                  <Phone className="size-3.5 text-[#0d6157]" />
+                  <span>Call Now</span>
                 </a>
               </div>
             </div>
 
-            {/* Sales & Technical Support */}
+            {/* Working Hours */}
             <div className="p-7 rounded-[28px] bg-slate-50 border border-slate-200/80 space-y-4">
               <div className="flex items-start gap-3.5">
-                <div className="size-9 rounded-xl bg-white border border-slate-200 text-[#0d6157] flex items-center justify-center shrink-0 shadow-xs">
-                  <Mail className="size-4" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email Us</div>
-                  <div className="text-sm font-semibold text-slate-900 mt-0.5">sales@pulseware.health</div>
-                  <div className="text-xs text-slate-500">support@pulseware.health</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3.5 pt-3 border-t border-slate-200/60">
                 <div className="size-9 rounded-xl bg-white border border-slate-200 text-[#0d6157] flex items-center justify-center shrink-0 shadow-xs">
                   <Clock className="size-4" />
                 </div>
