@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter';
+import { TopAnnouncementBar } from '@/components/layout/TopAnnouncementBar';
 import {
   Activity,
   ArrowRight,
@@ -76,16 +77,7 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
     <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#0d8276] selection:text-white relative overflow-x-hidden">
       
       {/* ─── 1. TOP ANNOUNCEMENT BAR ─── */}
-      <div className="bg-[#093e38] text-teal-100 text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2 border-b border-teal-800/40">
-        <span className="inline-flex items-center gap-1 bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider">
-          <Zap className="size-3" /> New Release
-        </span>
-        <span className="hidden sm:inline">Pulse Speak Autonomous Voice AI &amp; Multi-Branch Clinic Telephony is now live!</span>
-        <span className="sm:hidden">Pulse Speak Voice AI is live!</span>
-        <Link href="/pricing" className="underline font-semibold hover:text-white transition-colors ml-1 inline-flex items-center gap-0.5">
-          View Solutions <ChevronRight className="size-3" />
-        </Link>
-      </div>
+      <TopAnnouncementBar />
 
       {/* ─── 2. HERO SHELL CONTAINER ─── */}
       <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">

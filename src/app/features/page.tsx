@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter';
+import { TopAnnouncementBar } from '@/components/layout/TopAnnouncementBar';
 import { getSessionUser } from '@/lib/auth/session';
 
 export const metadata = {
@@ -51,6 +52,9 @@ export default async function FeaturesPage() {
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#0d8276] selection:text-white relative overflow-x-hidden">
       
+      {/* ─── TOP ANNOUNCEMENT BAR ─── */}
+      <TopAnnouncementBar />
+
       {/* ─── 1. HERO CARD WITH UNIFIED NAVBAR ─── */}
       <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3 pb-8 sm:pb-12">
         <div className="relative w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_12px_45px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d5f1ec] via-[#edf9f6] to-[#c6ece4] pb-14 sm:pb-20">
