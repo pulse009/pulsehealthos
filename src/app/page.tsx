@@ -1,5 +1,6 @@
 import React from 'react';
 import { getSessionUser } from '@/lib/auth/session';
+import { getAllSiteContent } from '@/lib/cms/service';
 import LandingPageClient from '@/components/landing/LandingPageClient';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,7 @@ export const metadata = {
 
 export default async function HomePage() {
   const user = await getSessionUser();
+  const cmsContent = await getAllSiteContent();
 
   const portalHref = user
     ? user.role === 'SUPER_ADMIN'
@@ -19,5 +21,12 @@ export default async function HomePage() {
       : '/portal'
     : '/login';
 
-  return <LandingPageClient user={user} portalHref={portalHref} />;
+  return (
+    <LandingPageClient
+      user={user}
+      portalHref={portalHref}
+      cmsContent={cmsContent}
+    />
+  );
 }
+

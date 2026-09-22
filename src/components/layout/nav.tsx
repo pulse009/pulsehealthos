@@ -32,6 +32,7 @@ import {
   LuHeartPulse as HeartPulse,
   LuPill as Pill,
   LuFlaskConical as FlaskConical,
+  LuGlobe as Globe,
 } from 'react-icons/lu';
 import { FaUserDoctor as Stethoscope } from 'react-icons/fa6';
 import { cn } from '@/components/ui/primitives';
@@ -56,10 +57,12 @@ const ICONS = {
   analytics: BarChart3,
   users: UserCog,
   logs: ScrollText,
+  cms: Globe,
 } as const;
 
 export const ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/admin/cms', label: 'Website CMS', icon: 'cms' },
   { href: '/admin/clinics', label: 'Clinics', icon: 'clinics' },
   { href: '/admin/leads', label: 'Leads', icon: 'leads' },
   { href: '/admin/appointments', label: 'Appointments', icon: 'appointments' },

@@ -1586,5 +1586,16 @@ model LabOrder {
   @@index([specimenId])
 }
 
+// ---------------------------------------------------------------------------
+// Public CMS & Website Dynamic Content
+// ---------------------------------------------------------------------------
 
+model SiteContent {
+  id        String   @id @default(uuid())
+  key       String   @unique // e.g. "announcement", "hero", "products", "features", "pricing", "about", "contact", "footer"
+  content   Json     // Structured JSON payload
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
+  @@map("site_contents")
+}

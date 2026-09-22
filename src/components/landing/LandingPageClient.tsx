@@ -50,6 +50,9 @@ import {
   Zap,
 } from 'lucide-react';
 
+import { AllSiteContent } from '@/lib/cms/types';
+import { DEFAULT_SITE_CONTENT } from '@/lib/cms/defaults';
+
 interface LandingPageClientProps {
   user: {
     id: string;
@@ -58,9 +61,14 @@ interface LandingPageClientProps {
     clinicId?: string | null;
   } | null;
   portalHref: string;
+  cmsContent?: AllSiteContent;
 }
 
-export default function LandingPageClient({ user, portalHref }: LandingPageClientProps) {
+export default function LandingPageClient({
+  user,
+  portalHref,
+  cmsContent = DEFAULT_SITE_CONTENT,
+}: LandingPageClientProps) {
   // State for Product Suite active tab
   const [activeProductTab, setActiveProductTab] = useState<'healthos' | 'now' | 'speak'>('healthos');
 
@@ -73,11 +81,13 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
   // State for billing preview toggle
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
+  const { announcement, hero, architecture, products, pricing, footer } = cmsContent;
+
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#0d8276] selection:text-white relative overflow-x-hidden">
       
       {/* ─── 1. TOP ANNOUNCEMENT BAR ─── */}
-      <TopAnnouncementBar />
+      <TopAnnouncementBar content={announcement} />
 
       {/* ─── 2. HERO SHELL CONTAINER ─── */}
       <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">
@@ -109,62 +119,52 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
           <PublicNavbar activePage="home" user={user} portalHref={portalHref} />
 
           {/* ─── Hero Main Center Content ─── */}
-          <div className="relative z-20 px-4 sm:px-8 lg:px-12 pt-12 sm:pt-16 pb-12 sm:pb-16 text-center max-w-5xl mx-auto flex flex-col items-center justify-center">
+          <div className="relative z-20 px-4 sm:px-8 lg:px-12 pt-10 sm:pt-16 pb-12 sm:pb-16 text-center max-w-5xl mx-auto flex flex-col items-center justify-center">
             
             {/* Pill Tag */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 shadow-sm border border-[#0d8276]/20 text-[#0d6157] text-xs font-semibold tracking-wide mb-6">
-              <span className="flex size-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Production-Grade Healthcare Operating System</span>
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/90 shadow-sm border border-[#0d8276]/20 text-[#0d6157] text-[11px] sm:text-xs font-semibold tracking-normal sm:tracking-wide mb-6 whitespace-nowrap shrink-0 max-w-full">
+              <span className="flex size-1.5 sm:size-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="truncate">{hero.badgeText}</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-5xl lg:text-[62px] font-semibold tracking-tight leading-[1.12] text-slate-900">
-              <span className="block text-[#0d5c56]">Intelligent Clinic Management,</span>
-              <span className="block text-slate-900 mt-1 sm:mt-2">Automated From Patient To Payout</span>
+              <span className="block text-[#0d5c56]">{hero.headlineFirst}</span>
+              <span className="block text-slate-900 mt-1 sm:mt-2">{hero.headlineSecond}</span>
             </h1>
 
             {/* Subtitle */}
             <p className="mt-5 sm:mt-6 text-sm sm:text-base lg:text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto font-normal">
-              Pulseware synchronizes your entire clinical operation into one seamless ecosystem: autonomous <strong>WhatsApp &amp; Voice AI booking</strong>, <strong>smart Electronic Health Records (EHR)</strong>, <strong>pharmacy batch inventory</strong>, and <strong>automated doctor commission payouts</strong> — with zero double-booking guaranteed.
+              {hero.subtitle}
             </p>
 
             {/* Action Buttons */}
             <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 w-full sm:w-auto justify-center">
               <a
-                href="#products"
+                href={hero.primaryCtaHref || '#products'}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#0d6157] hover:bg-[#0a4e46] text-white text-sm font-semibold shadow-[0_4px_20px_rgba(13,97,87,0.3)] transition-all hover:scale-105 active:scale-95 group"
               >
-                <span>Explore Platform Products</span>
+                <span>{hero.primaryCtaText}</span>
                 <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
               </a>
 
               <Link
-                href="/contact"
+                href={hero.secondaryCtaHref || '/contact'}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold border border-slate-200/90 shadow-sm transition-all hover:scale-105 active:scale-95"
               >
                 <Calendar className="size-4 text-[#0d6157]" />
-                <span>Request Custom Demo</span>
+                <span>{hero.secondaryCtaText}</span>
               </Link>
             </div>
 
             {/* Fast Stats Row Under CTA */}
-            <div className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6 border-t border-[#0d6157]/15 w-full max-w-4xl text-left">
-              <div className="bg-white/60 backdrop-blur-xs p-3 rounded-2xl border border-white/80">
-                <div className="text-xl sm:text-2xl font-bold text-[#0d5c56]">0%</div>
-                <div className="text-[11px] text-slate-500 font-medium">Double-Booking Collision Rate</div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-xs p-3 rounded-2xl border border-white/80">
-                <div className="text-xl sm:text-2xl font-bold text-[#0d5c56]">&lt; 50ms</div>
-                <div className="text-[11px] text-slate-500 font-medium">Live Availability Engine</div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-xs p-3 rounded-2xl border border-white/80">
-                <div className="text-xl sm:text-2xl font-bold text-[#0d5c56]">24/7</div>
-                <div className="text-[11px] text-slate-500 font-medium">WhatsApp &amp; Voice Booking</div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-xs p-3 rounded-2xl border border-white/80">
-                <div className="text-xl sm:text-2xl font-bold text-[#0d5c56]">11 Roles</div>
-                <div className="text-[11px] text-slate-500 font-medium">Role-Based Hospital Security</div>
-              </div>
+            <div className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-6 pt-6 border-t border-[#0d6157]/15 w-full max-w-4xl text-left">
+              {hero.stats.map((stat, idx) => (
+                <div key={idx} className="bg-white/60 backdrop-blur-xs p-3 sm:p-3.5 rounded-2xl border border-white/80">
+                  <div className="text-lg sm:text-2xl font-bold text-[#0d5c56]">{stat.value}</div>
+                  <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-tight mt-0.5">{stat.label}</div>
+                </div>
+              ))}
             </div>
 
           </div>
@@ -182,79 +182,37 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold tracking-wider uppercase mb-1.5">
                 <ShieldCheck className="size-3.5 text-teal-600" />
-                <span>Enterprise Standards &amp; Architecture</span>
+                <span>{architecture.badge}</span>
               </div>
               <h3 className="text-base sm:text-lg font-semibold text-slate-900">
-                Engineered for hospitals, polyclinics, specialized centers &amp; medical networks
+                {architecture.title}
               </h3>
             </div>
             <p className="text-xs text-slate-500 max-w-md lg:text-right font-normal">
-              Built on mathematical PostgreSQL concurrency guarantees and strict tenant boundary isolation.
+              {architecture.subtitle}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            
-            {/* Standard 1 */}
-            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-teal-200/90 shadow-2xs hover:shadow-xs transition-all group">
-              <div className="size-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <ShieldCheck className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                  PostgreSQL GiST
+            {architecture.items.map((item, idx) => {
+              const icons = [ShieldCheck, Lock, Globe2, Database];
+              const IconComponent = icons[idx % icons.length] || ShieldCheck;
+              return (
+                <div key={idx} className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-teal-200/90 shadow-2xs hover:shadow-xs transition-all group">
+                  <div className="size-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <IconComponent className="size-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                      {item.title}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate">
+                      {item.tag || item.desc}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-500 truncate">
-                  Zero Double-Booking Guarantee
-                </div>
-              </div>
-            </div>
-
-            {/* Standard 2 */}
-            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-teal-200/90 shadow-2xs hover:shadow-xs transition-all group">
-              <div className="size-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Lock className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                  Strict Tenant Scoping
-                </div>
-                <div className="text-[11px] text-slate-500 truncate">
-                  Cryptographic IDOR-Proof
-                </div>
-              </div>
-            </div>
-
-            {/* Standard 3 */}
-            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-teal-200/90 shadow-2xs hover:shadow-xs transition-all group">
-              <div className="size-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Globe2 className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                  20+ Locales &amp; Timezones
-                </div>
-                <div className="text-[11px] text-slate-500 truncate">
-                  Arabic, English &amp; IANA Math
-                </div>
-              </div>
-            </div>
-
-            {/* Standard 4 */}
-            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-teal-200/90 shadow-2xs hover:shadow-xs transition-all group">
-              <div className="size-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Database className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                  UTC Timestamptz Trails
-                </div>
-                <div className="text-[11px] text-slate-500 truncate">
-                  Immutable Clinical Audit Logs
-                </div>
-              </div>
-            </div>
-
+              );
+            })}
           </div>
         </div>
       </section>
@@ -262,8 +220,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
       {/* ─── 4. FLAGSHIP PRODUCTS SUITE (MAIN PRODUCT SHOWCASE) ─── */}
       <section id="products" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-12">
         <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0d6157] text-xs font-semibold uppercase tracking-wider mb-3">
-            <Layers className="size-3.5" /> Product Suite
+          <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0d6157] text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-3 whitespace-nowrap shrink-0 max-w-full">
+            <Layers className="size-3.5 shrink-0" /> <span className="truncate">Product Suite</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900">
             Three Powerful Products. <br className="hidden sm:inline" />
@@ -276,40 +234,37 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
           {/* Interactive Product Selector Tabs */}
           <div className="mt-8 inline-flex p-1.5 rounded-2xl bg-slate-100 border border-slate-200 shadow-inner max-w-full overflow-x-auto">
             <button
-              type="button"
               onClick={() => setActiveProductTab('healthos')}
               className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
                 activeProductTab === 'healthos'
-                  ? 'bg-white text-[#0d5c56] shadow-sm border border-slate-200/60'
+                  ? 'bg-white text-[#0d6157] shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <HeartPulse className="size-4 text-teal-600" />
-              <span>Pulse HealthOS (Full PMS)</span>
+              <HeartPulse className="size-4 shrink-0 text-[#0d8276]" />
+              <span>HealthOS</span>
             </button>
             <button
-              type="button"
               onClick={() => setActiveProductTab('now')}
               className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
                 activeProductTab === 'now'
-                  ? 'bg-white text-[#0d5c56] shadow-sm border border-slate-200/60'
+                  ? 'bg-white text-emerald-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <MessageSquare className="size-4 text-emerald-600" />
-              <span>Pulse Now (WhatsApp AI)</span>
+              <MessageSquare className="size-4 shrink-0 text-emerald-600" />
+              <span>Pulse Now</span>
             </button>
             <button
-              type="button"
               onClick={() => setActiveProductTab('speak')}
               className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
                 activeProductTab === 'speak'
-                  ? 'bg-white text-[#0d5c56] shadow-sm border border-slate-200/60'
+                  ? 'bg-white text-cyan-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Volume2 className="size-4 text-cyan-600" />
-              <span>Pulse Speak (Voice AI)</span>
+              <Volume2 className="size-4 shrink-0 text-cyan-600" />
+              <span>Pulse Speak</span>
             </button>
           </div>
         </div>
@@ -321,8 +276,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
               
               {/* Left Column: Product Overview & Feature Highlights */}
               <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-200/60">
-                  <HeartPulse className="size-3.5" /> Flagship Clinic Operating System
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-teal-50 text-teal-800 text-[11px] sm:text-xs font-semibold border border-teal-200/60 whitespace-nowrap shrink-0 max-w-full">
+                  <HeartPulse className="size-3.5 shrink-0" /> <span className="truncate">Flagship Clinic Operating System</span>
                 </div>
                 
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
@@ -382,78 +337,80 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
               </div>
 
               {/* Right Column: Visual HealthOS Dashboard Mockup */}
-              <div className="lg:col-span-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-5 sm:p-7 text-white shadow-2xl border border-slate-700/80 space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-700/80 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-3 rounded-full bg-rose-500" />
-                    <div className="size-3 rounded-full bg-amber-500" />
-                    <div className="size-3 rounded-full bg-emerald-500" />
-                    <span className="text-xs text-slate-400 font-mono ml-2">healthos.pulseware.internal</span>
+              <div className="lg:col-span-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-4 sm:p-6 text-white shadow-2xl border border-slate-700/80 space-y-4 sm:space-y-5 overflow-hidden">
+                <div className="flex items-center justify-between border-b border-slate-700/80 pb-3 sm:pb-4 gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="size-2.5 sm:size-3 rounded-full bg-rose-500" />
+                      <div className="size-2.5 sm:size-3 rounded-full bg-amber-500" />
+                      <div className="size-2.5 sm:size-3 rounded-full bg-emerald-500" />
+                    </div>
+                    <span className="text-[10px] sm:text-xs text-slate-400 font-mono ml-1 sm:ml-2 truncate">healthos.pulseware.internal</span>
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                  <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 shrink-0 whitespace-nowrap">
                     Live Clinic OS
                   </span>
                 </div>
 
                 {/* Dashboard Metrics Strip */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
-                    <div className="text-[11px] text-slate-400">Total Patients</div>
-                    <div className="text-lg sm:text-xl font-bold text-white mt-1">1,482</div>
-                    <div className="text-[10px] text-emerald-400">+14% this month</div>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="bg-slate-800/80 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-700 flex flex-col justify-between">
+                    <div className="text-[10px] sm:text-[11px] text-slate-400 leading-tight">Total Patients</div>
+                    <div className="text-base sm:text-xl font-bold text-white my-0.5 sm:my-1">1,482</div>
+                    <div className="text-[9px] sm:text-[10px] text-emerald-400 leading-tight">+14% month</div>
                   </div>
-                  <div className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
-                    <div className="text-[11px] text-slate-400">Pharmacy Low Stock</div>
-                    <div className="text-lg sm:text-xl font-bold text-amber-400 mt-1">3 Items</div>
-                    <div className="text-[10px] text-slate-400">Auto PO Ready</div>
+                  <div className="bg-slate-800/80 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-700 flex flex-col justify-between">
+                    <div className="text-[10px] sm:text-[11px] text-slate-400 leading-tight">Low Stock</div>
+                    <div className="text-base sm:text-xl font-bold text-amber-400 my-0.5 sm:my-1">3 Items</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 leading-tight">Auto PO Ready</div>
                   </div>
-                  <div className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
-                    <div className="text-[11px] text-slate-400">Daily Revenue</div>
-                    <div className="text-lg sm:text-xl font-bold text-teal-300 mt-1">14,250 SAR</div>
-                    <div className="text-[10px] text-emerald-400">Balanced</div>
+                  <div className="bg-slate-800/80 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-700 flex flex-col justify-between">
+                    <div className="text-[10px] sm:text-[11px] text-slate-400 leading-tight">Daily Revenue</div>
+                    <div className="text-sm sm:text-xl font-bold text-teal-300 my-0.5 sm:my-1 truncate">14,250 SAR</div>
+                    <div className="text-[9px] sm:text-[10px] text-emerald-400 leading-tight">Balanced</div>
                   </div>
                 </div>
 
                 {/* Active Consultation / Doctor Card */}
-                <div className="bg-slate-800/90 rounded-2xl p-4 border border-slate-700 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="size-9 rounded-full bg-teal-600 flex items-center justify-center font-bold text-xs text-white">
+                <div className="bg-slate-800/90 rounded-2xl p-3.5 sm:p-4 border border-slate-700 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                      <div className="size-8 sm:size-9 rounded-full bg-teal-600 flex items-center justify-center font-bold text-xs text-white shrink-0">
                         DC
                       </div>
-                      <div>
-                        <div className="text-xs font-semibold text-white">Dr. David Chen, MD</div>
-                        <div className="text-[10px] text-slate-400">Chief of Orthopedics &bull; Room 204</div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-white truncate">Dr. David Chen, MD</div>
+                        <div className="text-[10px] text-slate-400 truncate">Chief of Orthopedics &bull; Room 204</div>
                       </div>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 font-medium">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 font-medium shrink-0 whitespace-nowrap">
                       In Consultation
                     </span>
                   </div>
 
                   {/* Patient mini record */}
                   <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-700/60 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 font-medium">Patient: Khalid Mansoor</span>
-                      <span className="text-[10px] font-mono text-teal-400">MRN: #PL-8942</span>
+                    <div className="flex items-center justify-between text-xs gap-2">
+                      <span className="text-slate-300 font-medium text-[11px] sm:text-xs truncate">Patient: Khalid Mansoor</span>
+                      <span className="text-[10px] font-mono text-teal-400 shrink-0 whitespace-nowrap">MRN: #PL-8942</span>
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[10px] sm:text-[11px] text-slate-400 leading-snug">
                       Diagnosis: Acute Lumbar Strain &bull; Prescribed: Ibuprofen 600mg + Physical Therapy Order
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                      <span>Lab Status: CBC Normal</span>
-                      <span className="text-emerald-400">Rx Sent to Pharmacy</span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800 gap-2">
+                      <span className="truncate">Lab Status: CBC Normal</span>
+                      <span className="text-emerald-400 shrink-0">Rx Sent to Pharmacy</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Pharmacy stock fast bar */}
-                <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <Pill className="size-4 text-teal-400" />
-                    <span className="text-slate-300">Amoxicillin 500mg (Batch #BX-902)</span>
+                <div className="bg-slate-800/60 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-700 flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Pill className="size-3.5 sm:size-4 text-teal-400 shrink-0" />
+                    <span className="text-slate-300 text-[11px] sm:text-xs truncate">Amoxicillin 500mg (Batch #BX-902)</span>
                   </div>
-                  <span className="text-emerald-400 font-mono text-xs">482 Units In Stock</span>
+                  <span className="text-emerald-400 font-mono text-[10px] sm:text-xs shrink-0 whitespace-nowrap">482 Units In Stock</span>
                 </div>
               </div>
 
@@ -468,8 +425,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
               
               {/* Left Column: Product Overview */}
               <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200/60">
-                  <MessageSquare className="size-3.5" /> Autonomous WhatsApp Booking Engine
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] sm:text-xs font-semibold border border-emerald-200/60 whitespace-nowrap shrink-0 max-w-full">
+                  <MessageSquare className="size-3.5 shrink-0" /> <span className="truncate">Autonomous WhatsApp Booking Engine</span>
                 </div>
                 
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
@@ -614,8 +571,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
               
               {/* Left Column: Product Overview */}
               <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 text-cyan-800 text-xs font-semibold border border-cyan-200/60">
-                  <Volume2 className="size-3.5" /> Autonomous Voice AI Telephony
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-cyan-50 text-cyan-800 text-[11px] sm:text-xs font-semibold border border-cyan-200/60 whitespace-nowrap shrink-0 max-w-full">
+                  <Volume2 className="size-3.5 shrink-0" /> <span className="truncate">Autonomous Voice AI Telephony</span>
                 </div>
                 
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
@@ -746,8 +703,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-18">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white text-[#0d6157] text-xs font-semibold shadow-xs border border-teal-200/80 mb-3">
-              <Cpu className="size-3.5" /> Full Feature Matrix
+            <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1 rounded-full bg-white text-[#0d6157] text-[11px] sm:text-xs font-semibold shadow-xs border border-teal-200/80 mb-3 whitespace-nowrap shrink-0 max-w-full">
+              <Cpu className="size-3.5 shrink-0" /> <span className="truncate">Full Feature Matrix</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900">
               Built For Every Healthcare Workflow
@@ -910,7 +867,7 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
 
       {/* ─── 6. ARCHITECTURAL SUPERIORITY (HOW IT WORKS UNDER THE HOOD) ─── */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="rounded-[32px] sm:rounded-[44px] bg-[#073631] text-white p-8 sm:p-12 lg:p-16 border border-teal-800/80 shadow-2xl relative overflow-hidden">
+        <div className="rounded-[32px] sm:rounded-[44px] bg-[#073631] text-white p-6 sm:p-12 lg:p-16 border border-teal-800/80 shadow-2xl relative overflow-hidden">
           
           {/* Subtle Ambient Glow */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 blur-[90px] rounded-full pointer-events-none" />
@@ -919,8 +876,9 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center relative z-10">
             
             <div className="lg:col-span-6 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-semibold border border-teal-500/30">
-                <ShieldAlert className="size-3.5" /> High-Concurreny Architectural Guarantee
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-teal-500/20 text-teal-300 text-[11px] sm:text-xs font-semibold border border-teal-500/30 whitespace-nowrap shrink-0 max-w-full">
+                <ShieldAlert className="size-3.5 shrink-0" />
+                <span className="truncate">High-Concurrency Architectural Guarantee</span>
               </div>
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-[1.15]">
@@ -1016,8 +974,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
       {/* ─── 7. PRODUCT PRICING SNAPSHOT SECTION ─── */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0d6157] text-xs font-semibold uppercase tracking-wider mb-3">
-            <CreditCard className="size-3.5" /> Simple Transparent Plans
+          <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0d6157] text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-3 whitespace-nowrap shrink-0 max-w-full">
+            <CreditCard className="size-3.5 shrink-0" /> <span className="truncate">Simple Transparent Plans</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900">
             Predictable Pricing For Every Scale
@@ -1027,29 +985,31 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
           </p>
 
           {/* Billing Switcher */}
-          <div className="mt-8 inline-flex items-center p-1.5 rounded-full bg-white shadow-sm border border-slate-200/80">
+          <div className="mt-8 inline-flex items-center p-1 sm:p-1.5 rounded-full bg-white shadow-sm border border-slate-200/80 whitespace-nowrap shrink-0">
             <button
               type="button"
               onClick={() => setBillingCycle('monthly')}
-              className={`px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${
+              className={`px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${
                 billingCycle === 'monthly'
                   ? 'bg-[#0d6157] text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Monthly Billing
+              <span className="hidden sm:inline whitespace-nowrap">Monthly Billing</span>
+              <span className="inline sm:hidden whitespace-nowrap">Monthly</span>
             </button>
             <button
               type="button"
               onClick={() => setBillingCycle('annual')}
-              className={`px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
                 billingCycle === 'annual'
                   ? 'bg-[#0d6157] text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Annual Billing</span>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">
+              <span className="hidden sm:inline whitespace-nowrap">Annual Billing</span>
+              <span className="inline sm:hidden whitespace-nowrap">Annual</span>
+              <span className="text-[9.5px] sm:text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 leading-tight">
                 Save 20%
               </span>
             </button>
@@ -1236,8 +1196,8 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
       {/* ─── 8. FREQUENTLY ASKED QUESTIONS ACCORDION ─── */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-2">
-            <HelpCircle className="size-3.5" /> Support &amp; FAQ
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] sm:text-xs font-semibold mb-2 whitespace-nowrap shrink-0 max-w-full">
+            <HelpCircle className="size-3.5 shrink-0" /> <span className="truncate">Support &amp; FAQ</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
             Frequently Asked Questions
@@ -1325,7 +1285,7 @@ export default function LandingPageClient({ user, portalHref }: LandingPageClien
       </section>
 
       {/* ─── 10. ENTERPRISE FOOTER ─── */}
-      <PublicFooter />
+      <PublicFooter content={footer} />
 
     </div>
   );

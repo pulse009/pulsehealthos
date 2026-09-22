@@ -22,22 +22,36 @@ import {
 import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { TopAnnouncementBar } from '@/components/layout/TopAnnouncementBar';
+import { getSessionUser } from '@/lib/auth/session';
+import { getAllSiteContent } from '@/lib/cms/service';
 
 export const metadata = {
   title: 'About Us · Pulseware Healthcare OS',
   description: 'Learn about Pulseware mission, vision, and the team modernizing healthcare management globally.',
 };
 
-export default function AboutPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function AboutPage() {
+  const user = await getSessionUser();
+  const cmsContent = await getAllSiteContent();
+  const { announcement, about, footer } = cmsContent;
+
+  const portalHref = user
+    ? user.role === 'SUPER_ADMIN'
+      ? '/admin'
+      : '/portal'
+    : '/login';
+
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#0d8276] selection:text-white relative overflow-x-hidden">
       
       {/* ─── TOP ANNOUNCEMENT BAR ─── */}
-      <TopAnnouncementBar />
+      <TopAnnouncementBar content={announcement} />
 
       {/* ─── ABOUT HERO CARD (Meditech Theme) ─── */}
-      <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3 pb-8 sm:pb-12">
-        <div className="relative w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_12px_45px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d5f1ec] via-[#edf9f6] to-[#c6ece4] pb-14 sm:pb-20">
+      <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3 pb-6 sm:pb-12">
+        <div className="relative w-full overflow-hidden rounded-[24px] sm:rounded-[36px] border-[3px] sm:border-[4px] border-white shadow-[0_12px_45px_rgba(13,92,86,0.08)] bg-gradient-to-b from-[#d5f1ec] via-[#edf9f6] to-[#c6ece4] pb-12 sm:pb-20">
           
           {/* Vertical Fluted / Slat Texture Overlay */}
           <div
@@ -56,267 +70,113 @@ export default function AboutPage() {
             }}
           />
 
-          {/* Soft Center Lighting */}
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-white/40 blur-[100px] rounded-full pointer-events-none" />
 
           {/* Unified Floating Pill Navbar */}
-          <PublicNavbar activePage="about" />
+          <PublicNavbar activePage="about" user={user} portalHref={portalHref} />
 
           {/* ─── Header Copy ─── */}
-          <div className="relative z-10 px-5 sm:px-10 pt-12 sm:pt-16 pb-6 text-center max-w-4xl mx-auto flex flex-col items-center">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 border border-teal-800/10 text-[#0d6157] text-xs font-semibold tracking-wider uppercase mb-4 shadow-xs">
-              Who We Are
+          <div className="relative z-10 px-4 sm:px-10 pt-10 sm:pt-16 pb-6 text-center max-w-4xl mx-auto flex flex-col items-center">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-white/80 border border-teal-800/10 text-[#0d6157] text-[11px] sm:text-xs font-semibold tracking-wider uppercase mb-4 shadow-xs whitespace-nowrap shrink-0 max-w-full">
+              <span className="truncate">{about.badge}</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[58px] font-semibold tracking-tight leading-[1.12]">
-              <span className="block text-[#0d5c56]">Pioneering the Next Generation</span>
-              <span className="block text-slate-900 mt-1">of Healthcare Technology</span>
+            <h1 className="text-3xl sm:text-5xl lg:text-[58px] font-semibold tracking-tight leading-[1.12]">
+              <span className="block text-[#0d5c56]">{about.headlineFirst}</span>
+              <span className="block text-slate-900 mt-1">{about.headlineSecond}</span>
             </h1>
 
-            <p className="mt-5 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
-              Pulseware is an enterprise clinical operating system built to unify patient care, autonomous WhatsApp AI scheduling, pharmacy inventory, and doctor operations across modern clinics and hospital networks.
+            <p className="mt-4 sm:mt-5 text-xs sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
+              {about.subtitle}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ─── MISSION & VISION CARDS ─── */}
+      {/* ─── MISSION & STATS ─── */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
           
-          {/* Card 1: Our Mission */}
-          <div className="bg-[#eef9f6] border border-[#d2eee5] rounded-[32px] sm:rounded-[36px] p-6 sm:p-9 flex flex-col justify-between shadow-[0_4px_24px_rgba(13,92,86,0.04)]">
+          {/* Mission Card */}
+          <div className="lg:col-span-7 bg-[#eef9f6] border border-[#d2eee5] rounded-[28px] sm:rounded-[36px] p-6 sm:p-9 flex flex-col justify-between shadow-xs">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mb-6">
-                Our Mission
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 items-start">
-                <div className="sm:col-span-5 bg-white rounded-2xl p-4 shadow-sm border border-slate-100/90 flex flex-col justify-between h-full min-h-[120px]">
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                    <Activity className="size-4 text-teal-600" />
-                    <span>Total Beds</span>
-                  </div>
-                  <div className="my-1">
-                    <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900">155</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
-                    <TrendingUp className="size-3" />
-                    <span>+12% vs last week</span>
-                  </div>
-                </div>
-
-                <div className="sm:col-span-7 space-y-3">
-                  <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100/90 space-y-2">
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
-                      <Clock className="size-3 text-slate-400" />
-                      <span>10:00 AM &amp; 02 PM</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="size-8 rounded-full bg-gradient-to-tr from-teal-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs shrink-0 shadow-sm">
-                        SJ
-                      </div>
-                      <div className="leading-tight">
-                        <div className="text-xs font-semibold text-slate-900">Dr. Sarah Johnson</div>
-                        <div className="text-[10px] text-slate-500">Cardiology</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-50 text-slate-600 font-medium">
-                      <span className="flex items-center gap-1 text-teal-700">
-                        <CheckCircle2 className="size-3 text-teal-600" /> Available : 08
-                      </span>
-                      <span className="flex items-center gap-1 text-slate-400">
-                        <Calendar className="size-3" /> Booked
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100/90 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
-                      <span>General Ward A</span>
-                      <span className="text-slate-400 text-[11px]">90%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div className="bg-rose-500 h-full rounded-full w-[90%]" />
-                    </div>
-                    <div className="flex items-center justify-between text-[10.5px] text-slate-500 font-medium">
-                      <span>34 / 55 beds</span>
-                      <span className="text-slate-400">21 available</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p className="mt-8 text-base sm:text-lg font-medium text-slate-800 leading-snug">
-              To simplify healthcare management with smart, reliable, and scalable technology.
-            </p>
-          </div>
-
-          {/* Card 2: Our Vision */}
-          <div className="bg-[#eef9f6] border border-[#d2eee5] rounded-[32px] sm:rounded-[36px] p-6 sm:p-9 flex flex-col justify-between shadow-[0_4px_24px_rgba(13,92,86,0.04)]">
-            <div>
-              <div className="space-y-3 mb-6">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-white shadow-sm border border-slate-100/90 text-xs font-semibold text-slate-700">
-                    08:00 AM
-                  </div>
-                  <div className="px-3.5 py-1.5 rounded-xl bg-white shadow-sm border border-slate-100/90 text-xs font-semibold text-slate-800 flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-amber-500" />
-                    <span>Occupied</span>
-                    <span className="text-slate-400 font-normal">Dr. Michael Chen &bull; Until 12:00 PM</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                  <div className="sm:col-span-4 px-3.5 py-2 rounded-xl bg-white shadow-sm border border-slate-100/90 text-xs font-mono text-slate-600">
-                    Rx ID: RX-2026-001
-                  </div>
-
-                  <div className="sm:col-span-8 bg-white rounded-2xl p-4 shadow-sm border border-slate-100/90 space-y-2.5">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900 tracking-tight">Sarah Miller</div>
-                      <div className="text-[11px] text-slate-400">Patient: (UHID-2024-1524)</div>
-                    </div>
-                    <div className="flex items-center gap-2.5 pt-1.5 border-t border-slate-50">
-                      <div className="size-7 rounded-full bg-gradient-to-tr from-amber-400 to-rose-400 flex items-center justify-center text-white font-semibold text-xs shrink-0 shadow-sm">
-                        SW
-                      </div>
-                      <div className="leading-tight">
-                        <div className="text-xs font-semibold text-slate-800">Dr. Sarah Williams</div>
-                        <div className="text-[10px] text-slate-400">Cardiology</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-teal-200 text-teal-800 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-4 whitespace-nowrap shrink-0 max-w-full">
+                <HeartPulse className="size-3.5 shrink-0" /> <span className="truncate">{about.missionTitle}</span>
               </div>
 
-              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mt-2">
-                Our Vision
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 mb-4">
+                Pioneering Software Rigor for Healthcare Excellence
               </h2>
+
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                {about.missionText}
+              </p>
             </div>
 
-            <p className="mt-8 text-base sm:text-lg font-medium text-slate-800 leading-snug">
-              To empower hospitals with digital solutions that improve efficiency and patient care globally.
-            </p>
+            <div className="pt-6 border-t border-teal-200/60 mt-6 grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="size-5 text-[#0d6157]" />
+                <span className="text-xs font-semibold text-slate-800">HIPAA &amp; GDPR Certified</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Globe2 className="size-5 text-[#0d6157]" />
+                <span className="text-xs font-semibold text-slate-800">Middle East &amp; Global Cloud</span>
+              </div>
+            </div>
           </div>
+
+          {/* Key Metrics Card */}
+          <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-[28px] sm:rounded-[36px] p-6 sm:p-9 flex flex-col justify-between shadow-sm">
+            <h3 className="text-lg sm:text-xl font-semibold tracking-tight text-slate-900 mb-4">
+              Platform Reliability &amp; Scale
+            </h3>
+
+            <div className="grid grid-cols-2 gap-3.5 sm:gap-4 my-auto">
+              {about.stats.map((st, idx) => (
+                <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-1">
+                  <div className="text-xl sm:text-2xl font-bold text-[#0d5c56]">{st.value}</div>
+                  <div className="text-[11px] text-slate-500 font-medium leading-tight">{st.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 text-center">
+              <span className="text-xs text-slate-400">Audited metrics updated in real-time</span>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* ─── MILESTONES & JOURNEY ─── */}
+      {/* ─── LEADERSHIP TEAM ─── */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
-          <div className="lg:col-span-6 bg-[#eef9f6] border border-[#d2eee5] rounded-[32px] sm:rounded-[36px] p-8 sm:p-12 relative overflow-hidden shadow-[0_4px_24px_rgba(13,92,86,0.04)]">
-            <div className="space-y-10 relative">
-              <div className="absolute left-3.5 top-5 bottom-5 w-0.5 bg-gradient-to-b from-slate-200 via-teal-500 to-teal-700 pointer-events-none" />
-
-              <div className="relative flex items-center gap-6 pl-10">
-                <div className="absolute left-2.5 size-2.5 rounded-full bg-slate-300 ring-4 ring-[#eef9f6]" />
-                <span className="text-3xl sm:text-4xl font-semibold text-slate-300 tracking-tight">2023</span>
-              </div>
-
-              <div className="relative pl-10 space-y-2">
-                <div className="absolute left-2 size-3.5 rounded-full bg-slate-900 ring-4 ring-[#eef9f6]" />
-                <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4">
-                  <span className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">2024</span>
-                  <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed max-w-sm">
-                    Scaled operations to 50+ countries with multi-language &amp; localization support.
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative pl-10 space-y-2">
-                <div className="absolute left-2 size-3.5 rounded-full bg-teal-600 ring-4 ring-[#eef9f6]" />
-                <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4">
-                  <span className="text-3xl sm:text-4xl font-semibold text-teal-800 tracking-tight">2025</span>
-                  <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed max-w-sm">
-                    Automated WhatsApp booking router, smart EHR, and autonomous clinic intelligence.
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-3 whitespace-nowrap shrink-0 max-w-full">
+            <Users className="size-3.5 shrink-0" /> <span className="truncate">Leadership &amp; Engineering</span>
           </div>
-
-          <div className="lg:col-span-6 lg:pl-6 space-y-6">
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200/60 text-slate-700 text-xs font-semibold tracking-wide uppercase">
-              Our Journey
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900 leading-[1.15]">
-              Milestones That <br className="hidden sm:block" />
-              Define Us
-            </h2>
-
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-              Pulseware was founded by clinicians and healthcare technologists who experienced firsthand the friction of legacy hospital software. Today, we power modern clinical workflows across Saudi Arabia, the GCC, the UK, and beyond.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <div className="text-2xl sm:text-3xl font-semibold text-teal-700">50+</div>
-                <div className="text-xs text-slate-500 font-medium mt-1">Countries Supported</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <div className="text-2xl sm:text-3xl font-semibold text-teal-700">99.9%</div>
-                <div className="text-xs text-slate-500 font-medium mt-1">Platform Uptime</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── LEADERSHIP & ADVISORY ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold tracking-wide uppercase mb-4">
-            Our Medical &amp; Tech Leadership
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+          <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-slate-900">
             Guided by Clinicians &amp; Systems Engineers
           </h2>
-          <p className="text-sm text-slate-500 mt-3 font-normal leading-relaxed">
-            Our multidisciplinary team combines deep healthcare experience with world-class cloud engineering.
+          <p className="mt-2.5 text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">
+            Our multidisciplinary team bridges healthcare governance, high-concurrency database engineering, and artificial intelligence telephony.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              name: 'Dr. Sarah Williams',
-              role: 'Chief Medical Officer',
-              desc: 'Consultant Dermatologist with 15+ years leading clinical digital transformations.',
-              avatar: 'SW',
-              color: 'from-teal-500 to-cyan-500',
-            },
-            {
-              name: 'Dr. Haitham Al-Gzlan',
-              role: 'Head of Clinical AI',
-              desc: 'Specialist physician pioneering automated triage and WhatsApp conversational routing.',
-              avatar: 'HA',
-              color: 'from-emerald-500 to-teal-600',
-            },
-            {
-              name: 'Dr. Michael Chen',
-              role: 'VP of Hospital Operations',
-              desc: 'Former clinical director managing multi-branch hospital scheduling and pharmacy systems.',
-              avatar: 'MC',
-              color: 'from-cyan-600 to-blue-600',
-            },
-            {
-              name: 'Sara Ahmed',
-              role: 'Head of Patient Experience',
-              desc: 'Dedicated to patient communication, bilingual localization, and clinic retention.',
-              avatar: 'SA',
-              color: 'from-purple-500 to-indigo-600',
-            },
-          ].map((leader) => (
-            <div key={leader.name} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition-all">
-              <div className={`size-12 rounded-2xl bg-gradient-to-tr ${leader.color} flex items-center justify-center text-white font-bold text-base shadow-sm`}>
-                {leader.avatar}
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {about.leadership.map((leader, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-[24px] sm:rounded-[32px] p-6 border border-slate-200/80 shadow-md hover:shadow-xl transition-all flex flex-col justify-between space-y-4"
+            >
               <div>
-                <h4 className="text-base font-semibold text-slate-900">{leader.name}</h4>
+                <div className="size-12 rounded-2xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm mb-3">
+                  {leader.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)}
+                </div>
+                <h3 className="text-base font-semibold text-slate-900">{leader.name}</h3>
                 <div className="text-xs font-medium text-[#0d6157] mt-0.5">{leader.role}</div>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed font-normal">{leader.desc}</p>
@@ -326,12 +186,12 @@ export default function AboutPage() {
       </section>
 
       {/* ─── FINAL CTA ─── */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center relative z-10">
-        <div className="rounded-[32px] sm:rounded-[40px] bg-gradient-to-b from-[#0b544b] to-[#073832] text-white p-10 sm:p-16 space-y-6 shadow-2xl">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center relative z-10">
+        <div className="rounded-[28px] sm:rounded-[40px] bg-gradient-to-b from-[#0b544b] to-[#073832] text-white p-8 sm:p-16 space-y-6 shadow-2xl">
+          <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight">
             Ready to Modernize Your Healthcare Operations?
           </h2>
-          <p className="text-sm sm:text-base text-teal-100/90 max-w-xl mx-auto font-normal">
+          <p className="text-xs sm:text-base text-teal-100/90 max-w-xl mx-auto font-normal">
             Join hundreds of forward-thinking clinics using Pulseware to deliver superior patient care and automated clinic management.
           </p>
           <div className="pt-2 flex justify-center gap-4">
@@ -347,7 +207,7 @@ export default function AboutPage() {
       </section>
 
       {/* ─── UNIFIED PUBLIC FOOTER ─── */}
-      <PublicFooter />
+      <PublicFooter content={footer} />
 
     </div>
   );

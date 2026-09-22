@@ -31,6 +31,8 @@ import { PublicNavbar } from '@/components/layout/PublicNavbar';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { TopAnnouncementBar } from '@/components/layout/TopAnnouncementBar';
 import { getSessionUser } from '@/lib/auth/session';
+import { getAllSiteContent } from '@/lib/cms/service';
+import { DEFAULT_SITE_CONTENT } from '@/lib/cms/defaults';
 
 export const metadata = {
   title: 'Products Suite · Pulseware Healthcare OS',
@@ -38,19 +40,32 @@ export const metadata = {
     'Explore the Pulseware product lineup: Pulse HealthOS (PMS & EHR), Pulse Now (WhatsApp AI Booking), and Pulse Speak (Autonomous Voice Telephony Receptionist).',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductsPage() {
   const user = await getSessionUser();
+  const cmsContent = await getAllSiteContent();
+  const { announcement, products, footer } = cmsContent;
+
   const portalHref = user
     ? user.role === 'SUPER_ADMIN'
       ? '/admin'
       : '/portal'
     : '/login';
 
+  const defaultProds = DEFAULT_SITE_CONTENT.products.products;
+  const healthOsProduct =
+    products.products.find((p) => p.id === 'healthos') ?? defaultProds[0]!;
+  const pulseNowProduct =
+    products.products.find((p) => p.id === 'now') ?? defaultProds[1]!;
+  const pulseSpeakProduct =
+    products.products.find((p) => p.id === 'speak') ?? defaultProds[2]!;
+
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 font-sans antialiased selection:bg-[#0d8276] selection:text-white relative overflow-x-hidden">
       
       {/* ─── TOP ANNOUNCEMENT BAR ─── */}
-      <TopAnnouncementBar />
+      <TopAnnouncementBar content={announcement} />
 
       {/* ─── 1. HERO CONTAINER WITH UNIFIED NAVBAR ─── */}
       <div className="relative w-full px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">
@@ -79,18 +94,18 @@ export default async function ProductsPage() {
           <PublicNavbar activePage="products" user={user} portalHref={portalHref} />
 
           {/* Hero Header Content */}
-          <div className="relative z-20 px-4 sm:px-8 pt-12 sm:pt-16 pb-6 text-center max-w-4xl mx-auto flex flex-col items-center">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/90 shadow-sm border border-[#0d8276]/20 text-[#0d6157] text-xs font-semibold uppercase tracking-wider mb-4">
-              <Layers className="size-3.5" /> Product Architecture
+          <div className="relative z-20 px-4 sm:px-8 pt-10 sm:pt-16 pb-6 text-center max-w-4xl mx-auto flex flex-col items-center">
+            <div className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1 rounded-full bg-white/90 shadow-sm border border-[#0d8276]/20 text-[#0d6157] text-[11px] sm:text-xs font-semibold uppercase tracking-wider mb-4 whitespace-nowrap shrink-0 max-w-full">
+              <Layers className="size-3.5 shrink-0" /> <span className="truncate">{products.badge}</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-semibold tracking-tight leading-[1.15] text-slate-900">
-              <span className="block text-[#0d5c56]">Three Dedicated Products,</span>
-              <span className="block text-slate-900 mt-1">One Connected Healthcare OS</span>
+              <span className="block text-[#0d5c56]">{products.headlineFirst}</span>
+              <span className="block text-slate-900 mt-1">{products.headlineSecond}</span>
             </h1>
 
-            <p className="mt-5 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
-              Explore Pulseware&apos;s modular software ecosystem. Choose the standalone autonomous booking agents or deploy the full clinical hospital management suite.
+            <p className="mt-4 sm:mt-5 text-xs sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
+              {products.subtitle}
             </p>
           </div>
 
@@ -98,84 +113,85 @@ export default async function ProductsPage() {
       </div>
 
       {/* ─── 2. PRODUCT 1: PULSE HEALTHOS ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-10 lg:p-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="bg-white rounded-[28px] sm:rounded-[40px] border border-slate-200 shadow-xl overflow-hidden p-5 sm:p-10 lg:p-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
             
-            <div className="lg:col-span-6 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-200/60">
-                <HeartPulse className="size-3.5" /> Practice Management System (PMS)
+            <div className="lg:col-span-6 space-y-5 sm:space-y-6">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-teal-50 text-teal-800 text-[11px] sm:text-xs font-semibold border border-teal-200/60 whitespace-nowrap shrink-0 max-w-full">
+                <HeartPulse className="size-3.5 shrink-0" /> <span className="truncate">{healthOsProduct.badge}</span>
               </div>
 
               <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-                Pulse HealthOS
+                {healthOsProduct.name}
               </h2>
 
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-                The centralized operational core for hospitals, clinics, and multi-specialty centers. HealthOS connects every clinical workflow: patient chart records, doctor consultations, electronic prescriptions, pharmacy inventory stock movements, diagnostic laboratory tests, and automated financial reconciliations.
+              <p className="text-xs sm:text-base text-slate-600 leading-relaxed font-normal">
+                {healthOsProduct.description}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {[
-                  'Smart EHR & Longitudinal Medical Records',
-                  'Pharmacy Batch & Expiry Date Management',
-                  'Doctor Payout & Commission Engine',
-                  'Multi-Tier Role-Based Access (11 Roles)',
-                  'Itemized Invoices with QR & Tax Splits',
-                  'Diagnostic Lab Order & PDF Result Uploads',
-                ].map((feat, i) => (
+                {healthOsProduct.features.map((feat, i) => (
                   <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                    <CheckCircle2 className="size-4 text-teal-600 shrink-0 mt-0.5" />
-                    <span className="font-semibold text-slate-800">{feat}</span>
+                    <CheckCircle2 className="size-4 text-[#0d6157] shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-slate-800 block">{feat.title}</span>
+                      {feat.desc && <span className="text-[11px] text-slate-500 block mt-0.5">{feat.desc}</span>}
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="pt-4 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/features"
+                  href={healthOsProduct.ctaHref || '/contact'}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0d6157] hover:bg-[#0a4e46] text-white text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
                 >
-                  <span>Explore HealthOS Features</span>
+                  <span>{healthOsProduct.ctaText}</span>
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href="/pricing"
                   className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold transition-all"
                 >
-                  <span>View Pricing Plans</span>
+                  <span>View Pricing Plans ({healthOsProduct.monthlyPrice})</span>
                 </Link>
               </div>
             </div>
 
             {/* HealthOS Mockup Graphic */}
-            <div className="lg:col-span-6 bg-slate-900 rounded-3xl p-6 text-white shadow-2xl border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-xs font-mono text-teal-400">HealthOS Clinical Core v2.4</span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-semibold">
+            <div className="lg:col-span-6 bg-slate-900 rounded-3xl p-4 sm:p-6 text-white shadow-2xl border border-slate-800 space-y-4 overflow-hidden">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="size-2 rounded-full bg-teal-400 animate-pulse shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-mono text-teal-400 font-medium whitespace-nowrap truncate">
+                    HealthOS Core v2.4
+                  </span>
+                </div>
+                <span className="text-[9px] sm:text-[10px] bg-emerald-500/20 text-emerald-300 px-2 sm:px-2.5 py-0.5 rounded-full font-semibold whitespace-nowrap shrink-0 border border-emerald-500/30">
                   Active Instance
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-slate-800/80 p-3 sm:p-3.5 rounded-2xl border border-slate-700">
                   <div className="text-[11px] text-slate-400">Active Consultations</div>
-                  <div className="text-xl font-bold text-white mt-1">28 In-Progress</div>
+                  <div className="text-lg sm:text-xl font-bold text-white mt-1">28 In-Progress</div>
                   <div className="text-[10px] text-teal-400">12 Doctors on Roster</div>
                 </div>
-                <div className="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                <div className="bg-slate-800/80 p-3 sm:p-3.5 rounded-2xl border border-slate-700">
                   <div className="text-[11px] text-slate-400">Pharmacy Inventory</div>
-                  <div className="text-xl font-bold text-white mt-1">1,894 SKUs</div>
+                  <div className="text-lg sm:text-xl font-bold text-white mt-1">1,894 SKUs</div>
                   <div className="text-[10px] text-emerald-400">100% In-Stock Sync</div>
                 </div>
               </div>
 
-              <div className="bg-slate-800/90 rounded-2xl p-4 border border-slate-700 space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <span>Prescription &amp; Billing Reconciliation</span>
-                  <span className="text-emerald-400 font-mono">Status: Settled</span>
+              <div className="bg-slate-800/90 rounded-2xl p-3.5 sm:p-4 border border-slate-700 space-y-2">
+                <div className="flex items-center justify-between gap-2 text-xs font-semibold">
+                  <span className="text-white text-[11px] sm:text-xs font-semibold whitespace-nowrap truncate min-w-0">Prescription &amp; Billing</span>
+                  <span className="text-emerald-400 font-mono text-[10px] sm:text-xs whitespace-nowrap shrink-0">Status: Settled</span>
                 </div>
-                <p className="text-[11.5px] text-slate-300 leading-relaxed font-normal">
+                <p className="text-[11px] sm:text-[11.5px] text-slate-300 leading-relaxed font-normal">
                   Patient Khalid Mansoor (UHID-2026-902) &bull; Dr. David Chen (Orthopedics) &bull; Automatic stock deduction for 2 items committed to ledger.
                 </p>
               </div>
@@ -186,22 +202,22 @@ export default async function ProductsPage() {
       </section>
 
       {/* ─── 3. PRODUCT 2: PULSE NOW ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-b from-[#edf9f6] via-white to-[#edf9f6] rounded-[40px] border border-teal-100">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center p-6 sm:p-10">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-gradient-to-b from-[#edf9f6] via-white to-[#edf9f6] rounded-[28px] sm:rounded-[40px] border border-teal-100">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center p-4 sm:p-10">
           
           {/* Left Column: UI Mockup */}
-          <div className="lg:col-span-6 order-2 lg:order-1 bg-[#0c1317] rounded-3xl p-6 text-white shadow-2xl border border-slate-800 space-y-4 max-w-md mx-auto w-full">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="size-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-white">
+          <div className="lg:col-span-6 order-2 lg:order-1 bg-[#0c1317] rounded-3xl p-4 sm:p-6 text-white shadow-2xl border border-slate-800 space-y-4 max-w-md mx-auto w-full overflow-hidden">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="size-7 sm:size-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-white shrink-0">
                   <Bot className="size-4" />
                 </div>
-                <div>
-                  <div className="text-xs font-semibold text-white">WhatsApp Fast Router</div>
-                  <div className="text-[10px] text-emerald-400 font-mono">Sub-50ms Availability</div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-white whitespace-nowrap truncate">WhatsApp Fast Router</div>
+                  <div className="text-[10px] text-emerald-400 font-mono whitespace-nowrap truncate">Sub-50ms Availability</div>
                 </div>
               </div>
-              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Official Cloud API</span>
+              <span className="text-[9.5px] sm:text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300 whitespace-nowrap shrink-0">Official Cloud API</span>
             </div>
 
             <div className="space-y-2.5 text-xs">
@@ -222,41 +238,37 @@ export default async function ProductsPage() {
           </div>
 
           {/* Right Column: Copy & Details */}
-          <div className="lg:col-span-6 order-1 lg:order-2 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200/60">
-              <MessageSquare className="size-3.5" /> Autonomous WhatsApp Concierge
+          <div className="lg:col-span-6 order-1 lg:order-2 space-y-5 sm:space-y-6">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] sm:text-xs font-semibold border border-emerald-200/60 whitespace-nowrap shrink-0 max-w-full">
+              <MessageSquare className="size-3.5 shrink-0" /> <span className="truncate">{pulseNowProduct.badge}</span>
             </div>
 
             <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-              Pulse Now
+              {pulseNowProduct.name}
             </h2>
 
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-              An intelligent, multilingual WhatsApp conversational booking agent that operates 24 hours a day, 7 days a week. Patients ask questions, check real doctor availability, and reserve appointments with zero double-booking collisions.
+            <p className="text-xs sm:text-base text-slate-600 leading-relaxed font-normal">
+              {pulseNowProduct.description}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              {[
-                'Instant WhatsApp Cloud Official API',
-                '20+ Languages (Arabic, English, French & more)',
-                'Zero-Double Booking Exclusion Constraints',
-                'Automated 24-Hour & 2-Hour Reminders',
-                'Pre-consultation Medical Questionnaire',
-                'Instant Human Receptionist Escalation',
-              ].map((feat, i) => (
+              {pulseNowProduct.features.map((feat, i) => (
                 <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-white border border-slate-200/70 text-xs">
                   <CheckCircle2 className="size-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span className="font-semibold text-slate-800">{feat}</span>
+                  <div>
+                    <span className="font-semibold text-slate-800 block">{feat.title}</span>
+                    {feat.desc && <span className="text-[11px] text-slate-500 block mt-0.5">{feat.desc}</span>}
+                  </div>
                 </div>
               ))}
             </div>
 
             <div className="pt-4 flex flex-wrap items-center gap-3">
               <Link
-                href="/contact"
+                href={pulseNowProduct.ctaHref || '/contact'}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
               >
-                <span>Get Pulse Now (499 SAR/mo)</span>
+                <span>{pulseNowProduct.ctaText} ({pulseNowProduct.monthlyPrice})</span>
                 <ArrowRight className="size-4" />
               </Link>
             </div>
@@ -266,45 +278,41 @@ export default async function ProductsPage() {
       </section>
 
       {/* ─── 4. PRODUCT 3: PULSE SPEAK ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-10 lg:p-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="bg-white rounded-[28px] sm:rounded-[40px] border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-10 lg:p-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
             
-            <div className="lg:col-span-6 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 text-cyan-800 text-xs font-semibold border border-cyan-200/60">
-                <Volume2 className="size-3.5" /> Autonomous Voice AI Telephony
+            <div className="lg:col-span-6 space-y-5 sm:space-y-6">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-cyan-50 text-cyan-800 text-[11px] sm:text-xs font-semibold border border-cyan-200/60 whitespace-nowrap shrink-0 max-w-full">
+                <Volume2 className="size-3.5 shrink-0" /> <span className="truncate">{pulseSpeakProduct.badge}</span>
               </div>
 
               <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-slate-900">
-                Pulse Speak
+                {pulseSpeakProduct.name}
               </h2>
 
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-                An autonomous spoken voice AI receptionist that answers hospital landlines, speaks with human-like latency and medical nuance, checks doctor calendars, and commits bookings directly into your hospital schedule.
+              <p className="text-xs sm:text-base text-slate-600 leading-relaxed font-normal">
+                {pulseSpeakProduct.description}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {[
-                  'Direct Hospital PBX, 3CX & SIP Trunk Sync',
-                  'Sub-400ms Spoken Neural Audio Latency',
-                  'Handles 100+ Concurrent Telephone Calls',
-                  'Speech-to-Text Clinical Transcription',
-                  'Verbal Appointment Booking & SMS Dispatch',
-                  'Smart Department & Doctor Call Forwarding',
-                ].map((feat, i) => (
+                {pulseSpeakProduct.features.map((feat, i) => (
                   <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
                     <CheckCircle2 className="size-4 text-cyan-600 shrink-0 mt-0.5" />
-                    <span className="font-semibold text-slate-800">{feat}</span>
+                    <div>
+                      <span className="font-semibold text-slate-800 block">{feat.title}</span>
+                      {feat.desc && <span className="text-[11px] text-slate-500 block mt-0.5">{feat.desc}</span>}
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="pt-4 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/contact"
+                  href={pulseSpeakProduct.ctaHref || '/contact'}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-700 hover:bg-cyan-800 text-white text-xs sm:text-sm font-semibold shadow-md transition-all hover:scale-105"
                 >
-                  <span>Request Pulse Speak Voice Demo</span>
+                  <span>{pulseSpeakProduct.ctaText}</span>
                   <PhoneCall className="size-4" />
                 </Link>
                 <Link
@@ -317,13 +325,13 @@ export default async function ProductsPage() {
             </div>
 
             {/* Voice AI Graphic */}
-            <div className="lg:col-span-6 bg-gradient-to-br from-slate-950 to-cyan-950 rounded-3xl p-6 text-white shadow-2xl border border-cyan-900/40 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <PhoneCall className="size-4 text-cyan-400 animate-pulse" />
-                  <span className="text-xs font-mono text-cyan-300">Live Voice Agent Telephony</span>
+            <div className="lg:col-span-6 bg-gradient-to-br from-slate-950 to-cyan-950 rounded-3xl p-4 sm:p-6 text-white shadow-2xl border border-cyan-900/40 space-y-4 overflow-hidden">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <PhoneCall className="size-4 text-cyan-400 animate-pulse shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-mono text-cyan-300 whitespace-nowrap truncate">Live Voice Agent Telephony</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">Latency: 340ms</span>
+                <span className="text-[9.5px] sm:text-[10px] font-mono text-slate-400 whitespace-nowrap shrink-0">Latency: 340ms</span>
               </div>
 
               <div className="bg-slate-900/90 rounded-2xl p-4 border border-cyan-800/30 space-y-3">
@@ -348,18 +356,18 @@ export default async function ProductsPage() {
       </section>
 
       {/* ─── 5. PRODUCT COMPARISON MATRIX ─── */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-10">
+          <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-slate-900">
             Compare Product Capabilities
           </h2>
-          <p className="mt-3 text-sm text-slate-500 font-normal">
+          <p className="mt-2.5 text-xs sm:text-sm text-slate-500 font-normal">
             Choose the exact combination of software modules needed for your healthcare organization.
           </p>
         </div>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full text-left text-xs sm:text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/75">
                 <th className="p-4 sm:p-5 font-semibold text-slate-900">Capability / Module</th>
@@ -411,7 +419,7 @@ export default async function ProductsPage() {
       </section>
 
       {/* ─── 6. UNIFIED PUBLIC FOOTER ─── */}
-      <PublicFooter />
+      <PublicFooter content={footer} />
 
     </div>
   );
